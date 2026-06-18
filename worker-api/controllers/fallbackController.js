@@ -9,42 +9,67 @@ const invalidCommand = async (req, res) => {
     }
 
     try {
-        // 1. Check if this invalid command attempt has already been logged for this message ID
-        const checkQuery = "SELECT * FROM invalid_command_senders WHERE phone_number = ? AND message_id = ?";
-        const [existing] = await db.upbsPool.query(checkQuery, [smsSender, messageId]);
+        // Retrieve member details to determine registration status
+        const memberQuery = "SELECT lastname, firstname, phone_number FROM members WHERE phone_number = ?";
+        const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
+        const isRegistered = memberRecords.length > 0;
 
-        const replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
+        let replyMessage = "";
 
-        if (existing.length === 0) {
-            try {
-                // Log it in invalid_command_senders using IGNORE to skip duplicate key warnings
-                const insertQuery = "INSERT IGNORE INTO invalid_command_senders (phone_number, message_id) VALUES (?, ?)";
-                await db.upbsPool.query(insertQuery, [smsSender, messageId]);
+        if (isRegistered) {
+            replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
+            
+            // Check if this invalid command attempt has already been logged
+            const checkQuery = "SELECT * FROM invalid_command_senders WHERE phone_number = ? AND message_id = ?";
+            const [existing] = await db.upbsPool.query(checkQuery, [smsSender, messageId]);
 
-                // Retrieve member details if they exist (to populate Logs properly)
-                const memberQuery = "SELECT lastname, firstname, phone_number FROM members WHERE phone_number = ?";
-                const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
+            if (existing.length === 0) {
+                try {
+                    const insertQuery = "INSERT IGNORE INTO invalid_command_senders (phone_number, message_id) VALUES (?, ?)";
+                    await db.upbsPool.query(insertQuery, [smsSender, messageId]);
 
-                let userLogInfo = { lastname: null, firstname: null, phone_number: null };
-                if (memberRecords.length > 0) {
-                    userLogInfo = memberRecords[0];
+                    const userLogInfo = memberRecords[0];
+
+                    const logQuery = `
+                        INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                        VALUES (?, ?, ?, ?, NOW(), ?, ?)
+                    `;
+                    await db.upbsPool.query(logQuery, [
+                        userLogInfo.lastname,
+                        userLogInfo.firstname,
+                        userLogInfo.phone_number,
+                        smsSender,
+                        'Invalid Command',
+                        messageId
+                    ]);
+                } catch (logErr) {
+                    console.error('Logging failed for invalid command (swallowed):', logErr.message);
                 }
+            }
+        } else {
+            replyMessage = "Sorry, you are not registered with UP Bike Share.";
 
-                // Log request in Logs table
-                const logQuery = `
-                    INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
-                    VALUES (?, ?, ?, ?, NOW(), ?, ?)
-                `;
-                await db.upbsPool.query(logQuery, [
-                    userLogInfo.lastname,
-                    userLogInfo.firstname,
-                    userLogInfo.phone_number,
-                    smsSender,
-                    'Invalid Command',
-                    messageId
-                ]);
-            } catch (logErr) {
-                console.error('Logging failed for invalid command (swallowed):', logErr.message);
+            // Check if this non-registered attempt has already been logged
+            const checkQuery = "SELECT * FROM non_registered_senders WHERE phone_number = ? AND message_id = ?";
+            const [existing] = await db.upbsPool.query(checkQuery, [smsSender, messageId]);
+
+            if (existing.length === 0) {
+                try {
+                    const insertQuery = "INSERT IGNORE INTO non_registered_senders (phone_number, message_id) VALUES (?, ?)";
+                    await db.upbsPool.query(insertQuery, [smsSender, messageId]);
+
+                    const logQuery = `
+                        INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                        VALUES (NULL, NULL, NULL, ?, NOW(), ?, ?)
+                    `;
+                    await db.upbsPool.query(logQuery, [
+                        smsSender,
+                        'Non-Registered',
+                        messageId
+                    ]);
+                } catch (logErr) {
+                    console.error('Logging failed for non-registered sender (swallowed):', logErr.message);
+                }
             }
         }
 

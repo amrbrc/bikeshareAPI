@@ -7,8 +7,34 @@ const { spawn } = require('child_process');
 
 const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
 
+let isPolling = false;
+
+// Helper to send multiple replies sequentially in the background
+async function sendRepliesSeq(phoneNumber, replies) {
+    for (const reply of replies) {
+        await sendReply(phoneNumber, reply);
+    }
+}
+
+// Helper to handle borrow fallback asynchronously in the background
+async function handleBorrowFallback(smsSender, messageId) {
+    try {
+        const fallbackResponse = await axios.post(`${WORKER_URL}/api/invalid-command`, {
+            smsSender,
+            messageId
+        });
+        const replyMessage = fallbackResponse.data.reply || 'Invalid Command. Send "bikeshare help" for list of available commands.';
+        sendReply(smsSender, replyMessage);
+    } catch (err) {
+        console.error(`Fallback failed for ${smsSender}:`, err.message);
+    }
+}
+
 // Main polling function to check for new SMS messages
 async function pollInbox() {
+    if (isPolling) return;
+    isPolling = true;
+
     try {
         // Select all columns from 'inbox' where Processed is 'false'
         const [rows] = await db.query("SELECT * FROM inbox WHERE Processed='false'");
@@ -28,27 +54,7 @@ async function pollInbox() {
             console.log(`Processing command '${smsMessage}' from ${smsSender} (ID: ${messageId})...`);
 
             try {
-                // 1. Verify user registration status with the Worker API before proceeding
-                const checkResponse = await axios.post(`${WORKER_URL}/api/members/check`, {
-                    phone_number: smsSender
-                });
-
-                const isRegistered = checkResponse.data.registered;
-
-                if (!isRegistered) {
-                    console.log(`Sender ${smsSender} is not registered. Routing to non-registered fallback.`);
-                    // Send to non-registered fallback
-                    const workerResponse = await axios.post(`${WORKER_URL}/api/non-registered`, {
-                        smsSender,
-                        messageId
-                    });
-                    const replyMessage = workerResponse.data.reply || "Sorry, you are not registered with UP Bike Share.";
-                    await sendReply(smsSender, replyMessage);
-                    await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
-                    continue;
-                }
-
-                // 2. Parse command using regex and route to correct endpoints
+                // 1. Parse command using regex and route to correct endpoints
                 let endpoint = '';
                 let payload = { smsSender, messageId };
 
@@ -82,34 +88,24 @@ async function pollInbox() {
 
                 console.log(`Routing command to Worker API: ${endpoint} with payload:`, payload);
 
-                // 3. Send payload to Worker API
+                // 2. Send payload to Worker API
                 const workerResponse = await axios.post(`${WORKER_URL}${endpoint}`, payload);
 
-                // 4. Extract reply/replies and send
-                if (endpoint === '/api/borrow' && workerResponse.data.invalidBicycle) {
-                    // Fallback to invalid command
-                    console.log(`Borrow failed (invalid bicycle). Routing to invalid-command fallback.`);
-                    const fallbackResponse = await axios.post(`${WORKER_URL}/api/invalid-command`, {
-                        smsSender,
-                        messageId
-                    });
-                    const replyMessage = fallbackResponse.data.reply || 'Invalid Command. Send "bikeshare help" for list of available commands.';
-                    await sendReply(smsSender, replyMessage);
-                } else if (endpoint === '/api/usage') {
-                    // Usage endpoint returns `{ replies: [...] }`
-                    const replies = workerResponse.data.replies || [];
-                    for (const reply of replies) {
-                        await sendReply(smsSender, reply);
-                    }
-                } else {
-                    // Other endpoints return `{ reply: "..." }`
-                    const replyMessage = workerResponse.data.reply || "Request processed successfully.";
-                    await sendReply(smsSender, replyMessage);
-                }
-
-                // 5. Mark the message as processed in the database
+                // 3. Mark the message as processed in the database immediately to release lock
                 await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
                 console.log(`Message ${messageId} marked as processed!`);
+
+                // 4. Trigger SMS replies in the background asynchronously
+                if (endpoint === '/api/borrow' && workerResponse.data.invalidBicycle) {
+                    console.log(`Borrow failed (invalid bicycle). Routing to invalid-command fallback in background.`);
+                    handleBorrowFallback(smsSender, messageId);
+                } else if (endpoint === '/api/usage') {
+                    const replies = workerResponse.data.replies || [];
+                    sendRepliesSeq(smsSender, replies);
+                } else {
+                    const replyMessage = workerResponse.data.reply || "Request processed successfully.";
+                    sendReply(smsSender, replyMessage);
+                }
 
             } catch (apiError) {
                 console.error(`Worker API error or failed for ${smsSender}:`, apiError.message);
@@ -118,6 +114,8 @@ async function pollInbox() {
         }
     } catch (error) {
         console.error("Database polling error:", error);
+    } finally {
+        isPolling = false;
     }
 }
 
