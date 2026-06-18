@@ -16,32 +16,36 @@ const invalidCommand = async (req, res) => {
         const replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
 
         if (existing.length === 0) {
-            // Log it in invalid_command_senders
-            const insertQuery = "INSERT INTO invalid_command_senders (phone_number, message_id) VALUES (?, ?)";
-            await db.upbsPool.query(insertQuery, [smsSender, messageId]);
+            try {
+                // Log it in invalid_command_senders using IGNORE to skip duplicate key warnings
+                const insertQuery = "INSERT IGNORE INTO invalid_command_senders (phone_number, message_id) VALUES (?, ?)";
+                await db.upbsPool.query(insertQuery, [smsSender, messageId]);
 
-            // Retrieve member details if they exist (to populate Logs properly)
-            const memberQuery = "SELECT lastname, firstname, phone_number FROM members WHERE phone_number = ?";
-            const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
+                // Retrieve member details if they exist (to populate Logs properly)
+                const memberQuery = "SELECT lastname, firstname, phone_number FROM members WHERE phone_number = ?";
+                const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
-            let userLogInfo = { lastname: null, firstname: null, phone_number: null };
-            if (memberRecords.length > 0) {
-                userLogInfo = memberRecords[0];
+                let userLogInfo = { lastname: null, firstname: null, phone_number: null };
+                if (memberRecords.length > 0) {
+                    userLogInfo = memberRecords[0];
+                }
+
+                // Log request in Logs table
+                const logQuery = `
+                    INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                    VALUES (?, ?, ?, ?, NOW(), ?, ?)
+                `;
+                await db.upbsPool.query(logQuery, [
+                    userLogInfo.lastname,
+                    userLogInfo.firstname,
+                    userLogInfo.phone_number,
+                    smsSender,
+                    'Invalid Command',
+                    messageId
+                ]);
+            } catch (logErr) {
+                console.error('Logging failed for invalid command (swallowed):', logErr.message);
             }
-
-            // Log request in Logs table
-            const logQuery = `
-                INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
-                VALUES (?, ?, ?, ?, NOW(), ?, ?)
-            `;
-            await db.upbsPool.query(logQuery, [
-                userLogInfo.lastname,
-                userLogInfo.firstname,
-                userLogInfo.phone_number,
-                smsSender,
-                'Invalid Command',
-                messageId
-            ]);
         }
 
         return res.json({ reply: replyMessage });
@@ -68,20 +72,24 @@ const nonRegistered = async (req, res) => {
         const replyMessage = "Sorry, you are not registered with UP Bike Share.";
 
         if (existing.length === 0) {
-            // Log it in non_registered_senders
-            const insertQuery = "INSERT INTO non_registered_senders (phone_number, message_id) VALUES (?, ?)";
-            await db.upbsPool.query(insertQuery, [smsSender, messageId]);
+            try {
+                // Log it in non_registered_senders using IGNORE to skip duplicate key warnings
+                const insertQuery = "INSERT IGNORE INTO non_registered_senders (phone_number, message_id) VALUES (?, ?)";
+                await db.upbsPool.query(insertQuery, [smsSender, messageId]);
 
-            // Log request in Logs table (since non-registered, name and phone fields are null)
-            const logQuery = `
-                INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
-                VALUES (NULL, NULL, NULL, ?, NOW(), ?, ?)
-            `;
-            await db.upbsPool.query(logQuery, [
-                smsSender,
-                'Non-Registered',
-                messageId
-            ]);
+                // Log request in Logs table (since non-registered, name and phone fields are null)
+                const logQuery = `
+                    INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                    VALUES (NULL, NULL, NULL, ?, NOW(), ?, ?)
+                `;
+                await db.upbsPool.query(logQuery, [
+                    smsSender,
+                    'Non-Registered',
+                    messageId
+                ]);
+            } catch (logErr) {
+                console.error('Logging failed for non-registered sender (swallowed):', logErr.message);
+            }
         }
 
         return res.json({ reply: replyMessage });
