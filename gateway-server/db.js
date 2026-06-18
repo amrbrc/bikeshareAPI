@@ -5,7 +5,7 @@ const mysql = require('mysql2/promise');
 
 // Establish a connection pool to the hardware database
 const smsdPool = mysql.createPool({
-    host: '192.168.1.10',
+    host: process.env.DB_HOST || '127.0.0.1',
     user: 'upbs2024',
     password: 'upbs2024',
     database: 'smsd',

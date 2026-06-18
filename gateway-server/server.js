@@ -5,75 +5,117 @@ const db = require('./db');
 const axios = require('axios');
 const { spawn } = require('child_process');
 
+const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
+
 // Main polling function to check for new SMS messages
 async function pollInbox() {
     try {
-        // We want to select all columns (*) from the 'inbox' table 
-        // ONLY where the message hasn't been processed yet.
+        // Select all columns from 'inbox' where Processed is 'false'
         const [rows] = await db.query("SELECT * FROM inbox WHERE Processed='false'");
 
         for (const message of rows) {
-
-            // Extract the sender's phone number and the decoded text from Gammu
-            const phoneNumber = message.SenderNumber;
+            const smsSender = message.SenderNumber;
             const rawText = message.TextDecoded;
+            const messageId = message.ID;
 
-            // Normalize the input text to ensure reliable command matching
-            const command = rawText.trim().toLowerCase();
+            if (!rawText) {
+                console.error(`Empty message received from Sender: ${smsSender}, Message ID: ${messageId}`);
+                await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
+                continue;
+            }
 
-            console.log(`Processing command '${command}' from ${phoneNumber}...`);
+            const smsMessage = rawText.trim().toLowerCase();
+            console.log(`Processing command '${smsMessage}' from ${smsSender} (ID: ${messageId})...`);
 
             try {
-                // Verify user registration status with the Worker API before proceeding
-                const checkResponse = await axios.post('http://localhost:3001/api/members/check', {
-                    phone_number: phoneNumber
+                // 1. Verify user registration status with the Worker API before proceeding
+                const checkResponse = await axios.post(`${WORKER_URL}/api/members/check`, {
+                    phone_number: smsSender
                 });
 
-                let endpoint = ''; // Stores the resolved Worker API route
+                const isRegistered = checkResponse.data.registered;
 
-                if (checkResponse.data.isRegistered) {
-                    // Route matched commands to the corresponding Worker API endpoints
-                    switch (command) {
-                        case 'search': endpoint = '/search'; break;
-                        case 'help': endpoint = '/help'; break;
-                        case 'how': endpoint = '/how'; break;
-                        case 'search all': endpoint = '/search-all'; break;
-                        case 'locations': endpoint = '/locations'; break;
-                        case 'usage': endpoint = '/usage'; break;
-                        case 'borrow': endpoint = '/borrow'; break;
-                        default: endpoint = '/invalid-command';
-                    }
-                } else {
-                    // If they are not registered, route them here
-                    endpoint = '/non-registered';
+                if (!isRegistered) {
+                    console.log(`Sender ${smsSender} is not registered. Routing to non-registered fallback.`);
+                    // Send to non-registered fallback
+                    const workerResponse = await axios.post(`${WORKER_URL}/api/non-registered`, {
+                        smsSender,
+                        messageId
+                    });
+                    const replyMessage = workerResponse.data.reply || "Sorry, you are not registered with UP Bike Share.";
+                    await sendReply(smsSender, replyMessage);
+                    await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
+                    continue;
                 }
 
-                console.log(`Routing ${phoneNumber} to Worker API: ${endpoint}`);
+                // 2. Parse command using regex and route to correct endpoints
+                let endpoint = '';
+                let payload = { smsSender, messageId };
 
+                // Match regexes (mimicking monolith logic)
+                const searchMatch = smsMessage.match(/^search\s+(\w+)$/i);
+                const usageMatch = smsMessage.match(/^usage\s+(\w+)$/i);
+                const borrowMatch = smsMessage.match(/^(\w+)\s+(\w+)\s+to\s+(\w+)$/i);
 
-                // Send the command to Worker API
-                const workerResponse = await axios.post(`http://localhost:3001${endpoint}`, {
-                    phone_number: phoneNumber,
-                    command: command
-                });
+                if (smsMessage === 'search all') {
+                    endpoint = '/api/search-all';
+                } else if (searchMatch) {
+                    endpoint = '/api/search';
+                    payload.bicycleCode = searchMatch[1].toLowerCase();
+                } else if (smsMessage === 'bikeshare help') {
+                    endpoint = '/api/help';
+                } else if (smsMessage === 'how') {
+                    endpoint = '/api/how';
+                } else if (smsMessage === 'locations') {
+                    endpoint = '/api/locations';
+                } else if (usageMatch) {
+                    endpoint = '/api/usage';
+                    payload.bicycleCode = usageMatch[1].toLowerCase();
+                } else if (borrowMatch) {
+                    endpoint = '/api/borrow';
+                    payload.bicycleCode = borrowMatch[1].toLowerCase();
+                    payload.fromLocation = borrowMatch[2].toLowerCase();
+                    payload.toLocation = borrowMatch[3].toLowerCase();
+                } else {
+                    endpoint = '/api/invalid-command';
+                }
 
-                // Extract the generated reply from the Worker API response
-                const replyMessage = workerResponse.data.message || "Request processed successfully.";
+                console.log(`Routing command to Worker API: ${endpoint} with payload:`, payload);
 
-                // Trigger Gammu hardware to dispatch the SMS reply
-                await sendReply(phoneNumber, replyMessage);
+                // 3. Send payload to Worker API
+                const workerResponse = await axios.post(`${WORKER_URL}${endpoint}`, payload);
 
-                // Mark the message as processed in the database to prevent duplicate handling
-                await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [message.ID]);
-                console.log(`Message ${message.ID} marked as processed!`);
+                // 4. Extract reply/replies and send
+                if (endpoint === '/api/borrow' && workerResponse.data.invalidBicycle) {
+                    // Fallback to invalid command
+                    console.log(`Borrow failed (invalid bicycle). Routing to invalid-command fallback.`);
+                    const fallbackResponse = await axios.post(`${WORKER_URL}/api/invalid-command`, {
+                        smsSender,
+                        messageId
+                    });
+                    const replyMessage = fallbackResponse.data.reply || 'Invalid Command. Send "bikeshare help" for list of available commands.';
+                    await sendReply(smsSender, replyMessage);
+                } else if (endpoint === '/api/usage') {
+                    // Usage endpoint returns `{ replies: [...] }`
+                    const replies = workerResponse.data.replies || [];
+                    for (const reply of replies) {
+                        await sendReply(smsSender, reply);
+                    }
+                } else {
+                    // Other endpoints return `{ reply: "..." }`
+                    const replyMessage = workerResponse.data.reply || "Request processed successfully.";
+                    await sendReply(smsSender, replyMessage);
+                }
 
+                // 5. Mark the message as processed in the database
+                await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
+                console.log(`Message ${messageId} marked as processed!`);
 
             } catch (apiError) {
-                console.error(`Worker API is down or failed for ${phoneNumber}. We will try again later!`);
+                console.error(`Worker API error or failed for ${smsSender}:`, apiError.message);
                 // We do NOT mark the message as processed, so the loop will try again later!
             }
         }
-
     } catch (error) {
         console.error("Database polling error:", error);
     }
@@ -85,7 +127,7 @@ setInterval(pollInbox, 200);
 
 // Helper function to send SMS via Gammu hardware
 function sendReply(phoneNumber, text) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         console.log(`Sending SMS to ${phoneNumber}: "${text}"`);
 
         // This runs the actual terminal command to the modem
@@ -94,10 +136,10 @@ function sendReply(phoneNumber, text) {
         gammu.on('close', (code) => {
             if (code === 0) {
                 console.log(`SMS successfully sent to ${phoneNumber}`);
-                resolve();
             } else {
-                reject(new Error(`Gammu failed to send. Exit code ${code}`));
+                console.error(`Gammu failed to send. Exit code ${code}`);
             }
+            resolve(); // Always resolve to avoid blocking the queue indefinitely
         });
     });
 }
