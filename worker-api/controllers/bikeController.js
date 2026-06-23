@@ -386,10 +386,47 @@ const borrow = async (req, res) => {
     }
 };
 
+const getBicycles = async (req, res) => {
+    try {
+        const [rows] = await db.upbsPool.query('SELECT bicycle_code, new_location, previous_location FROM bicycle_codes');
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('Error in getBicycles:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching bicycles' });
+    }
+};
+
+const getLocations = async (req, res) => {
+    try {
+        const [rows] = await db.upbsPool.query('SELECT location_name, is_disabled FROM locations');
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('Error in getLocations:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching locations' });
+    }
+};
+
+const getHistory = async (req, res) => {
+    const { bicycleCode } = req.params;
+    try {
+        const [rows] = await db.upbsPool.query(
+            'SELECT previous_location, new_location, borrowed_by, borrowed_at FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC',
+            [bicycleCode]
+        );
+        return res.json(rows);
+    } catch (err) {
+        console.error('Error in getHistory:', err);
+        return res.status(500).json({ error: 'Database error fetching bicycle history' });
+    }
+};
+
 module.exports = {
     search,
     searchAll,
     locations,
     usage,
-    borrow
+    borrow,
+    getBicycles,
+    getLocations,
+    getHistory
 };
