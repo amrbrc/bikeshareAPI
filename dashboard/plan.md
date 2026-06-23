@@ -20,23 +20,23 @@ Combination Locks: The GET /api/bicycles endpoint must explicitly EXCLUDE the co
 
 👨‍💻 Developer A (Amer): Server Config, Security, & Analytics
 
-[ ] Step 1: Environment Configuration (.env)
+[x] Step 1: Environment Configuration (.env)
 
 Edit worker-api/package.json to install dotenv.
 
 Create worker-api/.env.example with DB credentials and ADMIN_USERNAME=admin / ADMIN_PASSWORD=upbsadmin2026.
 
-[ ] Step 2: Serve the Frontend (server.js)
+[x] Step 2: Serve the Frontend (server.js)
 
 Update worker-api/server.js to serve the ../dashboard folder using express.static. This makes the UI accessible at http://localhost:3001/ without CORS issues.
 
-[ ] Step 3: Authentication Middleware (authMiddleware.js)
+[x] Step 3: Authentication Middleware (authMiddleware.js)
 
 Create worker-api/middleware/authMiddleware.js.
 
 Check for Authorization: Bearer <token>. If it equals 'admin-logged-in-token', allow access. Otherwise, return 401 Unauthorized.
 
-[ ] Step 4: Build Analytics Controller (analyticsController.js)
+[x] Step 4: Build Analytics Controller (analyticsController.js)
 
 Implement GET /api/analytics.
 
@@ -44,19 +44,19 @@ Write the complex SQL grouping queries to calculate peakHours and popularStation
 
 👨‍💻 Developer B (Jhirick): API Routing & CRUD Controllers
 
-[ ] Step 1: Register New Routes (api.js)
+[x] Step 1: Register New Routes (api.js)
 
 Update worker-api/routes/api.js to include the new Dashboard endpoints.
 
 Crucial: Import Dev A's authMiddleware and apply it to all /api/admin/* routes to secure them.
 
-[ ] Step 2: Build Admin Operations (adminController.js)
+[x] Step 2: Build Admin Operations (adminController.js)
 
 Implement POST /api/admin/login (check username/password against process.env and return the token).
 
 Implement CRUD endpoints: GET / POST /api/admin/members, POST /api/admin/bicycles, POST /api/admin/locations, and POST /api/admin/locations/toggle.
 
-[ ] Step 3: Build Safe Public Getters (bikeController.js)
+[x] Step 3: Build Safe Public Getters (bikeController.js)
 
 Implement GET /api/bicycles. Security Check: Query only bicycle_code and new_location (DO NOT select combination_lock).
 
