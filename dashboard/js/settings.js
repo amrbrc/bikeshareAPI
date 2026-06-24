@@ -172,11 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navSettings) {
         navSettings.addEventListener('click', (e) => {
             e.preventDefault();
-            hideAllViews();
-            navSettings.classList.add('active');
-            if (settingsContainer) settingsContainer.style.display = 'block';
-            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            // Settings is now a modal, so we just show it over the active view
+            if (settingsContainer) {
+                settingsContainer.style.display = 'flex';
+                settingsContainer.style.animation = 'fadeIn 0.25s ease-out';
+            }
             checkSession();
+        });
+    }
+
+    // Modal close logic
+    const btnCloseSettings = document.getElementById('btn-close-settings');
+    if (btnCloseSettings) {
+        btnCloseSettings.addEventListener('click', () => {
+            if (settingsContainer) settingsContainer.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside the modal card
+    if (settingsContainer) {
+        settingsContainer.addEventListener('click', (e) => {
+            if (e.target === settingsContainer) {
+                settingsContainer.style.display = 'none';
+            }
         });
     }
 
@@ -234,13 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check login state
     function checkSession() {
         const token = sessionStorage.getItem('adminToken');
+        const settingsModalCard = document.getElementById('settings-modal-card');
         if (token === 'admin-logged-in-token') {
             if (loginView) loginView.style.display = 'none';
             if (adminView) adminView.style.display = 'block';
+            if (settingsModalCard) settingsModalCard.classList.add('admin-active');
             loadAdminPanel();
         } else {
             if (loginView) loginView.style.display = 'flex'; // Use flex for centered layout
             if (adminView) adminView.style.display = 'none';
+            if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
         }
     }
 
@@ -256,22 +277,56 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const btnText = document.getElementById('login-btn-text');
+        const btnIcon = document.getElementById('login-success-icon');
+        const originalBtnText = btnText ? btnText.textContent : 'Sign In';
+
         try {
+            if (btnLoginSubmit) {
+                btnLoginSubmit.disabled = true;
+                if (btnText) btnText.textContent = 'Authenticating...';
+            }
+
             const res = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
             const data = await res.json();
+            
             if (data.success) {
                 sessionStorage.setItem('adminToken', data.token);
-                checkSession();
+                // Success feedback
+                if (btnLoginSubmit) {
+                    btnLoginSubmit.style.backgroundColor = 'var(--up-green)';
+                    if (btnText) btnText.textContent = 'Login Successful!';
+                    if (btnIcon) btnIcon.style.display = 'block';
+                }
+                
+                setTimeout(() => {
+                    checkSession();
+                    // Reset button for future logouts
+                    if (btnLoginSubmit) {
+                        btnLoginSubmit.disabled = false;
+                        btnLoginSubmit.style.backgroundColor = '';
+                        if (btnText) btnText.textContent = originalBtnText;
+                        if (btnIcon) btnIcon.style.display = 'none';
+                    }
+                }, 800);
             } else {
+                if (btnLoginSubmit) {
+                    btnLoginSubmit.disabled = false;
+                    if (btnText) btnText.textContent = originalBtnText;
+                }
                 loginError.textContent = data.error || 'Authentication failed.';
                 loginError.style.display = 'block';
             }
         } catch (err) {
             console.error('[settings.js] Login error:', err);
+            if (btnLoginSubmit) {
+                btnLoginSubmit.disabled = false;
+                if (btnText) btnText.textContent = originalBtnText;
+            }
             loginError.textContent = 'Server connection error. Please try again.';
             loginError.style.display = 'block';
         }
