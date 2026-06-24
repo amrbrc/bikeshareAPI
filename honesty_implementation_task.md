@@ -41,34 +41,34 @@ This file tracks the implementation progress of the Honesty Policy updates for t
 
 ## 👨‍💻 Developer B (Jhirick): Gateway, SMS Endpoints & Dashboard
 
-- [ ] **Step 1: Gateway Server Updates (Port 3000)**
-  - [ ] Update regex parser to identify:
+- [x] **Step 1: Gateway Server Updates (Port 3000)**
+  - [x] Update regex parser to identify:
     - `done [code]` -> Forward to `POST /api/done`
     - `[code] good` / `good [code]` -> Forward to `POST /api/good`
     - `[code] broken` / `broken [code]` -> Forward to `POST /api/broken`
     - `[code] fixed` / `fixed [code]` -> Forward to `POST /api/fixed`
-  - [ ] Create `/api/sms/send` endpoint to allow worker-api services to trigger outgoing SMS alerts.
+  - [x] Create `/api/sms/send` endpoint to allow worker-api services to trigger outgoing SMS alerts.
 
-- [ ] **Step 2: Build SMS Handshake Endpoints (Port 3001)**
-  - [ ] Implement `POST /api/done`:
+- [x] **Step 2: Build SMS Handshake Endpoints (Port 3001)**
+  - [x] Implement `POST /api/done`:
     - Mark active trip `done_text_received = TRUE` and set `pending_status_time = NOW()`.
     - Set bike status `condition_status = 'Pending_Status'`.
-    - Reply: `"Trip for Bike [id] ended. Is the bike in Good or Broken condition? Reply '1 GOOD' or '1 BROKEN'. Please take a photo of the bike at the rack as proof."`
-  - [ ] Implement `POST /api/good`:
+    - Reply: `"Trip for Bike [id] ended. Is the bike in Good or Broken condition? Reply '[id] GOOD' or '[id] BROKEN'. Please take a photo of the bike at the rack as proof."`
+  - [x] Implement `POST /api/good`:
     - Verify bike is in `Pending_Status`.
     - Set `condition_status = 'Good'` in `bicycle_codes` and `condition_confirmed = TRUE` in `bicycle_history`.
     - Reply: `"Thank you! Bike [id] condition confirmed as Good."`
-  - [ ] Implement `POST /api/broken`:
+  - [x] Implement `POST /api/broken`:
     - If reported by current user (in response to done handshake): set `condition_status = 'Broken'`, set `broken_reported_at = NOW()`, set `penalty_applied = FALSE`. Reply: `"Bike [id] marked broken... You have 48 hours to repair..."`
     - If reported by next user (conflict with previous GOOD): set `condition_status = 'Disputed'`, reward reporter B with `+5` points, freeze User A's points (`points_frozen = TRUE`), send dispute SMS alerts to both.
-  - [ ] Implement `POST /api/fixed`:
+  - [x] Implement `POST /api/fixed`:
     - Reset bike `condition_status = 'Good'` and clear repair timers.
 
-- [ ] **Step 3: Dashboard Admin Resolution & UI**
-  - [ ] Implement `POST /api/admin/resolve-dispute` in `adminController.js`:
+- [x] **Step 3: Dashboard Admin Resolution & UI**
+  - [x] Implement `POST /api/admin/resolve-dispute` in `adminController.js`:
     - If guilty: Unfreeze User A's points, apply `-30` demerit, keep bike status as `'Broken'`.
     - If innocent: Unfreeze User A's points, restore status.
-  - [ ] Front-end Updates:
+  - [x] Front-end Updates:
     - Display `"Disputed"` bikes in red in the dashboard map and grid.
     - Add a `"Frozen"` badge indicator next to members with frozen points in the settings pane.
     - Build a dispute resolution interface inside Admin settings.

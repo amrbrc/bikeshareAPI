@@ -11,7 +11,7 @@ async function sendSMS(phoneNumber, text) {
         const response = await fetch(`${GATEWAY_URL}/api/sms/send`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: phoneNumber, text })
+            body: JSON.stringify({ phoneNumber, message: text })
         });
         if (!response.ok) {
             console.error(`[Cron] Gateway returned status ${response.status} when sending SMS to ${phoneNumber}`);
