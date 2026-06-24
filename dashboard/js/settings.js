@@ -254,13 +254,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = sessionStorage.getItem('adminToken');
         const settingsModalCard = document.getElementById('settings-modal-card');
         if (token === 'admin-logged-in-token') {
-            if (loginView) loginView.style.display = 'none';
-            if (adminView) adminView.style.display = 'block';
+            if (loginView) {
+                loginView.classList.add('d-none');
+                loginView.classList.remove('d-flex');
+            }
+            if (adminView) {
+                adminView.classList.remove('d-none');
+                adminView.style.display = 'block';
+            }
             if (settingsModalCard) settingsModalCard.classList.add('admin-active');
             loadAdminPanel();
         } else {
-            if (loginView) loginView.style.display = 'flex'; // Use flex for centered layout
-            if (adminView) adminView.style.display = 'none';
+            if (loginView) {
+                loginView.classList.remove('d-none');
+                loginView.classList.add('d-flex');
+            }
+            if (adminView) {
+                adminView.classList.add('d-none');
+                adminView.style.display = 'none';
+            }
             if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
         }
     }
