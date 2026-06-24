@@ -526,7 +526,7 @@ const broken = async (req, res) => {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 phoneNumber: prevMember[0].phone_number,
-                                message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution.`
+                                message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`
                             })
                         });
                     } catch (e) { console.error("Failed to send dispute alert", e.message); }
