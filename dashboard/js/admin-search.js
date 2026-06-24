@@ -6,6 +6,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSearch = document.getElementById('btn-admin-search');
     const searchResults = document.getElementById('admin-search-results');
 
+    // Update placeholder based on selected search type
+    const updatePlaceholder = () => {
+        if (searchType.value === 'bike') {
+            searchInput.placeholder = "Enter Bicycle Code (Leave empty to show all bikes)";
+        } else {
+            searchInput.placeholder = "Enter Phone, First Name, or Last Name...";
+        }
+    };
+    searchType.addEventListener('change', updatePlaceholder);
+    updatePlaceholder();
+
     // UI Template: Bike Profile Card (Pure View Only)
     const renderBikeCard = (bike) => `
         <div class="card border p-3 shadow-sm">
