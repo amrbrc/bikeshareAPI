@@ -6,15 +6,15 @@ This file tracks the implementation progress of the Honesty Policy updates for t
 
 ## 👨‍💻 Developer A (Amer): Database, Core API & Background Timers
 
-- [ ] **Step 1: Database Schema Upgrades**
-  - [ ] Add columns to `members` table:
+- [x] **Step 1: Database Schema Upgrades**
+  - [x] Add columns to `members` table:
     - `trust_points` (INT, Default: `100`)
     - `points_frozen` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
-  - [ ] Add columns to `bicycle_codes` table:
+  - [x] Add columns to `bicycle_codes` table:
     - `condition_status` (VARCHAR(50), Default: `'Good'`)
     - `broken_reported_at` (DATETIME, Default: `NULL`)
     - `penalty_applied` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
-  - [ ] Add columns to `bicycle_history` table:
+  - [x] Add columns to `bicycle_history` table:
     - `reminder_1h_sent` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
     - `reminder_4h_sent` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
     - `done_text_received` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
@@ -22,19 +22,19 @@ This file tracks the implementation progress of the Honesty Policy updates for t
     - `pending_status_time` (DATETIME, Default: `NULL`)
     - `reminder_pending_sent` (TINYINT(1)/BOOLEAN, Default: `0` / `FALSE`)
 
-- [ ] **Step 2: Update `POST /api/borrow` (Gatekeeper Rules)**
-  - [ ] Reject borrow request with `"Account suspended."` if `trust_points < 50`.
-  - [ ] Reject borrow request with `"Account frozen due to dispute."` if `points_frozen === true`.
-  - [ ] Reject borrow request with `"Bike unavailable."` if `condition_status !== 'Good'`.
+- [x] **Step 2: Update `POST /api/borrow` (Gatekeeper Rules)**
+  - [x] Reject borrow request with `"Account suspended."` if `trust_points < 50`.
+  - [x] Reject borrow request with `"Account frozen due to dispute."` if `points_frozen === true`.
+  - [x] Reject borrow request with `"Bike unavailable."` if `condition_status !== 'Good'`.
 
-- [ ] **Step 3: Build Centralized Cron Service (`worker-api/services/cronJobs.js`)**
-  - [ ] Install `node-cron` dependency.
-  - [ ] Implement **Job 1 (Every 10 mins)**: 1-Hour & 4-Hour reminders.
+- [x] **Step 3: Build Centralized Cron Service (`worker-api/services/cronJobs.js`)**
+  - [x] Install `node-cron` dependency.
+  - [x] Implement **Job 1 (Every 10 mins)**: 1-Hour & 4-Hour reminders.
     - If `borrow_time > 1 HOUR` and `reminder_1h_sent = FALSE` and trip active -> Send reminder text, set `reminder_1h_sent = TRUE`.
     - If `borrow_time > 4 HOURS` and `reminder_4h_sent = FALSE` and trip active -> Send reminder text, set `reminder_4h_sent = TRUE`.
-  - [ ] Implement **Job 2 (Every 2 mins)**: 5-Minute Pending status handshake reminder.
+  - [x] Implement **Job 2 (Every 2 mins)**: 5-Minute Pending status handshake reminder.
     - If bike is in `Pending_Status` longer than 5 mins and `reminder_pending_sent = FALSE` -> Send reminder text, set `reminder_pending_sent = TRUE`.
-  - [ ] Implement **Job 3 (Hourly)**: 48-Hour Unrepaired Damage Countdown.
+  - [x] Implement **Job 3 (Hourly)**: 48-Hour Unrepaired Damage Countdown.
     - If `condition_status = 'Broken'` and `broken_reported_at < NOW() - 48 hours` and `penalty_applied = FALSE` -> Deduct 20 trust points from the reporter, set `penalty_applied = TRUE`, send SMS notification.
 
 ---

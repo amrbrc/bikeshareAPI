@@ -3,9 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const apiRoutes = require('./routes/api');
+const cronJobs = require('./services/cronJobs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize background cron tasks
+cronJobs.initCronJobs();
 
 // Middleware
 app.use(cors());

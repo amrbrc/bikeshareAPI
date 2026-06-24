@@ -288,7 +288,7 @@ const borrow = async (req, res) => {
     try {
         // 1. Retrieve member information (required)
         const memberQuery = `
-            SELECT lastname, firstname, phone_number
+            SELECT lastname, firstname, phone_number, trust_points, points_frozen
             FROM members
             WHERE phone_number = ?
         `;
@@ -300,6 +300,15 @@ const borrow = async (req, res) => {
 
         const user = memberRecords[0];
 
+        // Apply Gatekeeper checks for member trust points and frozen status
+        if (user.trust_points < 50) {
+            return res.json({ reply: "Account suspended." });
+        }
+
+        if (user.points_frozen === 1 || user.points_frozen === true) {
+            return res.json({ reply: "Account frozen due to dispute." });
+        }
+
         // 2. Validate Bicycle Code
         const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ?";
         const [bicycles] = await upbsConn.query(bikeQuery, [bicycleCode]);
@@ -309,6 +318,11 @@ const borrow = async (req, res) => {
         }
 
         const bicycle = bicycles[0];
+
+        // Apply Gatekeeper check for bicycle condition
+        if (bicycle.condition_status !== 'Good') {
+            return res.json({ reply: "Bike unavailable." });
+        }
 
         // Helper function for location validation inside the handler
         const validateLoc = async (loc) => {
