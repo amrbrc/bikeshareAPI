@@ -11,6 +11,7 @@ const fallbackController = require('../controllers/fallbackController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const adminController = require('../controllers/adminController');
+const analyticsController = require('../controllers/analyticsController');
 
 // Member Check Route
 router.post('/members/check', memberController.checkMember);
