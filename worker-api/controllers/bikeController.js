@@ -341,10 +341,10 @@ const borrow = async (req, res) => {
         // 4. Start the database transaction
         await upbsConn.beginTransaction();
 
-        // Update bicycle location
+        // Update bicycle location and set condition_status to 'Borrowed'
         const updateBicycleQuery = `
             UPDATE bicycle_codes 
-            SET previous_location = ?, new_location = ? 
+            SET previous_location = ?, new_location = ?, condition_status = 'Borrowed' 
             WHERE bicycle_code = ?
         `;
         await upbsConn.query(updateBicycleQuery, [fromLocation, toLocation, bicycleCode]);
