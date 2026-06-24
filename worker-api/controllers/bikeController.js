@@ -310,7 +310,7 @@ const borrow = async (req, res) => {
         }
 
         // 2. Validate Bicycle Code
-        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1";
+        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)";
         const [bicycles] = await upbsConn.query(bikeQuery, [bicycleCode]);
 
         if (bicycles.length === 0) {
@@ -402,7 +402,7 @@ const borrow = async (req, res) => {
 
 const getBicycles = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT bicycle_code, new_location, previous_location, condition_status FROM bicycle_codes WHERE is_active = 1');
+        const [rows] = await db.upbsPool.query('SELECT bicycle_code, new_location, previous_location, condition_status, is_disabled FROM bicycle_codes WHERE is_active = 1');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getBicycles:', err);

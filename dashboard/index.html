@@ -327,7 +327,7 @@
                 <div class="row g-4 settings-grid mt-1">
                     <div class="col-md-6 settings-col d-flex flex-column gap-3">
                         <div class="settings-section border rounded p-4 d-flex flex-column gap-3 shadow-sm" style="height: 380px;">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-2 border-bottom pb-2">📍 Station Status Control</h4>
+                            <h4 class="settings-section-title h6 fw-bold text-dark mb-2 border-bottom pb-2">Station Status Control</h4>
                             <div id="station-toggle-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto" style="flex: 1; padding-right: 8px;">
                                 <!-- Dynamically populated station status toggles -->
                             </div>
@@ -335,37 +335,15 @@
                     </div>
                     <div class="col-md-6 settings-col d-flex flex-column gap-3">
                         <div class="settings-section border rounded p-4 d-flex flex-column gap-3 flex-grow-1 shadow-sm" style="min-height: 380px;">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-2 border-bottom pb-2">🚲 Quick Bike Override</h4>
-                            <div class="custom-scroll d-flex flex-column gap-3 overflow-auto" style="flex: 1; padding-right: 8px;">
-                                <div class="border p-3 rounded" style="background: var(--bg-main);">
-                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Target Bike Code</label>
-                                    <input type="text" id="override-target-bike" class="form-control form-control-sm mb-3 border-0 shadow-sm" placeholder="e.g. 1">
-
-                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">New Lock Code</label>
-                                    <div class="input-group input-group-sm mb-3 shadow-sm rounded">
-                                        <input type="text" id="override-new-lock" class="form-control border-0" placeholder="e.g. 9999">
-                                        <button class="btn btn-primary fw-bold px-3 border-0" id="btn-quick-override-lock" style="background-color: var(--up-maroon);">Save</button>
-                                    </div>
-
-                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">New Condition Status</label>
-                                    <div class="input-group input-group-sm shadow-sm rounded">
-                                        <select id="override-new-status" class="form-select border-0">
-                                            <option value="Good">Good</option>
-                                            <option value="Broken">Broken</option>
-                                        </select>
-                                        <button class="btn btn-primary fw-bold px-3 border-0" id="btn-quick-override-status" style="background-color: var(--up-maroon);">Save</button>
-                                    </div>
-
-                                    <div class="mt-4 pt-3 border-top">
-                                        <label class="form-label small fw-bold text-danger text-uppercase mb-2">Danger Zone</label>
-                                        <button class="btn btn-outline-danger w-100 fw-bold d-flex justify-content-center align-items-center gap-2" id="btn-quick-delete-bike">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                            Delete Bike
-                                        </button>
-                                        <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">Permanently deactivates the target bike.</small>
-                                    </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                <h4 class="settings-section-title h6 fw-bold text-dark mb-0">Quick Bike Override</h4>
+                                <div class="input-group input-group-sm shadow-sm" style="width: 200px;">
+                                    <input type="text" id="search-bike-override" class="form-control border-0" placeholder="Search Bike Code..." style="font-size: 0.75rem;">
+                                    <button class="btn btn-primary fw-bold px-2 border-0" id="btn-search-bike-override" style="background-color: var(--up-maroon); font-size: 0.75rem;">Search</button>
                                 </div>
-                                <div id="quick-override-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
+                            </div>
+                            <div id="bike-override-list" class="custom-scroll d-flex flex-column gap-3 overflow-auto" style="flex: 1; padding-right: 8px;">
+                                <!-- Dynamically populated bike override controls -->
                             </div>
                         </div>
                     </div>

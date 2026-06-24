@@ -495,9 +495,35 @@ const getReports = async (req, res) => {
         return res.status(500).json({ success: false, error: 'Database error fetching reports' });
     }
 };
+// POST /api/admin/bicycles/toggle
+const toggleBike = async (req, res) => {
+    const { bicycle_code, is_disabled } = req.body;
+
+    if (!bicycle_code || is_disabled === undefined) {
+        return res.status(400).json({ success: false, error: 'bicycle_code and is_disabled are required' });
+    }
+
+    try {
+        const val = is_disabled ? 1 : 0;
+        const [result] = await db.upbsPool.query(
+            'UPDATE bicycle_codes SET is_disabled = ? WHERE bicycle_code = ?',
+            [val, bicycle_code]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Bicycle not found' });
+        }
+
+        return res.json({ success: true, message: `Bicycle successfully ${val ? 'disabled' : 'enabled'}.` });
+    } catch (err) {
+        console.error('Error in toggleBike controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error toggling bicycle status' });
+    }
+};
 
 module.exports = {
     login,
+    toggleBike,
     getMembers,
     addMember,
     addBicycle,

@@ -402,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await Promise.all([
             populateLocationDropdowns(),
             renderStationToggles(),
+            renderBikeOverrides(),
             renderMembersList()
         ]);
     }
@@ -542,6 +543,176 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             stationToggleList.appendChild(div);
+        });
+    }
+
+    async function renderBikeOverrides() {
+        const list = document.getElementById('bike-override-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        let bikes = [];
+        try {
+            const res = await fetch('/api/bicycles', { cache: 'no-store' });
+            const data = await res.json();
+            if (data.success) bikes = data.data;
+        } catch (e) {
+            console.error('[settings.js] Error fetching bikes:', e);
+            list.innerHTML = '<div class="text-danger small">Failed to load bicycles.</div>';
+            return;
+        }
+
+        if (bikes.length === 0) {
+            list.innerHTML = '<div class="text-muted small">No bicycles registered.</div>';
+            return;
+        }
+
+        bikes.forEach(bike => {
+            const code = bike.bicycle_code;
+            const isDisabled = bike.is_disabled === 1;
+            
+            const div = document.createElement('div');
+            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item';
+            div.style.background = 'var(--bg-main)';
+            div.style.display = 'none'; // Initially hidden until searched
+            div.dataset.bikeCode = code;
+            
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold" style="font-size: 0.95rem;">Bike ${code}</span>
+                        <span class="toggle-switch-status ${!isDisabled ? 'online' : 'offline'}" style="font-size: 0.75rem; font-weight: 600;">
+                            ${!isDisabled ? '● Online' : '● Offline'}
+                        </span>
+                    </div>
+                    <label class="switch-label mb-0" for="toggle-bike-${code}">
+                        <input type="checkbox" id="toggle-bike-${code}" ${!isDisabled ? 'checked' : ''}>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="row g-2 align-items-center mt-1">
+                    <div class="col-5">
+                        <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">Lock Code</label>
+                        <input type="text" class="form-control form-control-sm border-0 shadow-sm bike-lock-input" placeholder="0000">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">Status</label>
+                        <select class="form-select form-select-sm border-0 shadow-sm bike-status-select">
+                            <option value="Good" ${bike.condition_status === 'Good' ? 'selected' : ''}>Good</option>
+                            <option value="Broken" ${bike.condition_status === 'Broken' ? 'selected' : ''}>Broken</option>
+                            <option value="Disputed" ${bike.condition_status === 'Disputed' ? 'selected' : ''}>Disputed</option>
+                            <option value="Missing" ${bike.condition_status === 'Missing' ? 'selected' : ''}>Missing</option>
+                        </select>
+                    </div>
+                    <div class="col-3 d-flex align-items-end">
+                        <button class="btn btn-sm btn-primary w-100 fw-bold border-0 btn-save-bike" style="background-color: var(--up-maroon);">Save</button>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-2 border-top d-flex justify-content-end">
+                    <button class="btn btn-sm btn-outline-danger fw-bold d-flex align-items-center gap-1 btn-delete-bike">
+                        Delete
+                    </button>
+                </div>
+            `;
+
+            // Toggle logic
+            const checkbox = div.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', async () => {
+                try {
+                    const res = await fetch('/api/admin/bicycles/toggle', {
+                        method: 'POST',
+                        headers: getAdminHeaders(),
+                        body: JSON.stringify({
+                            bicycle_code: code,
+                            is_disabled: !checkbox.checked
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const statusSpan = div.querySelector('.toggle-switch-status');
+                        if (checkbox.checked) {
+                            statusSpan.className = 'toggle-switch-status online';
+                            statusSpan.innerHTML = '● Online';
+                        } else {
+                            statusSpan.className = 'toggle-switch-status offline';
+                            statusSpan.innerHTML = '● Offline';
+                        }
+                    } else {
+                        alert(data.error || 'Failed to toggle bike status.');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                } catch (e) {
+                    console.error('[settings.js] Error toggling bike:', e);
+                    alert('Network error toggling bike.');
+                    checkbox.checked = !checkbox.checked;
+                }
+            });
+
+            // Save logic
+            const btnSave = div.querySelector('.btn-save-bike');
+            const lockInput = div.querySelector('.bike-lock-input');
+            const statusSelect = div.querySelector('.bike-status-select');
+            btnSave.addEventListener('click', async () => {
+                const payload = {};
+                if (lockInput.value.trim() !== '') payload.combination_lock = lockInput.value.trim();
+                if (statusSelect.value !== bike.condition_status) payload.condition_status = statusSelect.value;
+                
+                if (Object.keys(payload).length === 0) return alert('No changes to save.');
+
+                btnSave.disabled = true;
+                btnSave.textContent = '...';
+                try {
+                    const res = await fetch('/api/admin/bicycles/override', {
+                        method: 'POST',
+                        headers: getAdminHeaders(),
+                        body: JSON.stringify({ bicycle_code: code, ...payload })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Bike successfully updated!');
+                        lockInput.value = '';
+                        bike.condition_status = statusSelect.value; // update local state
+                        if (window.initDashboard) await window.initDashboard();
+                    } else {
+                        alert(data.error || 'Failed to update bike.');
+                    }
+                } catch (e) {
+                    alert('Network error.');
+                } finally {
+                    btnSave.disabled = false;
+                    btnSave.textContent = 'Save';
+                }
+            });
+
+            // Delete logic
+            const btnDelete = div.querySelector('.btn-delete-bike');
+            btnDelete.addEventListener('click', async () => {
+                if (confirm(`Are you absolutely sure you want to delete bike ${code}?`)) {
+                    btnDelete.disabled = true;
+                    try {
+                        const res = await fetch('/api/admin/delete-bike', {
+                            method: 'POST',
+                            headers: getAdminHeaders(),
+                            body: JSON.stringify({ bicycle_code: code })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            div.remove();
+                            if (window.initDashboard) await window.initDashboard();
+                        } else {
+                            alert(data.error || 'Failed to delete bike.');
+                            btnDelete.disabled = false;
+                        }
+                    } catch (e) {
+                        alert('Error deleting bike.');
+                        btnDelete.disabled = false;
+                    }
+                }
+            });
+
+            list.appendChild(div);
         });
     }
 
@@ -774,96 +945,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Quick Bike Override Listeners (Real Database Connection)
-    const btnOverrideLock = document.getElementById('btn-quick-override-lock');
-    const btnOverrideStatus = document.getElementById('btn-quick-override-status');
-    const targetBike = document.getElementById('override-target-bike');
-    const newLock = document.getElementById('override-new-lock');
-    const newStatus = document.getElementById('override-new-status');
-    const overrideMsg = document.getElementById('quick-override-msg');
-
-    const saveOverride = async (code, payload) => {
-        try {
-            const res = await fetch('/api/admin/bicycles/override', {
-                method: 'POST',
-                headers: getAdminHeaders(),
-                body: JSON.stringify({ bicycle_code: code, ...payload })
-            });
-            const data = await res.json();
-            if (data.success) {
-                overrideMsg.textContent = 'Bike successfully updated!';
-                overrideMsg.className = 'alert alert-success py-2 px-3 small mt-2';
-            } else {
-                overrideMsg.textContent = 'Failed to update.';
-                overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
-            }
-            overrideMsg.style.display = 'block';
-            if (window.initDashboard) await window.initDashboard();
-        } catch (e) {
-            overrideMsg.textContent = 'Network error.';
-            overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
-            overrideMsg.style.display = 'block';
-        }
-    };
-
-    if (btnOverrideLock) {
-        btnOverrideLock.addEventListener('click', () => {
-            const code = targetBike.value.trim();
-            const lock = newLock.value.trim();
-            if (!code || !lock) return;
-            saveOverride(code, { combination_lock: lock });
-        });
-    }
-
-    if (btnOverrideStatus) {
-        btnOverrideStatus.addEventListener('click', () => {
-            const code = targetBike.value.trim();
-            const stat = newStatus.value;
-            if (!code) return;
-            saveOverride(code, { condition_status: stat });
-        });
-    }
-
-    const btnQuickDeleteBike = document.getElementById('btn-quick-delete-bike');
-    if (btnQuickDeleteBike) {
-        btnQuickDeleteBike.addEventListener('click', async () => {
-            const code = targetBike.value.trim();
-            if (!code) {
-                overrideMsg.textContent = 'Please enter a target bike code.';
-                overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
-                overrideMsg.style.display = 'block';
-                return;
-            }
-            if (confirm(`Are you absolutely sure you want to delete bike ${code}? This cannot be undone.`)) {
-                btnQuickDeleteBike.disabled = true;
-                try {
-                    const res = await fetch('/api/admin/delete-bike', {
-                        method: 'POST',
-                        headers: getAdminHeaders(),
-                        body: JSON.stringify({ bicycle_code: code })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        overrideMsg.textContent = data.message || 'Bike successfully deleted!';
-                        overrideMsg.className = 'alert alert-success py-2 px-3 small mt-2';
-                        targetBike.value = '';
-                    } else {
-                        overrideMsg.textContent = data.error || 'Failed to delete bike.';
-                        overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
-                    }
-                    overrideMsg.style.display = 'block';
-                    if (window.initDashboard) await window.initDashboard();
-                } catch (e) {
-                    overrideMsg.textContent = 'Connection error.';
-                    overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
-                    overrideMsg.style.display = 'block';
-                } finally {
-                    btnQuickDeleteBike.disabled = false;
-                }
-            }
-        });
-    }
-
     // Run initial session check to gate the dashboard on page load
     checkSession();
+
+    // Quick Bike Override Search Filter
+    const searchBikeOverride = document.getElementById('search-bike-override');
+    const btnSearchBikeOverride = document.getElementById('btn-search-bike-override');
+    
+    if (searchBikeOverride && btnSearchBikeOverride) {
+        const executeSearch = () => {
+            const query = searchBikeOverride.value.trim().toLowerCase();
+            const items = document.querySelectorAll('.bike-override-item');
+            
+            items.forEach(item => {
+                const code = item.dataset.bikeCode.toLowerCase();
+                if (query === '' || code.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        };
+
+        btnSearchBikeOverride.addEventListener('click', executeSearch);
+        searchBikeOverride.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeSearch();
+        });
+    }
 });
