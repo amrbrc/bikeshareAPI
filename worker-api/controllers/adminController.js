@@ -172,7 +172,7 @@ const searchBicycles = async (req, res) => {
     const query = req.query.q || '';
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT * FROM bicycle_codes WHERE (bicycle_code LIKE ? OR combination_lock LIKE ?) AND is_active = 1 LIMIT 10",
+            "SELECT * FROM bicycle_codes WHERE (bicycle_code LIKE ? OR combination_lock LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 10",
             [`%${query}%`, `%${query}%`]
         );
         return res.json({ success: true, data: rows });
@@ -187,7 +187,7 @@ const searchMembers = async (req, res) => {
     const query = req.query.q || '';
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND is_active = 1 LIMIT 10",
+            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 10",
             [`%${query}%`, `%${query}%`, `%${query}%`]
         );
         return res.json({ success: true, data: rows });
@@ -205,7 +205,7 @@ const overrideBicycle = async (req, res) => {
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
         if (condition_status) { updateQuery += "condition_status = ?, "; params.push(condition_status); }
-        updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND is_active = 1";
+        updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)";
         params.push(bicycle_code);
 
         await db.upbsPool.query(updateQuery, params);
@@ -219,9 +219,19 @@ const overrideBicycle = async (req, res) => {
 // GET /api/admin/maintenance
 const getMaintenanceQueue = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query(
-            "SELECT bicycle_code, condition_status, new_location FROM bicycle_codes WHERE condition_status = 'Broken' AND is_active = 1"
-        );
+        const query = `
+            SELECT b.bicycle_code, b.new_location, b.condition_status,
+                   (SELECT m.phone_number 
+                    FROM bicycle_history bh 
+                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+                    WHERE bh.bicycle_code = b.bicycle_code 
+                    ORDER BY bh.borrowed_at DESC 
+                    LIMIT 1) AS last_user_phone
+            FROM bicycle_codes b
+            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed') 
+              AND (b.is_active = 1 OR b.is_active IS NULL)
+        `;
+        const [rows] = await db.upbsPool.query(query);
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error(err);
@@ -232,10 +242,14 @@ const getMaintenanceQueue = async (req, res) => {
 // GET /api/admin/honesty
 const getHonestyLogs = async (req, res) => {
     try {
-        // Fetching members with trust points < 100 for honesty logs
-        const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE CAST(trust_points AS SIGNED) < 100 AND is_active = 1 ORDER BY trust_points ASC LIMIT 20"
-        );
+        const query = `
+            SELECT FirstName, LastName, MobileNumber, SenderNumber, DateTime, Request, MessageID
+            FROM Logs
+            WHERE Request IN ('Broken Report', 'Fixed Report', 'Missing Report', 'False Report Penalty')
+            ORDER BY DateTime DESC
+            LIMIT 100
+        `;
+        const [rows] = await db.upbsPool.query(query);
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error(err);
@@ -253,7 +267,7 @@ const searchBike = async (req, res) => {
     try {
         // 1. Get the bicycle details (filtering for active ones)
         const [bikes] = await db.upbsPool.query(
-            "SELECT bicycle_code, combination_lock, condition_status FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1",
+            "SELECT bicycle_code, combination_lock, condition_status FROM bicycle_codes WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)",
             [bicycleCode]
         );
 
@@ -305,7 +319,7 @@ const searchMember = async (req, res) => {
         const sql = `
             SELECT firstname, lastname, phone_number, trust_points, points_frozen 
             FROM members 
-            WHERE (phone_number LIKE ? OR lastname LIKE ?) AND is_active = 1
+            WHERE (phone_number LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL)
             LIMIT 20
         `;
         const wildcard = `%${query}%`;
@@ -327,7 +341,7 @@ const overridePoints = async (req, res) => {
 
     try {
         const [result] = await db.upbsPool.query(
-            "UPDATE members SET trust_points = ? WHERE phone_number = ? AND is_active = 1",
+            "UPDATE members SET trust_points = ? WHERE phone_number = ? AND (is_active = 1 OR is_active IS NULL)",
             [Number(trust_points), phone_number]
         );
 
@@ -351,7 +365,7 @@ const overrideBike = async (req, res) => {
 
     try {
         const [result] = await db.upbsPool.query(
-            "UPDATE bicycle_codes SET combination_lock = ?, condition_status = ? WHERE bicycle_code = ? AND is_active = 1",
+            "UPDATE bicycle_codes SET combination_lock = ?, condition_status = ? WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)",
             [combination_lock, condition_status, bicycle_code]
         );
 

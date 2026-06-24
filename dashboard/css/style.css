@@ -473,7 +473,7 @@ body {
 }
 
 .settings-section {
-    background: rgba(123, 17, 19, 0.01);
+    background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 1.25rem;

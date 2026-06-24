@@ -201,10 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/admin/maintenance', { headers: getAdminHeaders() });
             const data = await res.json();
             if (data.success && data.data.length > 0) {
-                qList.innerHTML = data.data.map(b => `<div class="card p-3 border shadow-sm">
+                qList.innerHTML = data.data.map(b => `<div class="card p-3 border shadow-sm mb-2">
                     <strong>🚲 Bike #${b.bicycle_code}</strong>
                     <div class="text-danger small mt-1">Status: ${b.condition_status}</div>
-                    <div class="text-muted small">Location: ${b.new_location}</div>
+                    <div class="text-muted small">Location: ${b.new_location || 'Unknown'}</div>
+                    ${b.last_user_phone ? `<div class="text-muted small">Reporter/User: ${b.last_user_phone}</div>` : ''}
                 </div>`).join('');
             } else {
                 qList.innerHTML = '<div class="text-muted small">No broken bikes.</div>';
@@ -216,10 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/admin/honesty', { headers: getAdminHeaders() });
             const data = await res.json();
             if (data.success && data.data.length > 0) {
-                hList.innerHTML = data.data.map(m => `<div class="card p-3 border shadow-sm">
-                    <strong>👤 ${m.firstname} ${m.lastname} (${m.phone_number})</strong>
-                    <div class="text-danger fw-bold small mt-1">Trust Points: ${m.trust_points}</div>
-                </div>`).join('');
+                hList.innerHTML = data.data.map(log => {
+                    const formattedDate = new Date(log.DateTime).toLocaleString();
+                    return `<div class="card p-3 border shadow-sm mb-2">
+                        <strong>👤 ${log.FirstName || ''} ${log.LastName || ''} (${log.MobileNumber || log.SenderNumber})</strong>
+                        <div class="text-info fw-bold small mt-1">Action: ${log.Request}</div>
+                        <div class="text-muted small">Time: ${formattedDate}</div>
+                    </div>`;
+                }).join('');
             } else {
                 hList.innerHTML = '<div class="text-muted small">No honesty logs.</div>';
             }
