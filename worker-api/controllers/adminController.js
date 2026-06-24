@@ -171,10 +171,14 @@ const resolveDispute = async (req, res) => {
 const searchBicycles = async (req, res) => {
     const query = req.query.q || '';
     try {
-        const [rows] = await db.upbsPool.query(
-            "SELECT * FROM bicycle_codes WHERE (bicycle_code LIKE ? OR combination_lock LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 10",
-            [`%${query}%`, `%${query}%`]
-        );
+        let sql = "SELECT * FROM bicycle_codes WHERE (is_active = 1 OR is_active IS NULL)";
+        let params = [];
+        if (query.trim() !== '') {
+            sql += " AND bicycle_code LIKE ?";
+            params.push(`%${query.trim()}%`);
+        }
+        sql += " LIMIT 50";
+        const [rows] = await db.upbsPool.query(sql, params);
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error(err);

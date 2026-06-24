@@ -6,29 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSearch = document.getElementById('btn-admin-search');
     const searchResults = document.getElementById('admin-search-results');
 
-    // UI Template: Bike Profile Card (Contains inputs to override lock/status)
+    // UI Template: Bike Profile Card (Pure View Only)
     const renderBikeCard = (bike) => `
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="fw-bold h6 mb-0">🚲 Bike #${bike.code}</div>
-                <span class="badge ${bike.status === 'Good' ? 'bg-success' : 'bg-danger'}">${bike.status}</span>
+                <span class="badge ${bike.status === 'Good' ? 'bg-success' : (bike.status === 'Broken' ? 'bg-danger' : 'bg-warning')}">${bike.status}</span>
             </div>
-            <div class="small text-muted mb-3">📍 Location: ${bike.location}</div>
-            
-            <div class="border-top pt-3 mt-1 d-flex flex-column gap-2">
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="small fw-semibold">Override Lock Code:</span>
-                    <div class="input-group input-group-sm w-50">
-                        <input type="text" class="form-control text-center fw-bold" id="override-lock-${bike.code}" value="${bike.lock_code}">
-                        <button class="btn btn-outline-primary btn-override-lock" data-code="${bike.code}">Save</button>
-                    </div>
+            <div class="small text-muted mb-2">📍 Location: ${bike.location || 'Unknown'}</div>
+            <div class="d-flex flex-column gap-1 border-top pt-2 mt-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-semibold text-muted">Lock Code:</span>
+                    <span class="small fw-bold text-dark font-monospace">${bike.lock_code}</span>
                 </div>
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="small fw-semibold">Update Status:</span>
-                    <select class="form-select form-select-sm w-50 select-override-status" data-code="${bike.code}">
-                        <option value="Good" ${bike.status === 'Good' ? 'selected' : ''}>Good</option>
-                        <option value="Broken" ${bike.status === 'Broken' ? 'selected' : ''}>Broken</option>
-                    </select>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-semibold text-muted">Condition Status:</span>
+                    <span class="small fw-semibold text-dark">${bike.status}</span>
                 </div>
             </div>
         </div>
@@ -69,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = searchType.value;
         const query = searchInput.value.trim();
 
-        if (!query) {
+        if (type !== 'bike' && !query) {
             searchResults.innerHTML = `<div class="alert alert-warning py-2 small">Please enter a search query.</div>`;
             return;
         }
@@ -106,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     searchResults.innerHTML = data.data.map(m => renderMemberCard(m)).join('');
                 }
             } else {
-                searchResults.innerHTML = `<div class="alert alert-info py-2 small border-0">No results found for "${query}".</div>`;
+                const searchMsg = query ? `No results found for "${query}".` : 'No bicycles found in database.';
+                searchResults.innerHTML = `<div class="alert alert-info py-2 small border-0">${searchMsg}</div>`;
             }
         } catch (e) {
             searchResults.innerHTML = `<div class="alert alert-danger py-2 small border-0">Error fetching database results.</div>`;
@@ -121,39 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Save Lock Code override
-        if (e.target.classList.contains('btn-override-lock')) {
-            const code = e.target.getAttribute('data-code');
-            const input = document.getElementById(`override-lock-${code}`);
-            if (!input) return;
-            const lock = input.value.trim();
-
-            e.target.disabled = true;
-            e.target.textContent = 'Saving...';
-            try {
-                const res = await fetch('/api/admin/bicycles/override', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ bicycle_code: code, combination_lock: lock })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('Lock code updated successfully!');
-                } else {
-                    alert(data.error || 'Failed to update lock code.');
-                }
-            } catch (err) {
-                alert('Connection error.');
-            } finally {
-                e.target.disabled = false;
-                e.target.textContent = 'Save';
-            }
-        }
-
-        // 2. Adjust points
+        // 1. Adjust points
         if (e.target.classList.contains('btn-adjust-points')) {
             const phone = e.target.getAttribute('data-phone');
             const newPoints = prompt('Enter new trust points value for this member:');
@@ -184,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Delete Member (soft-delete)
+        // 2. Delete Member (soft-delete)
         if (e.target.classList.contains('btn-delete-member')) {
             const phone = e.target.getAttribute('data-phone');
             if (!confirm('Are you sure you want to delete/deactivate this member?')) return;
@@ -206,49 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSearch.click();
                 } else {
                     alert(data.error || 'Failed to delete member.');
-                }
-            } catch (err) {
-                alert('Connection error.');
-            } finally {
-                e.target.disabled = false;
-            }
-        }
-    });
-
-    // Event delegation for select dropdown change in search results
-    searchResults.addEventListener('change', async (e) => {
-        const token = sessionStorage.getItem('adminToken');
-        if (!token) {
-            alert('Please sign in under the "Settings" tab first.');
-            return;
-        }
-
-        // Update bike condition status
-        if (e.target.classList.contains('select-override-status')) {
-            const code = e.target.getAttribute('data-code');
-            const status = e.target.value;
-
-            e.target.disabled = true;
-            try {
-                const res = await fetch('/api/admin/bicycles/override', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ bicycle_code: code, condition_status: status })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('Bicycle condition status updated successfully!');
-                    // Update badge color
-                    const badge = e.target.closest('.card').querySelector('.badge');
-                    if (badge) {
-                        badge.textContent = status;
-                        badge.className = `badge ${status === 'Good' ? 'bg-success' : 'bg-danger'}`;
-                    }
-                } else {
-                    alert(data.error || 'Failed to update status.');
                 }
             } catch (err) {
                 alert('Connection error.');
