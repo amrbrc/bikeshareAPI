@@ -172,12 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navSettings) {
         navSettings.addEventListener('click', (e) => {
             e.preventDefault();
-            // Settings is now a modal, so we just show it over the active view
-            if (settingsContainer) {
-                settingsContainer.style.display = 'flex';
-                settingsContainer.style.animation = 'fadeIn 0.25s ease-out';
-            }
-            checkSession();
+            checkSession(true);
         });
     }
 
@@ -250,9 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check login state
-    function checkSession() {
+    function checkSession(forceShowAdmin = false) {
         const token = sessionStorage.getItem('adminToken');
         const settingsModalCard = document.getElementById('settings-modal-card');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
         if (token === 'admin-logged-in-token') {
             if (loginView) {
                 loginView.classList.add('d-none');
@@ -263,6 +259,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminView.style.display = 'block';
             }
             if (settingsModalCard) settingsModalCard.classList.add('admin-active');
+            
+            // If they clicked the settings tab explicitly, show the modal. Otherwise hide it.
+            if (forceShowAdmin) {
+                if (settingsContainer) {
+                    settingsContainer.style.display = 'flex';
+                    settingsContainer.style.background = 'rgba(11, 15, 25, 0.6)';
+                    settingsContainer.style.backdropFilter = 'blur(8px)';
+                }
+                if (btnCloseSettings) btnCloseSettings.style.display = 'flex';
+            } else {
+                if (settingsContainer) settingsContainer.style.display = 'none';
+            }
+            
             loadAdminPanel();
         } else {
             if (loginView) {
@@ -274,6 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminView.style.display = 'none';
             }
             if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
+            
+            // Force solid background full screen login and hide close button
+            if (settingsContainer) {
+                settingsContainer.style.display = 'flex';
+                settingsContainer.style.background = 'var(--bg-main)';
+                settingsContainer.style.backdropFilter = 'none';
+            }
+            if (btnCloseSettings) btnCloseSettings.style.display = 'none';
         }
     }
 
@@ -790,4 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveOverride(code, { condition_status: stat });
         });
     }
+
+    // Run initial session check to gate the dashboard on page load
+    checkSession();
 });

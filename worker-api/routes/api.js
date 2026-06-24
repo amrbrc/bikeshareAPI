@@ -42,6 +42,7 @@ router.post('/admin/override-bike', authMiddleware, adminController.overrideBike
 router.post('/admin/delete-member', authMiddleware, adminController.deleteMember);
 router.post('/admin/delete-bike', authMiddleware, adminController.deleteBike);
 router.post('/admin/delete-location', authMiddleware, adminController.deleteLocation);
+router.post('/admin/locations/toggle', authMiddleware, adminController.toggleLocation);
 router.get('/admin/reports', authMiddleware, adminController.getReports);
 
 // Fallback Routes
