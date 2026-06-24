@@ -5,6 +5,7 @@ USE upbs;
 
 -- 1. Upgrades for the members table
 ALTER TABLE members ADD COLUMN IF NOT EXISTS trust_points INT DEFAULT 100;
+ALTER TABLE members MODIFY COLUMN trust_points INT DEFAULT 100;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS points_frozen TINYINT(1) DEFAULT 0;
 
 -- 2. Upgrades for the bicycle_codes table

@@ -139,7 +139,7 @@ const resolveDispute = async (req, res) => {
 
     try {
         if (verdict === 'guilty') {
-            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = trust_points - 30 WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = CAST(trust_points AS SIGNED) - 30 WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken' WHERE bicycle_code = ?", [bicycle_code]);
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);

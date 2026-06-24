@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         members.forEach(mem => {
-            const isFrozen = mem.points_frozen === 1 || mem.points_frozen === true;
+            const isFrozen = mem.points_frozen == 1 || mem.points_frozen === true || mem.points_frozen === 'true';
             const frozenBadge = isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; font-weight: 600;">FROZEN</span>' : '';
 
             const div = document.createElement('div');

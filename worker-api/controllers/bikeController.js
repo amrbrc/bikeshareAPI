@@ -305,7 +305,7 @@ const borrow = async (req, res) => {
             return res.json({ reply: "Account suspended." });
         }
 
-        if (user.points_frozen === 1 || user.points_frozen === true) {
+        if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
             return res.json({ reply: "Account frozen due to dispute." });
         }
 
@@ -510,7 +510,7 @@ const broken = async (req, res) => {
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Disputed' WHERE bicycle_code = ?", [bicycleCode]);
 
             // Reward Reporter (Next User)
-            await db.upbsPool.query("UPDATE members SET trust_points = trust_points + 5 WHERE phone_number = ?", [smsSender]);
+            await db.upbsPool.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [smsSender]);
 
             // Freeze Previous User
             if (history.length > 0) {

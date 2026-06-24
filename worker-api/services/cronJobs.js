@@ -49,6 +49,8 @@ const startBorrowRemindersJob = () => {
                 const borrowTimeMs = Date.now() - new Date(row.borrowed_at).getTime();
                 const borrowHours = borrowTimeMs / (1000 * 60 * 60);
 
+                console.log(`[Cron Debug] Row ID: ${row.id}, Bike: ${row.bicycle_code}, borrowed_at: ${row.borrowed_at}, borrowHours: ${borrowHours}`);
+
                 if (row.reminder_4h_sent === 0 && borrowHours >= 4) {
                     // Send 4-Hour Reminder
                     const text = `Reminder: You have 2 hours left on Bike ${row.bicycle_code}. Please return it to a station soon. Remember to text 'done ${row.bicycle_code}' when finished.`;
@@ -139,7 +141,7 @@ const startUnrepairedDamageJob = () => {
 
                     // Deduct 20 points
                     await db.upbsPool.query(
-                        'UPDATE members SET trust_points = GREATEST(0, trust_points - 20) WHERE phone_number = ?',
+                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 20) WHERE phone_number = ?',
                         [member.phone_number]
                     );
 
