@@ -30,7 +30,19 @@ router.post('/fixed', bikeController.fixed);
 // Help Routes
 router.post('/help', helpController.help);
 router.post('/how', helpController.how);
-router.post('/admin/resolve-dispute', adminController.resolveDispute);
+// Public Admin Route
+router.post('/admin/login', adminController.login);
+
+// Admin Routes (Secured with authMiddleware)
+router.post('/admin/resolve-dispute', authMiddleware, adminController.resolveDispute);
+router.get('/admin/search-bike', authMiddleware, adminController.searchBike);
+router.get('/admin/search-member', authMiddleware, adminController.searchMember);
+router.post('/admin/override-points', authMiddleware, adminController.overridePoints);
+router.post('/admin/override-bike', authMiddleware, adminController.overrideBike);
+router.post('/admin/delete-member', authMiddleware, adminController.deleteMember);
+router.post('/admin/delete-bike', authMiddleware, adminController.deleteBike);
+router.post('/admin/delete-location', authMiddleware, adminController.deleteLocation);
+router.get('/admin/reports', authMiddleware, adminController.getReports);
 
 // Fallback Routes
 router.post('/invalid-command', fallbackController.invalidCommand);

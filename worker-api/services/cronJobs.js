@@ -35,8 +35,10 @@ const startBorrowRemindersJob = () => {
                        m.phone_number
                 FROM bicycle_history bh
                 JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 0 
                   AND bh.condition_confirmed = 0
+                  AND bc.condition_status = 'Borrowed'
                   AND (
                       (bh.reminder_1h_sent = 0 AND bh.borrowed_at < NOW() - INTERVAL 1 HOUR)
                       OR 
@@ -87,9 +89,11 @@ const startHandshakeReminderJob = () => {
                        m.phone_number
                 FROM bicycle_history bh
                 JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 1 
                   AND bh.condition_confirmed = 0
                   AND bh.reminder_pending_sent = 0
+                  AND bc.condition_status = 'Pending_Status'
                   AND bh.pending_status_time < NOW() - INTERVAL 5 MINUTE
             `;
             const [records] = await db.upbsPool.query(query);

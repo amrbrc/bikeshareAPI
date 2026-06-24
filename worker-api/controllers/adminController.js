@@ -17,7 +17,7 @@ const login = async (req, res) => {
 // GET /api/admin/members
 const getMembers = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members ORDER BY lastname ASC, firstname ASC');
+        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE is_active = 1 ORDER BY lastname ASC, firstname ASC');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getMembers controller:', err);
@@ -138,12 +138,27 @@ const resolveDispute = async (req, res) => {
     }
 
     try {
+        // Retrieve the dispute_reported_by phone number from bicycle_codes
+        const [bike] = await db.upbsPool.query("SELECT dispute_reported_by FROM bicycle_codes WHERE bicycle_code = ?", [bicycle_code]);
+        const reporterPhone = bike.length > 0 ? bike[0].dispute_reported_by : null;
+
         if (verdict === 'guilty') {
-            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = CAST(trust_points AS SIGNED) - 30 WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken' WHERE bicycle_code = ?", [bicycle_code]);
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 30) WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycle_code]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+            
+            if (reporterPhone) {
+                // Penalize the false reporter with a -10 points demerit
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 10) WHERE phone_number = ?", [reporterPhone]);
+                
+                // Log the false report penalty
+                await db.upbsPool.query(
+                    "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'False Report Penalty']
+                );
+            }
         }
         return res.json({ success: true, message: `Dispute resolved as ${verdict}.` });
     } catch (err) {
@@ -157,7 +172,7 @@ const searchBicycles = async (req, res) => {
     const query = req.query.q || '';
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT * FROM bicycle_codes WHERE bicycle_code LIKE ? OR combination_lock LIKE ? LIMIT 10",
+            "SELECT * FROM bicycle_codes WHERE (bicycle_code LIKE ? OR combination_lock LIKE ?) AND is_active = 1 LIMIT 10",
             [`%${query}%`, `%${query}%`]
         );
         return res.json({ success: true, data: rows });
@@ -172,7 +187,7 @@ const searchMembers = async (req, res) => {
     const query = req.query.q || '';
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ? LIMIT 10",
+            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND is_active = 1 LIMIT 10",
             [`%${query}%`, `%${query}%`, `%${query}%`]
         );
         return res.json({ success: true, data: rows });
@@ -190,7 +205,7 @@ const overrideBicycle = async (req, res) => {
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
         if (condition_status) { updateQuery += "condition_status = ?, "; params.push(condition_status); }
-        updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ?";
+        updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND is_active = 1";
         params.push(bicycle_code);
 
         await db.upbsPool.query(updateQuery, params);
@@ -201,23 +216,11 @@ const overrideBicycle = async (req, res) => {
     }
 };
 
-// DELETE /api/admin/locations/:name
-const deleteLocation = async (req, res) => {
-    const location_name = req.params.name;
-    try {
-        await db.upbsPool.query("DELETE FROM locations WHERE location_name = ?", [location_name]);
-        return res.json({ success: true, message: 'Station deleted.' });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, error: 'Database error' });
-    }
-};
-
 // GET /api/admin/maintenance
 const getMaintenanceQueue = async (req, res) => {
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT bicycle_code, condition_status, new_location FROM bicycle_codes WHERE condition_status = 'Broken'"
+            "SELECT bicycle_code, condition_status, new_location FROM bicycle_codes WHERE condition_status = 'Broken' AND is_active = 1"
         );
         return res.json({ success: true, data: rows });
     } catch (err) {
@@ -231,12 +234,247 @@ const getHonestyLogs = async (req, res) => {
     try {
         // Fetching members with trust points < 100 for honesty logs
         const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE CAST(trust_points AS SIGNED) < 100 ORDER BY trust_points ASC LIMIT 20"
+            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE CAST(trust_points AS SIGNED) < 100 AND is_active = 1 ORDER BY trust_points ASC LIMIT 20"
         );
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// GET /api/admin/search-bike
+const searchBike = async (req, res) => {
+    const { bicycleCode } = req.query;
+    if (!bicycleCode) {
+        return res.status(400).json({ success: false, error: 'bicycleCode query parameter is required' });
+    }
+
+    try {
+        // 1. Get the bicycle details (filtering for active ones)
+        const [bikes] = await db.upbsPool.query(
+            "SELECT bicycle_code, combination_lock, condition_status FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1",
+            [bicycleCode]
+        );
+
+        if (bikes.length === 0) {
+            return res.status(404).json({ success: false, error: 'Bicycle not found or is inactive' });
+        }
+
+        const bike = bikes[0];
+
+        // 2. Get the last 10 trips in history for this bike
+        const [history] = await db.upbsPool.query(
+            "SELECT id, previous_location, new_location, borrowed_by, borrowed_at, done_text_received, condition_confirmed, pending_status_time FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 10",
+            [bicycleCode]
+        );
+
+        // 3. Determine if there is a running active borrow on the bike (done_text_received = 0)
+        let activeBorrow = null;
+        if (history.length > 0 && history[0].done_text_received === 0) {
+            activeBorrow = {
+                borrowed_by: history[0].borrowed_by,
+                borrowed_at: history[0].borrowed_at
+            };
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                bicycle_code: bike.bicycle_code,
+                combination_lock: bike.combination_lock,
+                condition_status: bike.condition_status,
+                active_borrow: activeBorrow,
+                history: history
+            }
+        });
+    } catch (err) {
+        console.error('Error in searchBike controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error searching bicycle' });
+    }
+};
+
+// GET /api/admin/search-member
+const searchMember = async (req, res) => {
+    const { query } = req.query;
+    if (!query) {
+        return res.status(400).json({ success: false, error: 'query parameter is required' });
+    }
+
+    try {
+        const sql = `
+            SELECT firstname, lastname, phone_number, trust_points, points_frozen 
+            FROM members 
+            WHERE (phone_number LIKE ? OR lastname LIKE ?) AND is_active = 1
+            LIMIT 20
+        `;
+        const wildcard = `%${query}%`;
+        const [rows] = await db.upbsPool.query(sql, [wildcard, wildcard]);
+
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('Error in searchMember controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error searching members' });
+    }
+};
+
+// POST /api/admin/override-points
+const overridePoints = async (req, res) => {
+    const { phone_number, trust_points } = req.body;
+    if (!phone_number || trust_points === undefined) {
+        return res.status(400).json({ success: false, error: 'phone_number and trust_points are required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE members SET trust_points = ? WHERE phone_number = ? AND is_active = 1",
+            [Number(trust_points), phone_number]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Member not found or is inactive' });
+        }
+
+        return res.json({ success: true, message: 'Trust points updated successfully!' });
+    } catch (err) {
+        console.error('Error in overridePoints controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error overriding points' });
+    }
+};
+
+// POST /api/admin/override-bike
+const overrideBike = async (req, res) => {
+    const { bicycle_code, combination_lock, condition_status } = req.body;
+    if (!bicycle_code || !combination_lock || !condition_status) {
+        return res.status(400).json({ success: false, error: 'bicycle_code, combination_lock, and condition_status are required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE bicycle_codes SET combination_lock = ?, condition_status = ? WHERE bicycle_code = ? AND is_active = 1",
+            [combination_lock, condition_status, bicycle_code]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Bicycle not found or is inactive' });
+        }
+
+        return res.json({ success: true, message: 'Bicycle override settings applied!' });
+    } catch (err) {
+        console.error('Error in overrideBike controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error overriding bicycle settings' });
+    }
+};
+
+// POST /api/admin/delete-member
+const deleteMember = async (req, res) => {
+    const { phone_number } = req.body;
+    if (!phone_number) {
+        return res.status(400).json({ success: false, error: 'phone_number is required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE members SET is_active = 0 WHERE phone_number = ?",
+            [phone_number]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+
+        return res.json({ success: true, message: 'Member successfully deactivated (soft-deleted)!' });
+    } catch (err) {
+        console.error('Error in deleteMember controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error deleting member' });
+    }
+};
+
+// POST /api/admin/delete-bike
+const deleteBike = async (req, res) => {
+    const { bicycle_code } = req.body;
+    if (!bicycle_code) {
+        return res.status(400).json({ success: false, error: 'bicycle_code is required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE bicycle_codes SET is_active = 0 WHERE bicycle_code = ?",
+            [bicycle_code]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Bicycle not found' });
+        }
+
+        return res.json({ success: true, message: 'Bicycle successfully deactivated (soft-deleted)!' });
+    } catch (err) {
+        console.error('Error in deleteBike controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error deleting bicycle' });
+    }
+};
+
+// POST /api/admin/delete-location (Also handles DELETE /api/admin/locations/:name)
+const deleteLocation = async (req, res) => {
+    const location_name = req.body.location_name || req.params.name;
+    if (!location_name) {
+        return res.status(400).json({ success: false, error: 'location_name is required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE locations SET is_active = 0 WHERE location_name = ?",
+            [location_name]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Location/Station not found' });
+        }
+
+        return res.json({ success: true, message: 'Location/Station successfully deactivated (soft-deleted)!' });
+    } catch (err) {
+        console.error('Error in deleteLocation controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error deleting location' });
+    }
+};
+
+// GET /api/admin/reports
+const getReports = async (req, res) => {
+    try {
+        // 1. Maintenance Queue: active bikes in Broken, Missing, or Disputed condition
+        const queueQuery = `
+            SELECT b.bicycle_code, b.new_location, b.condition_status,
+                   (SELECT m.phone_number 
+                    FROM bicycle_history bh 
+                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+                    WHERE bh.bicycle_code = b.bicycle_code 
+                    ORDER BY bh.borrowed_at DESC 
+                    LIMIT 1) AS last_user_phone
+            FROM bicycle_codes b
+            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed') AND b.is_active = 1
+        `;
+        const [maintenanceQueue] = await db.upbsPool.query(queueQuery);
+
+        // 2. Honesty Logs: entries in Logs table where Request matches reports
+        const logsQuery = `
+            SELECT LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID
+            FROM Logs
+            WHERE Request IN ('Broken Report', 'Fixed Report', 'Missing Report')
+            ORDER BY DateTime DESC
+            LIMIT 100
+        `;
+        const [honestyLogs] = await db.upbsPool.query(logsQuery);
+
+        return res.json({
+            success: true,
+            data: {
+                maintenanceQueue,
+                honestyLogs
+            }
+        });
+    } catch (err) {
+        console.error('Error in getReports controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching reports' });
     }
 };
 
@@ -248,10 +486,17 @@ module.exports = {
     addLocation,
     toggleLocation,
     resolveDispute,
+    searchBike,
+    searchMember,
+    overridePoints,
+    overrideBike,
+    deleteMember,
+    deleteBike,
+    deleteLocation,
+    getReports,
     searchBicycles,
     searchMembers,
     overrideBicycle,
-    deleteLocation,
     getMaintenanceQueue,
     getHonestyLogs
 };
