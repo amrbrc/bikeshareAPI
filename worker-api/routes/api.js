@@ -30,10 +30,13 @@ router.post('/fixed', bikeController.fixed);
 // Help Routes
 router.post('/help', helpController.help);
 router.post('/how', helpController.how);
-// Public Admin Route
+// Public Admin Routes
 router.post('/admin/login', adminController.login);
 
 // Admin Routes (Secured with authMiddleware)
+router.post('/admin/members', authMiddleware, adminController.addMember);
+router.post('/admin/bicycles', authMiddleware, adminController.addBicycle);
+router.post('/admin/locations', authMiddleware, adminController.addLocation);
 router.post('/admin/resolve-dispute', authMiddleware, adminController.resolveDispute);
 router.get('/admin/search-bike', authMiddleware, adminController.searchBike);
 router.get('/admin/search-member', authMiddleware, adminController.searchMember);

@@ -163,9 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
             navRegistration.classList.add('active');
             if (registrationContainer) registrationContainer.style.display = 'block';
             if (mainWrapper) mainWrapper.style.overflowY = 'auto';
-            // Auto-logout admin when leaving settings view
-            sessionStorage.removeItem('adminToken');
-            checkSession();
         });
     }
 
@@ -258,6 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminView.classList.remove('d-none');
                 adminView.style.display = 'block';
             }
+            if (btnLogout) {
+                btnLogout.style.display = 'flex';
+            }
             if (settingsModalCard) settingsModalCard.classList.add('admin-active');
             
             // If they clicked the settings tab explicitly, show the modal. Otherwise hide it.
@@ -281,6 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (adminView) {
                 adminView.classList.add('d-none');
                 adminView.style.display = 'none';
+            }
+            if (btnLogout) {
+                btnLogout.style.display = 'none';
             }
             if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
             
@@ -478,9 +481,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btnDelete.addEventListener('click', async () => {
                 if (confirm(`Are you sure you want to delete station ${stationName}?`)) {
                     try {
-                        const res = await fetch(`/api/admin/locations/${encodeURIComponent(stationName)}`, {
-                            method: 'DELETE',
-                            headers: getAdminHeaders()
+                        const res = await fetch('/api/admin/delete-location', {
+                            method: 'POST',
+                            headers: getAdminHeaders(),
+                            body: JSON.stringify({ location_name: stationName })
                         });
                         const data = await res.json();
                         if (data.success) {
@@ -497,8 +501,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const checkbox = div.querySelector('input[type="checkbox"]');
             checkbox.addEventListener('change', async () => {
-                checkbox.disabled = true;
-
                 try {
                     const res = await fetch('/api/admin/locations/toggle', {
                         method: 'POST',
@@ -508,21 +510,34 @@ document.addEventListener('DOMContentLoaded', () => {
                             is_disabled: !checkbox.checked
                         })
                     });
+                    
+                    if (!res.ok && res.status !== 500 && res.status !== 400 && res.status !== 404) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    
                     const data = await res.json();
                     if (data.success) {
-                        await renderStationToggles();
+                        // Update the local visual state
+                        const statusSpan = div.querySelector('.toggle-switch-status');
+                        if (checkbox.checked) {
+                            statusSpan.className = 'toggle-switch-status online';
+                            statusSpan.innerHTML = '● Online';
+                        } else {
+                            statusSpan.className = 'toggle-switch-status offline';
+                            statusSpan.innerHTML = '● Offline';
+                        }
+                        
                         if (window.initDashboard) {
                             await window.initDashboard();
                         }
                     } else {
                         alert(data.error || 'Failed to toggle station status.');
                         checkbox.checked = !checkbox.checked;
-                        checkbox.disabled = false;
                     }
                 } catch (e) {
                     console.error('[settings.js] Error toggling station:', e);
+                    alert(`Server Error: ${e.message}\n\nPlease restart your Node.js backend server so it can load the new database logic we just pushed!`);
                     checkbox.checked = !checkbox.checked;
-                    checkbox.disabled = false;
                 }
             });
 
@@ -783,6 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
             }
             overrideMsg.style.display = 'block';
+            if (window.initDashboard) await window.initDashboard();
         } catch (e) {
             overrideMsg.textContent = 'Network error.';
             overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
@@ -805,6 +821,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const stat = newStatus.value;
             if (!code) return;
             saveOverride(code, { condition_status: stat });
+        });
+    }
+
+    const btnQuickDeleteBike = document.getElementById('btn-quick-delete-bike');
+    if (btnQuickDeleteBike) {
+        btnQuickDeleteBike.addEventListener('click', async () => {
+            const code = targetBike.value.trim();
+            if (!code) {
+                overrideMsg.textContent = 'Please enter a target bike code.';
+                overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
+                overrideMsg.style.display = 'block';
+                return;
+            }
+            if (confirm(`Are you absolutely sure you want to delete bike ${code}? This cannot be undone.`)) {
+                btnQuickDeleteBike.disabled = true;
+                try {
+                    const res = await fetch('/api/admin/delete-bike', {
+                        method: 'POST',
+                        headers: getAdminHeaders(),
+                        body: JSON.stringify({ bicycle_code: code })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        overrideMsg.textContent = data.message || 'Bike successfully deleted!';
+                        overrideMsg.className = 'alert alert-success py-2 px-3 small mt-2';
+                        targetBike.value = '';
+                    } else {
+                        overrideMsg.textContent = data.error || 'Failed to delete bike.';
+                        overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
+                    }
+                    overrideMsg.style.display = 'block';
+                    if (window.initDashboard) await window.initDashboard();
+                } catch (e) {
+                    overrideMsg.textContent = 'Connection error.';
+                    overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
+                    overrideMsg.style.display = 'block';
+                } finally {
+                    btnQuickDeleteBike.disabled = false;
+                }
+            }
         });
     }
 

@@ -143,7 +143,7 @@ const locations = async (req, res) => {
         const { lastname, firstname, phone_number } = memberRecords[0];
 
         // 2. Fetch active locations
-        const locationQuery = "SELECT location_name FROM locations";
+        const locationQuery = "SELECT location_name FROM locations WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)";
         const [locations] = await db.upbsPool.query(locationQuery);
 
         let replyMessage = "";
@@ -326,7 +326,7 @@ const borrow = async (req, res) => {
 
         // Helper function for location validation inside the handler
         const validateLoc = async (loc) => {
-            const [rows] = await upbsConn.query("SELECT * FROM locations WHERE location_name = ? AND is_active = 1", [loc]);
+            const [rows] = await upbsConn.query("SELECT * FROM locations WHERE location_name = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)", [loc]);
             return rows.length > 0;
         };
 
@@ -335,7 +335,7 @@ const borrow = async (req, res) => {
         const validTo = await validateLoc(toLocation);
 
         if (!validFrom || !validTo) {
-            return res.json({ reply: "Invalid location(s). Please check your 'from' and 'to' locations." });
+            return res.json({ reply: "One or both locations are invalid, offline, or unavailable at the moment." });
         }
 
         // 4. Start the database transaction
