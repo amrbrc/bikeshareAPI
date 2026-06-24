@@ -519,12 +519,15 @@ const broken = async (req, res) => {
                 if (prevMember.length > 0) {
                     await db.upbsPool.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMember[0].phone_number]);
 
-                    // Alert the previous user using the new Gateway /api/sms/send endpoint
-                    const axios = require('axios');
+                    // Alert the previous user using the new Gateway /api/sms/send endpoint using global fetch
                     try {
-                        await axios.post('http://localhost:3000/api/sms/send', {
-                            phoneNumber: prevMember[0].phone_number,
-                            message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution.`
+                        await fetch('http://localhost:3000/api/sms/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                phoneNumber: prevMember[0].phone_number,
+                                message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution.`
+                            })
                         });
                     } catch (e) { console.error("Failed to send dispute alert", e.message); }
                 }
