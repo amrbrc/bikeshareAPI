@@ -10,6 +10,8 @@ const fallbackController = require('../controllers/fallbackController');
 // Middleware
 const authMiddleware = require('../middleware/authMiddleware');
 
+const adminController = require('../controllers/adminController');
+
 // Member Check Route
 router.post('/members/check', memberController.checkMember);
 
@@ -19,10 +21,15 @@ router.post('/search-all', bikeController.searchAll);
 router.post('/locations', bikeController.locations);
 router.post('/usage', bikeController.usage);
 router.post('/borrow', bikeController.borrow);
+router.post('/done', bikeController.done);
+router.post('/good', bikeController.good);
+router.post('/broken', bikeController.broken);
+router.post('/fixed', bikeController.fixed);
 
 // Help Routes
 router.post('/help', helpController.help);
 router.post('/how', helpController.how);
+router.post('/admin/resolve-dispute', adminController.resolveDispute);
 
 // Fallback Routes
 router.post('/invalid-command', fallbackController.invalidCommand);

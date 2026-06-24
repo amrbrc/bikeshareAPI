@@ -21,7 +21,7 @@ async function initDashboard() {
     const lastUpdatedEl = document.getElementById('stat-last-updated');
     if (lastUpdatedEl) {
         const now = new Date();
-        lastUpdatedEl.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        lastUpdatedEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 }
 
@@ -31,10 +31,10 @@ async function initDashboard() {
 function startLiveClock() {
     const timeEl = document.getElementById('live-time');
     if (!timeEl) return;
-    
+
     setInterval(() => {
         const now = new Date();
-        timeEl.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }, 1000);
 }
 
@@ -97,11 +97,21 @@ function renderBikes() {
         card.className = 'bike-card';
         card.style.animationDelay = `${index * 0.05}s`;
 
+        // YOUR NEW HONESTY POLICY LOGIC GOES HERE:
+        const isDisputed = bike.condition_status === 'Disputed';
+        // If disputed, add a thick red border. Otherwise, do nothing.
+        const borderStyle = isDisputed ? 'border: 2px solid #ef4444;' : '';
+        // If disputed, show a red DISPUTED badge
+        const warningBadge = isDisputed ? '<div style="font-size:0.6rem; color:white; background:#ef4444; padding:2px 4px; border-radius:4px; margin-top:4px;">DISPUTED</div>' : '';
+
         card.innerHTML = `
-            <span class="bike-icon">🚲</span>
-            <div class="bike-num">${bike.bicycle_code}</div>
-            <div class="bike-loc-wrap">
-                <div class="bike-loc">${bike.new_location || 'Unknown'}</div>
+            <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; ${borderStyle} border-radius: var(--radius-md); padding: 8px;">
+                <span class="bike-icon">🚲</span>
+                <div class="bike-num">${bike.bicycle_code}</div>
+                <div class="bike-loc-wrap">
+                    <div class="bike-loc">${bike.new_location || 'Unknown'}</div>
+                </div>
+                ${warningBadge}
             </div>
         `;
 
@@ -136,10 +146,10 @@ function renderLocations() {
         const stationKey = loc.location_name;
         const count = bikeCounts[stationKey] || 0;
         const isDisabled = loc.is_disabled === 1 || loc.is_disabled === true;
-        
+
         // Get color from map.js if available, default to green. Use red if disabled.
-        const dotColor = isDisabled ? '#ef4444' : ((window.STATION_COLORS && window.STATION_COLORS[stationKey]) 
-            ? window.STATION_COLORS[stationKey] 
+        const dotColor = isDisabled ? '#ef4444' : ((window.STATION_COLORS && window.STATION_COLORS[stationKey])
+            ? window.STATION_COLORS[stationKey]
             : '#34d399');
 
         const row = document.createElement('div');
@@ -148,7 +158,7 @@ function renderLocations() {
         if (isDisabled) {
             row.style.opacity = '0.75';
         }
-        
+
         // If this station is currently selected, highlight it
         if (currentFilterStation === stationKey) {
             row.style.background = 'rgba(255,255,255,0.08)';
@@ -178,7 +188,7 @@ function renderLocations() {
                     window.zoomToStation(stationKey);
                 }
             }
-            
+
             // Re-render UI
             renderLocations(); // Re-render to update highlight state
             renderBikes();     // Re-render to show filtered bikes

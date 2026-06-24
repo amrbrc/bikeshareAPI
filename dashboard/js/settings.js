@@ -6,10 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = document.getElementById('settings-modal');
     const settingsModalCard = document.getElementById('settings-modal-card');
     const closeSettings = document.getElementById('close-settings');
-    
+
     const loginView = document.getElementById('settings-login-view');
     const adminView = document.getElementById('settings-admin-view');
-    
+
     const loginUsername = document.getElementById('admin-username');
     const loginPassword = document.getElementById('admin-password');
     const loginError = document.getElementById('login-error');
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addStationMsg = document.getElementById('add-station-msg');
 
     const stationToggleList = document.getElementById('station-toggle-list');
-    
+
     // Register Member elements
     const newMemberFirstname = document.getElementById('new-member-firstname');
     const newMemberLastname = document.getElementById('new-member-lastname');
@@ -41,9 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const firstname = newMemberFirstname.value.trim();
         const lastname = newMemberLastname.value.trim();
         let phone = newMemberPhone.value.trim();
-        
+
         addMemberMsg.style.display = 'none';
-        
+
         if (!firstname || !lastname || !phone) {
             addMemberMsg.textContent = 'All fields are required.';
             addMemberMsg.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -79,10 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/admin/members', {
                 method: 'POST',
                 headers: getAdminHeaders(),
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     firstname,
                     lastname,
-                    phone_number: phone 
+                    phone_number: phone
                 })
             });
             const data = await res.json();
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Auto-logout when closing the modal
         sessionStorage.removeItem('adminToken');
         checkSession();
-        
+
         // Reset states
         loginUsername.value = '';
         loginPassword.value = '';
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-logout when closing the modal
             sessionStorage.removeItem('adminToken');
             checkSession();
-            
+
             if (settingsModalCard) {
                 settingsModalCard.classList.remove('admin-active');
             }
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     btnLoginSubmit.addEventListener('click', handleLogin);
-    
+
     // Support login on pressing Enter
     loginUsername.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
     loginPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
@@ -237,12 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         addBikeMsg.className = '';
         addBikeMsg.style.background = 'none';
         addBikeMsg.style.border = 'none';
-        
+
         addStationMsg.style.display = 'none';
         addStationMsg.className = '';
         addStationMsg.style.background = 'none';
         addStationMsg.style.border = 'none';
-        
+
         await Promise.all([
             populateLocationDropdowns(),
             renderStationToggles(),
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateLocationDropdowns() {
         console.log('[settings.js] populateLocationDropdowns started');
         newBikeLocation.innerHTML = '';
-        
+
         let locations = [];
         try {
             const res = await fetch('/api/locations');
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderStationToggles() {
         console.log('[settings.js] renderStationToggles started');
         stationToggleList.innerHTML = '';
-        
+
         let locations = [];
         try {
             const res = await fetch('/api/locations');
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         locations.forEach(loc => {
             const stationName = loc.location_name;
             const isDisabled = loc.is_disabled === 1 || loc.is_disabled === true;
-            
+
             const div = document.createElement('div');
             div.className = 'toggle-switch-container';
 
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const checkbox = div.querySelector('input[type="checkbox"]');
             checkbox.addEventListener('change', async () => {
                 checkbox.disabled = true;
-                
+
                 try {
                     const res = await fetch('/api/admin/locations/toggle', {
                         method: 'POST',
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderMembersList() {
         if (!membersList) return;
         membersList.innerHTML = '';
-        
+
         let members = [];
         try {
             const res = await fetch('/api/admin/members', {
@@ -375,6 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         members.forEach(mem => {
+            const isFrozen = mem.points_frozen === 1 || mem.points_frozen === true;
+            const frozenBadge = isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; font-weight: 600;">FROZEN</span>' : '';
+
             const div = document.createElement('div');
             div.style.background = 'var(--bg-main)';
             div.style.padding = '10px 14px';
@@ -383,13 +386,75 @@ document.addEventListener('DOMContentLoaded', () => {
             div.style.display = 'flex';
             div.style.justifyContent = 'space-between';
             div.style.alignItems = 'center';
-            
+            div.style.flexWrap = 'wrap';
+            div.style.gap = '10px';
+
             div.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-h);">${mem.lastname}, ${mem.firstname}</span>
-                    <span style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">${mem.phone_number}</span>
+                <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-h);">
+                        ${mem.lastname}, ${mem.firstname} ${frozenBadge}
+                    </span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">
+                        ${mem.phone_number} | Trust Points: <strong style="color: ${mem.trust_points < 50 ? '#ef4444' : 'inherit'};">${mem.trust_points}</strong>
+                    </span>
                 </div>
             `;
+
+            // If the user is frozen, we inject the Dispute Resolution UI directly into their card!
+            if (isFrozen) {
+                const actionDiv = document.createElement('div');
+                actionDiv.style.display = 'flex';
+                actionDiv.style.flexDirection = 'column';
+                actionDiv.style.gap = '5px';
+                actionDiv.style.width = '100%';
+                actionDiv.style.marginTop = '4px';
+                actionDiv.style.paddingTop = '8px';
+                actionDiv.style.borderTop = '1px dashed var(--border)';
+
+                actionDiv.innerHTML = `
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Resolve Dispute (Enter Disputed Bike Code):</div>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" class="form-control settings-input" placeholder="Bike Code" style="height: 28px; font-size: 0.75rem; width: 90px;">
+                        <button class="btn btn-sm btn-success py-0 px-2 btn-innocent" style="font-size: 0.7rem; font-weight: 600;">Innocent</button>
+                        <button class="btn btn-sm btn-danger py-0 px-2 btn-guilty" style="font-size: 0.7rem; font-weight: 600;">Guilty (-30 pts)</button>
+                    </div>
+                `;
+
+                const bikeInput = actionDiv.querySelector('input');
+                const btnInnocent = actionDiv.querySelector('.btn-innocent');
+                const btnGuilty = actionDiv.querySelector('.btn-guilty');
+
+                const handleResolve = async (verdict) => {
+                    const bikeCode = bikeInput.value.trim();
+                    if (!bikeCode) return alert("Please enter the Disputed Bike Code first!");
+
+                    if (confirm(`Mark user ${mem.firstname} as ${verdict} for bike ${bikeCode}?`)) {
+                        try {
+                            const res = await fetch('/api/admin/resolve-dispute', {
+                                method: 'POST',
+                                headers: getAdminHeaders(),
+                                body: JSON.stringify({ phone_number: mem.phone_number, verdict: verdict, bicycle_code: bikeCode })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                alert(data.message);
+                                renderMembersList(); // Refresh member list to remove FROZEN badge
+                                if (window.initDashboard) window.initDashboard(); // Refresh bikes grid to remove DISPUTED border
+                            } else {
+                                alert(data.error);
+                            }
+                        } catch (e) {
+                            alert("Error resolving dispute.");
+                        }
+                    }
+                };
+
+                btnInnocent.addEventListener('click', () => handleResolve('innocent'));
+                btnGuilty.addEventListener('click', () => handleResolve('guilty'));
+
+                div.appendChild(actionDiv);
+            }
+
             membersList.appendChild(div);
         });
     }
@@ -399,9 +464,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = newBikeCode.value.trim();
         const lock = newBikeLock.value.trim();
         const loc = newBikeLocation.value;
-        
+
         addBikeMsg.style.display = 'none';
-        
+
         if (!code || !lock || !loc) {
             addBikeMsg.textContent = 'All fields are required.';
             addBikeMsg.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -460,9 +525,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add Station Form Submit
     btnAddStation.addEventListener('click', async () => {
         const name = newStationName.value.trim();
-        
+
         addStationMsg.style.display = 'none';
-        
+
         if (!name) {
             addStationMsg.textContent = 'Station name is required.';
             addStationMsg.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -493,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 addStationMsg.style.display = 'block';
 
                 await loadAdminPanel();
-                
+
                 if (window.initDashboard) {
                     await window.initDashboard();
                 }

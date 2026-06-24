@@ -402,7 +402,7 @@ const borrow = async (req, res) => {
 
 const getBicycles = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT bicycle_code, new_location, previous_location FROM bicycle_codes');
+        const [rows] = await db.upbsPool.query('SELECT bicycle_code, new_location, previous_location, condition_status FROM bicycle_codes');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getBicycles:', err);
@@ -434,6 +434,124 @@ const getHistory = async (req, res) => {
     }
 };
 
+const done = async (req, res) => {
+    const { smsSender, bicycleCode } = req.body;
+    try {
+        const [history] = await db.upbsPool.query(
+            "SELECT id FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1",
+            [bicycleCode]
+        );
+
+        if (history.length > 0) {
+            await db.upbsPool.query(
+                "UPDATE bicycle_history SET done_text_received = 1, pending_status_time = NOW() WHERE id = ?",
+                [history[0].id]
+            );
+        }
+
+        await db.upbsPool.query(
+            "UPDATE bicycle_codes SET condition_status = 'Pending_Status' WHERE bicycle_code = ?",
+            [bicycleCode]
+        );
+
+        return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply '${bicycleCode} GOOD' or '${bicycleCode} BROKEN'. Please take a photo of the bike at the rack as proof.` });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error processing done request' });
+    }
+};
+
+const good = async (req, res) => {
+    const { smsSender, bicycleCode } = req.body;
+    try {
+        const [bike] = await db.upbsPool.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ?", [bicycleCode]);
+
+        if (bike.length === 0 || bike[0].condition_status !== 'Pending_Status') {
+            return res.json({ reply: `Bike ${bicycleCode} is not awaiting a condition check.` });
+        }
+
+        await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycleCode]);
+
+        const [history] = await db.upbsPool.query("SELECT id FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1", [bicycleCode]);
+        if (history.length > 0) {
+            await db.upbsPool.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [history[0].id]);
+        }
+
+        return res.json({ reply: `Thank you! Bike ${bicycleCode} condition confirmed as Good.` });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+    }
+};
+
+const broken = async (req, res) => {
+    const { smsSender, bicycleCode } = req.body;
+    try {
+        const [bike] = await db.upbsPool.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ?", [bicycleCode]);
+        if (bike.length === 0) return res.json({ reply: "Bike not found." });
+
+        const [history] = await db.upbsPool.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
+
+        const [member] = await db.upbsPool.query("SELECT firstname, lastname FROM members WHERE phone_number = ?", [smsSender]);
+        const currentUserName = member.length > 0 ? `${member[0].firstname} ${member[0].lastname}` : '';
+
+        // Determine if this is the immediate user or the next user
+        let isImmediateUser = history.length > 0 && history[0].borrowed_by === currentUserName;
+
+        if (isImmediateUser) {
+            // Immediate user reporting broken (Honesty Policy)
+            await db.upbsPool.query(
+                "UPDATE bicycle_codes SET condition_status = 'Broken', broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?",
+                [bicycleCode]
+            );
+            return res.json({ reply: `Bike ${bicycleCode} marked broken. Please repair it within 48 hours to avoid penalty. Reply '${bicycleCode} fixed' when done.` });
+        } else {
+            // Conflict! Next user is reporting it broken after previous user said Good.
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Disputed' WHERE bicycle_code = ?", [bicycleCode]);
+
+            // Reward Reporter (Next User)
+            await db.upbsPool.query("UPDATE members SET trust_points = trust_points + 5 WHERE phone_number = ?", [smsSender]);
+
+            // Freeze Previous User
+            if (history.length > 0) {
+                // Get previous user's phone number
+                const [prevMember] = await db.upbsPool.query("SELECT phone_number FROM members WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+                if (prevMember.length > 0) {
+                    await db.upbsPool.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMember[0].phone_number]);
+
+                    // Alert the previous user using the new Gateway /api/sms/send endpoint
+                    const axios = require('axios');
+                    try {
+                        await axios.post('http://localhost:3000/api/sms/send', {
+                            phoneNumber: prevMember[0].phone_number,
+                            message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution.`
+                        });
+                    } catch (e) { console.error("Failed to send dispute alert", e.message); }
+                }
+            }
+
+            return res.json({ reply: `Thank you for reporting. You've earned +5 Trust Points. Bike ${bicycleCode} is marked as Disputed for admin review.` });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+    }
+};
+
+const fixed = async (req, res) => {
+    const { smsSender, bicycleCode } = req.body;
+    try {
+        await db.upbsPool.query(
+            "UPDATE bicycle_codes SET condition_status = 'Good', broken_reported_at = NULL, penalty_applied = 0 WHERE bicycle_code = ?",
+            [bicycleCode]
+        );
+        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as fixed and is ready to be used.` });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+    }
+};
+
 module.exports = {
     search,
     searchAll,
@@ -442,5 +560,9 @@ module.exports = {
     borrow,
     getBicycles,
     getLocations,
-    getHistory
+    getHistory,
+    done,
+    good,
+    broken,
+    fixed
 };

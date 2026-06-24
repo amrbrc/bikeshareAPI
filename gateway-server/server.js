@@ -5,6 +5,31 @@ const db = require('./db');
 const axios = require('axios');
 const { spawn } = require('child_process');
 
+const express = require('express');
+const app = express();
+app.use(express.json());
+
+// This endpoint allows the worker-api to trigger an outgoing SMS
+app.post('/api/sms/send', async (req, res) => {
+    const { phoneNumber, message } = req.body;
+    if (!phoneNumber || !message) {
+        return res.status(400).json({ error: 'Missing phoneNumber or message' });
+    }
+
+    try {
+        await sendReply(phoneNumber, message);
+        res.json({ success: true, message: 'SMS queued for sending' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send SMS' });
+    }
+});
+
+// Start the Express server on port 3000
+const GATEWAY_PORT = 3000;
+app.listen(GATEWAY_PORT, () => {
+    console.log(`Gateway HTTP Server listening on port ${GATEWAY_PORT}`);
+});
+
 const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
 
 // Main polling function to check for new SMS messages
@@ -57,6 +82,12 @@ async function pollInbox() {
                 const usageMatch = smsMessage.match(/^usage\s+(\w+)$/i);
                 const borrowMatch = smsMessage.match(/^(\w+)\s+(\w+)\s+to\s+(\w+)$/i);
 
+                // NEW HONESTY POLICY REGEXES
+                const doneMatch = smsMessage.match(/^done\s+(\w+)$/i);
+                const goodMatch = smsMessage.match(/^(\w+)\s+good$|^good\s+(\w+)$/i);
+                const brokenMatch = smsMessage.match(/^(\w+)\s+broken$|^broken\s+(\w+)$/i);
+                const fixedMatch = smsMessage.match(/^(\w+)\s+fixed$|^fixed\s+(\w+)$/i);
+
                 if (smsMessage === 'search all') {
                     endpoint = '/api/search-all';
                 } else if (searchMatch) {
@@ -76,6 +107,18 @@ async function pollInbox() {
                     payload.bicycleCode = borrowMatch[1].toLowerCase();
                     payload.fromLocation = borrowMatch[2].toLowerCase();
                     payload.toLocation = borrowMatch[3].toLowerCase();
+                } else if (doneMatch) {
+                    endpoint = '/api/done';
+                    payload.bicycleCode = doneMatch[1].toLowerCase();
+                } else if (goodMatch) {
+                    endpoint = '/api/good';
+                    payload.bicycleCode = (goodMatch[1] || goodMatch[2]).toLowerCase();
+                } else if (brokenMatch) {
+                    endpoint = '/api/broken';
+                    payload.bicycleCode = (brokenMatch[1] || brokenMatch[2]).toLowerCase();
+                } else if (fixedMatch) {
+                    endpoint = '/api/fixed';
+                    payload.bicycleCode = (fixedMatch[1] || fixedMatch[2]).toLowerCase();
                 } else {
                     endpoint = '/api/invalid-command';
                 }

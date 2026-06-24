@@ -17,7 +17,7 @@ const login = async (req, res) => {
 // GET /api/admin/members
 const getMembers = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number FROM members ORDER BY lastname ASC, firstname ASC');
+        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members ORDER BY lastname ASC, firstname ASC');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getMembers controller:', err);
@@ -129,11 +129,35 @@ const toggleLocation = async (req, res) => {
     }
 };
 
+// POST /api/admin/resolve-dispute
+const resolveDispute = async (req, res) => {
+    const { phone_number, verdict, bicycle_code } = req.body;
+
+    if (!phone_number || !verdict || !bicycle_code) {
+        return res.status(400).json({ success: false, error: 'phone_number, verdict, and bicycle_code are required' });
+    }
+
+    try {
+        if (verdict === 'guilty') {
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = trust_points - 30 WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken' WHERE bicycle_code = ?", [bicycle_code]);
+        } else if (verdict === 'innocent') {
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycle_code]);
+        }
+        return res.json({ success: true, message: `Dispute resolved as ${verdict}.` });
+    } catch (err) {
+        console.error('Error resolving dispute:', err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
 module.exports = {
     login,
     getMembers,
     addMember,
     addBicycle,
     addLocation,
-    toggleLocation
+    toggleLocation,
+    resolveDispute
 };
