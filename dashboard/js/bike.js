@@ -43,7 +43,7 @@ function startLiveClock() {
 // =============================================================
 async function fetchBikes() {
     try {
-        const response = await fetch('/api/bicycles');
+        const response = await fetch('/api/bicycles', { cache: 'no-store' });
         const result = await response.json();
         if (result.success) {
             allBikes = result.data;
@@ -55,7 +55,7 @@ async function fetchBikes() {
 
 async function fetchLocations() {
     try {
-        const response = await fetch('/api/locations');
+        const response = await fetch('/api/locations', { cache: 'no-store' });
         const result = await response.json();
         if (result.success) {
             allLocations = result.data;
@@ -99,19 +99,22 @@ function renderBikes() {
 
         // YOUR NEW HONESTY POLICY LOGIC GOES HERE:
         const isDisputed = bike.condition_status === 'Disputed';
-        // If disputed, add a thick red border. Otherwise, do nothing.
-        const borderStyle = isDisputed ? 'border: 2px solid #ef4444;' : '';
+        const isDisabled = Number(bike.is_disabled) === 1 || bike.is_disabled === true || String(bike.is_disabled).toLowerCase() === 'true';
+        // If disputed, add a thick red border. If disabled, grey border.
+        const borderStyle = isDisputed ? 'border: 2px solid #ef4444;' : (isDisabled ? 'border: 2px solid #6c757d; background-color: #f8f9fa;' : '');
         // If disputed, show a red DISPUTED badge
         const warningBadge = isDisputed ? '<div style="font-size:0.6rem; color:white; background:#ef4444; padding:2px 4px; border-radius:4px; margin-top:4px;">DISPUTED</div>' : '';
+        const disabledBadge = isDisabled ? '<div style="font-size:0.6rem; color:white; background:#6c757d; padding:2px 4px; border-radius:4px; margin-top:4px;">OFFLINE</div>' : '';
 
         card.innerHTML = `
             <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; ${borderStyle} border-radius: var(--radius-md); padding: 8px;">
-                <span class="bike-icon">🚲</span>
-                <div class="bike-num">${bike.bicycle_code}</div>
+                <span class="bike-icon" style="display: none;"></span>
+                <div class="bike-num" style="${isDisabled ? 'color: #6c757d; text-decoration: line-through;' : ''}">${bike.bicycle_code}</div>
                 <div class="bike-loc-wrap">
                     <div class="bike-loc">${bike.new_location || 'Unknown'}</div>
                 </div>
                 ${warningBadge}
+                ${disabledBadge}
             </div>
         `;
 

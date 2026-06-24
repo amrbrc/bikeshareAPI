@@ -211,11 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/admin/maintenance', { headers: getAdminHeaders() });
             const data = await res.json();
             if (data.success && data.data.length > 0) {
-                qList.innerHTML = data.data.map(b => `<div class="card p-3 border shadow-sm mb-2">
-                    <strong>🚲 Bike #${b.bicycle_code}</strong>
+                qList.innerHTML = data.data.map(b => `<div class="d-flex flex-column p-3 border rounded shadow-sm mb-2" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
+                    <strong>Bike #${b.bicycle_code}</strong>
                     <div class="text-danger small mt-1">Status: ${b.condition_status}</div>
-                    <div class="text-muted small">Location: ${b.new_location || 'Unknown'}</div>
-                    ${b.last_user_phone ? `<div class="text-muted small">Reporter/User: ${b.last_user_phone}</div>` : ''}
+                    <div class="small mt-1" style="color: var(--text-muted);">Location: ${b.new_location || 'Unknown'}</div>
+                    ${b.last_user_phone ? `<div class="small" style="color: var(--text-muted);">Reporter/User: ${b.last_user_phone}</div>` : ''}
                 </div>`).join('');
             } else {
                 qList.innerHTML = '<div class="text-muted small">No broken bikes.</div>';
@@ -229,10 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.data.length > 0) {
                 hList.innerHTML = data.data.map(log => {
                     const formattedDate = new Date(log.DateTime).toLocaleString();
-                    return `<div class="card p-3 border shadow-sm mb-2">
+                    return `<div class="d-flex flex-column p-3 border rounded shadow-sm mb-2" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
                         <strong>👤 ${log.FirstName || ''} ${log.LastName || ''} (${log.MobileNumber || log.SenderNumber})</strong>
                         <div class="text-info fw-bold small mt-1">Action: ${log.Request}</div>
-                        <div class="text-muted small">Time: ${formattedDate}</div>
+                        <div class="small mt-1" style="color: var(--text-muted);">Time: ${formattedDate}</div>
                     </div>`;
                 }).join('');
             } else {
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnLogout.style.display = 'flex';
             }
             if (settingsModalCard) settingsModalCard.classList.add('admin-active');
-            
+
             // If they clicked the settings tab explicitly, show the modal. Otherwise hide it.
             if (forceShowAdmin) {
                 if (settingsContainer) {
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (settingsContainer) settingsContainer.style.display = 'none';
             }
-            
+
             loadAdminPanel();
         } else {
             if (loginView) {
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnLogout.style.display = 'none';
             }
             if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
-            
+
             // Force solid background full screen login and hide close button
             if (settingsContainer) {
                 settingsContainer.style.display = 'flex';
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ username, password })
             });
             const data = await res.json();
-            
+
             if (data.success) {
                 sessionStorage.setItem('adminToken', data.token);
                 // Success feedback
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (btnText) btnText.textContent = 'Login Successful!';
                     if (btnIcon) btnIcon.style.display = 'block';
                 }
-                
+
                 setTimeout(() => {
                     checkSession();
                     // Reset button for future logouts
@@ -517,11 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             is_disabled: !checkbox.checked
                         })
                     });
-                    
+
                     if (!res.ok && res.status !== 500 && res.status !== 400 && res.status !== 404) {
                         throw new Error(`HTTP error! status: ${res.status}`);
                     }
-                    
+
                     const data = await res.json();
                     if (data.success) {
                         // Update the local visual state
@@ -533,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             statusSpan.className = 'toggle-switch-status offline';
                             statusSpan.innerHTML = '● Offline';
                         }
-                        
+
                         if (window.initDashboard) {
                             await window.initDashboard();
                         }
@@ -576,12 +576,12 @@ document.addEventListener('DOMContentLoaded', () => {
         bikes.forEach(bike => {
             const code = bike.bicycle_code;
             const isDisabled = bike.is_disabled === 1;
-            
+
             const div = document.createElement('div');
             div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item d-none';
             div.style.background = 'var(--bg-main)';
             div.dataset.bikeCode = code;
-            
+
             div.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-2">
                     <div class="d-flex align-items-center gap-2">
@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const payload = {};
                 if (lockInput.value.trim() !== '') payload.combination_lock = lockInput.value.trim();
                 if (statusSelect.value !== bike.condition_status) payload.condition_status = statusSelect.value;
-                
+
                 if (Object.keys(payload).length === 0) return alert('No changes to save.');
 
                 btnSave.disabled = true;
@@ -956,12 +956,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Quick Bike Override Search Filter
     const searchBikeOverride = document.getElementById('search-bike-override');
     const btnSearchBikeOverride = document.getElementById('btn-search-bike-override');
-    
+
     if (searchBikeOverride && btnSearchBikeOverride) {
         const executeSearch = () => {
             const query = searchBikeOverride.value.trim().toLowerCase();
             const items = document.querySelectorAll('.bike-override-item');
-            
+
             items.forEach(item => {
                 const code = item.dataset.bikeCode.toLowerCase();
                 if (query === '' || code.includes(query)) {

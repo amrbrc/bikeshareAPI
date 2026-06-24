@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderBikeCard = (bike) => `
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="fw-bold text-dark mb-0">🚲 Bike #${bike.code}</h6>
+                <h6 class="fw-bold mb-0 ${bike.is_disabled ? 'text-decoration-line-through text-muted' : 'text-dark'}">Bike #${bike.code} ${bike.is_disabled ? '<span class="text-danger small">(Offline)</span>' : ''}</h6>
                 <span class="badge ${bike.status === 'Good' ? 'bg-success' : (bike.status === 'Broken' ? 'bg-danger' : 'bg-warning')}">${bike.status}</span>
             </div>
             <div class="small text-muted mb-2">📍 Location: <span class="text-dark fw-semibold">${bike.location || 'Unknown'}</span></div>
@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         code: b.bicycle_code,
                         lock_code: b.combination_lock,
                         status: b.condition_status,
-                        location: b.new_location
+                        location: b.new_location,
+                        is_disabled: b.is_disabled === 1 || b.is_disabled === true
                     })).join('');
                 } else {
                     searchResults.innerHTML = data.data.map(m => renderMemberCard(m)).join('');
