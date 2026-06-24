@@ -458,23 +458,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const isDisabled = loc.is_disabled === 1 || loc.is_disabled === true;
 
             const div = document.createElement('div');
-            div.className = 'toggle-switch-container';
+            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2';
+            div.style.background = 'var(--bg-main)';
 
             const checkboxId = `toggle-${stationName.replace(/\s+/g, '-').toLowerCase()}`;
 
             div.innerHTML = `
-                <div class="d-flex align-items-center gap-2 w-100">
-                    <div class="toggle-switch-info flex-grow-1">
-                        <span class="toggle-switch-name">${stationName.toUpperCase()}</span>
-                        <span class="toggle-switch-status ${isDisabled ? 'offline' : 'online'}">
-                            ● ${isDisabled ? 'Offline' : 'Online'}
+                <div class="d-flex justify-content-between align-items-center pb-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold" style="font-size: 0.95rem;">${stationName.toUpperCase()}</span>
+                        <span class="toggle-switch-status ${isDisabled ? 'offline' : 'online'}" style="font-size: 0.75rem; font-weight: 600;">
+                            ${isDisabled ? '● Offline' : '● Online'}
                         </span>
                     </div>
                     <label class="switch-label mb-0" for="${checkboxId}">
                         <input type="checkbox" id="${checkboxId}" ${!isDisabled ? 'checked' : ''}>
                         <span class="switch-slider"></span>
                     </label>
-                    <button class="btn btn-sm btn-outline-danger ms-2 btn-delete-station" data-station="${stationName}">🗑️</button>
+                </div>
+
+                <div class="mt-1 pt-2 border-top d-flex justify-content-end">
+                    <button class="btn btn-sm btn-outline-danger fw-bold d-flex align-items-center gap-1 btn-delete-station" data-station="${stationName}">
+                        Delete
+                    </button>
                 </div>
             `;
 
@@ -572,9 +578,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isDisabled = bike.is_disabled === 1;
             
             const div = document.createElement('div');
-            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item';
+            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item d-none';
             div.style.background = 'var(--bg-main)';
-            div.style.display = 'none'; // Initially hidden until searched
             div.dataset.bikeCode = code;
             
             div.innerHTML = `
@@ -960,9 +965,9 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach(item => {
                 const code = item.dataset.bikeCode.toLowerCase();
                 if (query === '' || code.includes(query)) {
-                    item.style.display = 'flex';
+                    item.classList.remove('d-none');
                 } else {
-                    item.style.display = 'none';
+                    item.classList.add('d-none');
                 }
             });
         };
