@@ -42,4 +42,12 @@ router.get('/locations', bikeController.getLocations);
 router.get('/history/:bicycleCode', bikeController.getHistory);
 router.get('/analytics', analyticsController.getAnalytics);
 
+// Admin UI Routes (Requires authentication)
+router.get('/admin/search/bicycles', authMiddleware, adminController.searchBicycles);
+router.get('/admin/search/members', authMiddleware, adminController.searchMembers);
+router.post('/admin/bicycles/override', authMiddleware, adminController.overrideBicycle);
+router.delete('/admin/locations/:name', authMiddleware, adminController.deleteLocation);
+router.get('/admin/maintenance', authMiddleware, adminController.getMaintenanceQueue);
+router.get('/admin/honesty', authMiddleware, adminController.getHonestyLogs);
+
 module.exports = router;

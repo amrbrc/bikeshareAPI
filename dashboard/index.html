@@ -36,13 +36,16 @@
             <li class="nav-item active" id="nav-dashboard">Dashboard</li>
             <li class="nav-item" id="nav-map">Map View</li>
             <li class="nav-item" id="nav-analytics">Analytics</li>
+            <li class="nav-item" id="nav-registration">Registration & Setup</li>
+            <li class="nav-item" id="nav-logs">Report Logs</li>
             <li class="nav-item" id="nav-settings">Settings</li>
         </ul>
 
         <div class="sidebar-bottom mt-auto pt-4 border-top">
             <div class="d-flex gap-2 mb-3">
                 <button id="theme-toggle" class="theme-toggle btn flex-fill" title="Toggle Theme">🌙</button>
-                <div class="theme-toggle flex-fill d-flex align-items-center justify-content-center" id="live-time" style="flex: 2; font-size: 0.85rem; font-weight: 600;">--:--:--
+                <div class="theme-toggle flex-fill d-flex align-items-center justify-content-center" id="live-time"
+                    style="flex: 2; font-size: 0.85rem; font-weight: 600;">--:--:--
                 </div>
             </div>
             <div class="status-pill d-flex align-items-center justify-content-center gap-2 py-2">
@@ -61,7 +64,7 @@
         </div>
 
         <!-- DASHBOARD DATA -->
-        <div class="data-container container-fluid px-4 py-3">
+        <div id="dashboard-container" class="data-container container-fluid px-4 py-3">
             <div class="row g-4">
 
                 <!-- LEFT COLUMN -->
@@ -94,7 +97,8 @@
                     <div class="panel card border p-4 shadow-sm">
                         <div class="panel-title h6 mb-3 fw-bold">Bike History</div>
                         <div class="input-group mb-3 border rounded overflow-hidden">
-                            <input type="text" id="history-bike-code" class="form-control border-0" placeholder="Bike code (e.g. 1)">
+                            <input type="text" id="history-bike-code" class="form-control border-0"
+                                placeholder="Bike code (e.g. 1)">
                             <button id="btn-search-history" class="btn btn-accent px-4 border-0">Search</button>
                         </div>
                         <div id="history-results" class="custom-scroll d-flex flex-column gap-2"
@@ -115,99 +119,24 @@
                     </div>
 
                     <!-- DEVELOPER B PANELS -->
-                    <div class="panel card border p-4 shadow-sm d-flex flex-column">
-                        <div class="panel-title h6 mb-3 fw-bold">SMS Reference Guide</div>
-                        <div class="command-guide custom-scroll d-flex flex-column gap-2"
-                            style="flex: 1; padding-right: 4px;">
-                            <!-- Command 1 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">Borrow
-                                        Bicycle</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('1 eee to vinzons', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Borrow a bicycle from a station to
-                                    another.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">1 eee to vinzons</code>
-                            </div>
-                            <!-- Command 2 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">Search Bicycle
-                                        Location</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('search 1', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Check current location of a
-                                    specific bike.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">search 1</code>
-                            </div>
-                            <!-- Command 3 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">Search All
-                                        Bicycles</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('search all', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Check the locations of all active
-                                    bikes.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">search all</code>
-                            </div>
-                            <!-- Command 4 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">List
-                                        Stations</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('locations', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Retrieve names of all active
-                                    stations.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">locations</code>
-                            </div>
-                            <!-- Command 5 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">Bike Usage
-                                        History</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('usage 1', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Retrieve latest borrowing details
-                                    of a bike.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">usage 1</code>
-                            </div>
-                            <!-- Command 6 -->
-                            <div class="p-3 border rounded d-flex flex-column gap-2"
-                                style="background: var(--bg-main);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-h);">Get Help &
-                                        Command List</span>
-                                    <span class="btn btn-outline-secondary btn-sm py-1 px-2"
-                                        style="font-size: 0.65rem; cursor: pointer;"
-                                        onclick="copyToClipboard('bikeshare help', this)">📋 Copy</span>
-                                </div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">Request available command list and
-                                    format guidelines.</div>
-                                <code class="font-monospace text-success border border-success-subtle bg-success-subtle py-1 px-2 rounded"
-                                    style="font-size: 0.72rem; font-weight: 600; width: fit-content; border: 1px solid rgba(0,106,78,0.2);">bikeshare help</code>
+                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="min-height: 350px;">
+                        <div class="panel-title h6 mb-3 fw-bold">Admin Search Center</div>
+                        <div class="input-group mb-3 border rounded overflow-hidden">
+                            <select id="admin-search-type" class="form-select border-0 text-muted"
+                                style="max-width: 130px; background-color: var(--bg-main);">
+                                <option value="bike">Bicycles</option>
+                                <option value="member">Members</option>
+                            </select>
+                            <input type="text" id="admin-search-input" class="form-control border-0"
+                                placeholder="Enter Code, Phone or Name...">
+                            <button id="btn-admin-search" class="btn btn-accent px-4 border-0">Search</button>
+                        </div>
+                        <div id="admin-search-results" class="custom-scroll d-flex flex-column gap-2"
+                            style="flex: 1; overflow-y: auto;">
+                            <!-- Placeholder Text -->
+                            <div class="text-muted small text-center mt-4 p-3 bg-light rounded"
+                                style="border: 1px dashed #ccc;">
+                                Select a category and enter a query to search.
                             </div>
                         </div>
                     </div>
@@ -233,7 +162,8 @@
                         </div>
                         <div class="stat-box card flex-fill border p-3 shadow-sm">
                             <span class="lbl text-muted text-uppercase fw-semibold mb-2">Top Hub</span>
-                            <span class="val h4 fw-bold mb-0 py-1" id="analytics-top-hub" style="white-space: nowrap; text-transform: uppercase;">--</span>
+                            <span class="val h4 fw-bold mb-0 py-1" id="analytics-top-hub"
+                                style="white-space: nowrap; text-transform: uppercase;">--</span>
                         </div>
                     </div>
                 </div>
@@ -252,13 +182,20 @@
                 <div class="col-lg-6" style="height: calc(100% - 150px); min-height: 300px;">
                     <div class="panel card border p-4 shadow-sm h-100 d-flex flex-column">
                         <div class="panel-title h6 mb-3 fw-bold">Most Popular Stations</div>
-                        <div style="flex: 1; position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 0;">
-                            <div style="aspect-ratio: 1; height: 90%; max-height: 100%; position: relative; display: flex; justify-content: center; align-items: center;">
+                        <div
+                            style="flex: 1; position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                            <div
+                                style="aspect-ratio: 1; height: 90%; max-height: 100%; position: relative; display: flex; justify-content: center; align-items: center;">
                                 <canvas id="chart-popular-stations" style="max-width: 100%; max-height: 100%;"></canvas>
                                 <!-- Center Label -->
-                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Hubs</span>
-                                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-center-val">--</span>
+                                <div
+                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                    <span
+                                        style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total
+                                        Hubs</span>
+                                    <span
+                                        style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;"
+                                        id="doughnut-center-val">--</span>
                                 </div>
                             </div>
                         </div>
@@ -268,120 +205,211 @@
         </div>
     </main>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-card card shadow" id="settings-modal-card">
-            <button id="close-settings" class="close-btn border btn btn-light" title="Close">&times;</button>
-
-            <!-- Login View -->
-            <div id="settings-login-view">
-                <h3 class="h5 fw-bold text-center mb-1 text-dark" style="letter-spacing: -0.02em;">
-                    Admin Verification</h3>
-                <p class="small text-muted text-center mb-4">
-                    Please authenticate to access system settings.</p>
-                <div id="login-error" class="alert alert-danger py-2 px-3 text-center small mb-3" style="display: none;">
+    <!-- REGISTRATION & SETUP CONTAINER -->
+    <div id="registration-container" class="data-container container-fluid px-4 py-3"
+        style="display: none; height: calc(100vh - 3rem); box-sizing: border-box; overflow: auto;">
+        <h3 class="h5 fw-bold text-dark mb-4 border-bottom pb-2">Registration & Setup</h3>
+        <div class="row g-4">
+            <div class="col-md-6 d-flex flex-column gap-3">
+                <!-- Section: Add Bicycle -->
+                <div class="settings-section border rounded p-4 d-flex flex-column gap-3 shadow-sm bg-white">
+                    <h4 class="settings-section-title h6 fw-bold text-dark mb-0">🚲 Add New Bicycle</h4>
+                    <div id="add-bike-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="row g-2 settings-form-row">
+                            <div class="col-6 settings-input-group d-flex flex-column gap-1">
+                                <label
+                                    class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Bike
+                                    Code</label>
+                                <input type="text" id="new-bike-code" class="form-control settings-input"
+                                    placeholder="e.g. 9">
+                            </div>
+                            <div class="col-6 settings-input-group d-flex flex-column gap-1">
+                                <label
+                                    class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Lock
+                                    Code</label>
+                                <input type="text" id="new-bike-lock" class="form-control settings-input"
+                                    placeholder="e.g. 9999">
+                            </div>
+                        </div>
+                        <div class="settings-input-group d-flex flex-column gap-1">
+                            <label
+                                class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Initial
+                                Hub / Location</label>
+                            <select id="new-bike-location" class="form-select settings-select"></select>
+                        </div>
+                    </div>
+                    <button id="btn-add-bike" class="btn btn-accent w-100 fw-bold py-2"
+                        style="height: 38px; border-radius: var(--radius-sm);">Add to Fleet</button>
                 </div>
+
+                <!-- Section: Add Station -->
+                <div class="settings-section border rounded p-4 d-flex flex-column gap-3 shadow-sm bg-white">
+                    <h4 class="settings-section-title h6 fw-bold text-dark mb-0">📍 Add New Station</h4>
+                    <div id="add-station-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
+                    <div class="d-flex gap-2 align-items-end">
+                        <div class="settings-input-group d-flex flex-column gap-1 flex-grow-1">
+                            <label
+                                class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Station
+                                Name</label>
+                            <input type="text" id="new-station-name" class="form-control settings-input"
+                                placeholder="e.g. oval">
+                        </div>
+                        <button id="btn-add-station" class="btn btn-accent fw-bold px-3 text-nowrap"
+                            style="height: 38px; border-radius: var(--radius-sm);">Add Station</button>
+                    </div>
+                </div>
+
+                <!-- Section: Register Member -->
+                <div class="settings-section border rounded p-4 d-flex flex-column gap-3 shadow-sm bg-white">
+                    <h4 class="settings-section-title h6 fw-bold text-dark mb-0">👤 Register Member</h4>
+                    <div id="add-member-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="row g-2 settings-form-row">
+                            <div class="col-6 settings-input-group d-flex flex-column gap-1">
+                                <label
+                                    class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">First
+                                    Name</label>
+                                <input type="text" id="new-member-firstname" class="form-control settings-input"
+                                    placeholder="e.g. Juan">
+                            </div>
+                            <div class="col-6 settings-input-group d-flex flex-column gap-1">
+                                <label
+                                    class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Last
+                                    Name</label>
+                                <input type="text" id="new-member-lastname" class="form-control settings-input"
+                                    placeholder="e.g. Dela Cruz">
+                            </div>
+                        </div>
+                        <div class="settings-input-group d-flex flex-column gap-1">
+                            <label
+                                class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Phone
+                                Number</label>
+                            <input type="text" id="new-member-phone" class="form-control settings-input"
+                                placeholder="e.g. 09171234567">
+                        </div>
+                    </div>
+                    <button id="btn-add-member" class="btn btn-accent w-100 fw-bold py-2"
+                        style="height: 38px; border-radius: var(--radius-sm);">Register Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS & AUTH CONTAINER -->
+    <div id="settings-container" class="data-container container-fluid px-4 py-3"
+        style="display: none; height: calc(100vh - 3rem); box-sizing: border-box; overflow: auto;">
+        <!-- Login View -->
+        <div id="settings-login-view" class="d-flex justify-content-center align-items-center h-100">
+            <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+                <h3 class="h5 fw-bold text-center mb-1 text-dark" style="letter-spacing: -0.02em;">Admin Verification
+                </h3>
+                <p class="small text-muted text-center mb-4">Please authenticate to access system settings.</p>
+                <div id="login-error" class="alert alert-danger py-2 px-3 text-center small mb-3"
+                    style="display: none;"></div>
                 <div class="d-flex flex-column gap-3 mb-4">
                     <div class="settings-input-group d-flex flex-column gap-1">
-                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Email / Username</label>
-                        <input type="text" id="admin-username" class="form-control settings-input" placeholder="Enter username">
+                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Email
+                            / Username</label>
+                        <input type="text" id="admin-username" class="form-control settings-input"
+                            placeholder="Enter username">
                     </div>
                     <div class="settings-input-group d-flex flex-column gap-1">
-                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Password</label>
-                        <input type="password" id="admin-password" class="form-control settings-input" placeholder="Enter password">
+                        <label
+                            class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Password</label>
+                        <input type="password" id="admin-password" class="form-control settings-input"
+                            placeholder="Enter password">
                     </div>
                 </div>
-                <button id="btn-login-submit" class="btn btn-accent w-100 fw-bold py-2" style="height: 42px; border-radius: var(--radius-sm);">Sign In</button>
+                <button id="btn-login-submit" class="btn btn-accent w-100 fw-bold py-2"
+                    style="height: 42px; border-radius: var(--radius-sm);">Sign In</button>
             </div>
+        </div>
 
-            <!-- Admin View -->
-            <div id="settings-admin-view" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-                    <h3 class="h5 fw-bold text-dark mb-0" style="letter-spacing: -0.02em;">Admin Settings</h3>
-                </div>
-
-                <!-- Two Column Grid -->
-                <div class="row g-4 settings-grid">
-                    <!-- Left Column: Forms -->
-                    <div class="col-md-6 settings-col settings-col-left d-flex flex-column gap-3">
-                        <!-- Section: Add Bicycle -->
-                        <div class="settings-section border rounded p-3 d-flex flex-column gap-3">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-0">🚲 Add New Bicycle</h4>
-                            <div id="add-bike-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
-
-                            <div class="d-flex flex-column gap-2">
-                                <div class="row g-2 settings-form-row">
-                                    <div class="col-6 settings-input-group d-flex flex-column gap-1">
-                                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Bike Code</label>
-                                        <input type="text" id="new-bike-code" class="form-control settings-input" placeholder="e.g. 9">
-                                    </div>
-                                    <div class="col-6 settings-input-group d-flex flex-column gap-1">
-                                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Lock Code</label>
-                                        <input type="text" id="new-bike-lock" class="form-control settings-input" placeholder="e.g. 9999">
-                                    </div>
-                                </div>
-                                <div class="settings-input-group d-flex flex-column gap-1">
-                                    <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Initial Hub / Location</label>
-                                    <select id="new-bike-location" class="form-select settings-select">
-                                        <!-- Dynamically loaded -->
-                                    </select>
-                                </div>
-                            </div>
-                            <button id="btn-add-bike" class="btn btn-accent w-100 fw-bold py-2" style="height: 38px; border-radius: var(--radius-sm);">Add to Fleet</button>
-                        </div>
-
-                        <!-- Section: Add Station -->
-                        <div class="settings-section border rounded p-3 d-flex flex-column gap-3">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-0">📍 Add New Station</h4>
-                            <div id="add-station-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
-                            <div class="d-flex gap-2 align-items-end">
-                                <div class="settings-input-group d-flex flex-column gap-1 flex-grow-1">
-                                    <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Station Name</label>
-                                    <input type="text" id="new-station-name" class="form-control settings-input" placeholder="e.g. oval">
-                                </div>
-                                <button id="btn-add-station" class="btn btn-accent fw-bold px-3 text-nowrap" style="height: 38px; border-radius: var(--radius-sm);">Add Station</button>
-                            </div>
-                        </div>
-
-                        <!-- Section: Register Member -->
-                        <div class="settings-section border rounded p-3 d-flex flex-column gap-3">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-0">👤 Register Member</h4>
-                            <div id="add-member-msg" class="alert py-2 px-3 small mb-0" style="display: none;"></div>
-                            <div class="d-flex flex-column gap-2">
-                                <div class="row g-2 settings-form-row">
-                                    <div class="col-6 settings-input-group d-flex flex-column gap-1">
-                                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">First Name</label>
-                                        <input type="text" id="new-member-firstname" class="form-control settings-input" placeholder="e.g. Juan">
-                                    </div>
-                                    <div class="col-6 settings-input-group d-flex flex-column gap-1">
-                                        <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Last Name</label>
-                                        <input type="text" id="new-member-lastname" class="form-control settings-input" placeholder="e.g. Dela Cruz">
-                                    </div>
-                                </div>
-                                <div class="settings-input-group d-flex flex-column gap-1">
-                                    <label class="form-label settings-label small fw-semibold text-muted text-uppercase mb-0">Phone Number</label>
-                                    <input type="text" id="new-member-phone" class="form-control settings-input" placeholder="e.g. 09171234567">
-                                </div>
-                            </div>
-                            <button id="btn-add-member" class="btn btn-accent w-100 fw-bold py-2" style="height: 38px; border-radius: var(--radius-sm);">Register Member</button>
+        <!-- Admin View -->
+        <div id="settings-admin-view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <h3 class="h5 fw-bold text-dark mb-0" style="letter-spacing: -0.02em;">Admin Settings</h3>
+                <button id="btn-admin-logout" class="btn btn-sm btn-outline-danger">Log Out</button>
+            </div>
+            <div class="row g-4 settings-grid">
+                <div class="col-md-6 settings-col d-flex flex-column gap-3">
+                    <div class="settings-section border rounded p-4 d-flex flex-column gap-3 bg-white shadow-sm"
+                        style="height: 300px;">
+                        <h4 class="settings-section-title h6 fw-bold text-dark mb-0">📍 Station Status Control</h4>
+                        <div id="station-toggle-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto"
+                            style="flex: 1;">
+                            <!-- Dynamically populated station status toggles -->
                         </div>
                     </div>
+                </div>
+                <div class="col-md-6 settings-col d-flex flex-column gap-3">
+                    <div class="settings-section border rounded p-4 d-flex flex-column gap-3 flex-grow-1 bg-white shadow-sm"
+                        style="min-height: 0;">
+                        <h4 class="settings-section-title h6 fw-bold text-dark mb-0">🚲 Quick Bike Override</h4>
+                        <div class="custom-scroll d-flex flex-column gap-3 overflow-auto"
+                            style="flex: 1; padding-right: 5px;">
+                            <div class="border p-3 rounded" style="background: var(--bg-main);">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Target Bike
+                                    Code</label>
+                                <input type="text" id="override-target-bike" class="form-control form-control-sm mb-3"
+                                    placeholder="e.g. 1">
 
-                    <!-- Right Column: Station Status + Members List -->
-                    <div class="col-md-6 settings-col d-flex flex-column gap-3">
-                        <div class="settings-section border rounded p-3 d-flex flex-column gap-3" style="height: 240px;">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-0">📍 Station Status Control</h4>
-                            <div id="station-toggle-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto" style="flex: 1;">
-                                <!-- Dynamically populated station status toggles -->
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">New Lock
+                                    Code</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <input type="text" id="override-new-lock" class="form-control"
+                                        placeholder="e.g. 9999">
+                                    <button class="btn btn-outline-primary" id="btn-quick-override-lock">Save</button>
+                                </div>
+
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">New Condition
+                                    Status</label>
+                                <div class="input-group input-group-sm">
+                                    <select id="override-new-status" class="form-select">
+                                        <option value="Good">Good</option>
+                                        <option value="Broken">Broken</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary" id="btn-quick-override-status">Save</button>
+                                </div>
+                            </div>
+                            <div id="quick-override-msg" class="alert py-2 px-3 small mb-0" style="display: none;">
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Registered Members List -->
-                        <div class="settings-section border rounded p-3 d-flex flex-column gap-3 flex-grow-1" style="min-height: 0;">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-0">👥 Registered Members</h4>
-                            <div id="members-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto" style="flex: 1;">
-                                <!-- Dynamically populated members -->
-                            </div>
+        <!-- REPORT LOGS CONTAINER -->
+        <div id="logs-container" class="data-container container-fluid px-4 py-3"
+            style="display: none; height: calc(100vh - 3rem); box-sizing: border-box; overflow: auto;">
+            <h3 class="h5 fw-bold text-dark mb-4 border-bottom pb-2">Report Logs</h3>
+            <div class="row g-4">
+                <!-- Left Column: Maintenance Queue -->
+                <div class="col-md-6 d-flex flex-column gap-3">
+                    <div class="settings-section border rounded p-4 d-flex flex-column gap-3 bg-white shadow-sm"
+                        style="min-height: 400px;">
+                        <h4 class="settings-section-title h6 fw-bold text-dark mb-0">🛠️ Maintenance Queue</h4>
+                        <p class="small text-muted mb-0">Bikes reported as broken and needing repair.</p>
+                        <div id="maintenance-queue-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto"
+                            style="flex: 1;">
+                            <!-- We will populate this with real database records in Step 5 -->
+                            <div class="text-center small text-muted mt-4">Loading queue...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Honesty Logs -->
+                <div class="col-md-6 d-flex flex-column gap-3">
+                    <div class="settings-section border rounded p-4 d-flex flex-column gap-3 bg-white shadow-sm"
+                        style="min-height: 400px;">
+                        <h4 class="settings-section-title h6 fw-bold text-dark mb-0">📋 Honesty & Dispute Logs</h4>
+                        <p class="small text-muted mb-0">Recent trust point deductions and dispute history.</p>
+                        <div id="honesty-logs-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto"
+                            style="flex: 1;">
+                            <!-- We will populate this with real database records in Step 5 -->
+                            <div class="text-center small text-muted mt-4">Loading logs...</div>
                         </div>
                     </div>
                 </div>
@@ -406,6 +434,7 @@
     <script src="/js/sms.js?v=4"></script>
     <script src="/js/settings.js?v=4"></script>
     <script src="/js/analytics.js?v=4"></script>
+    <script src="js/admin-search.js"></script>
 </body>
 
 </html>

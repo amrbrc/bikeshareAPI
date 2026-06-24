@@ -152,6 +152,94 @@ const resolveDispute = async (req, res) => {
     }
 };
 
+// GET /api/admin/search/bicycles
+const searchBicycles = async (req, res) => {
+    const query = req.query.q || '';
+    try {
+        const [rows] = await db.upbsPool.query(
+            "SELECT * FROM bicycle_codes WHERE bicycle_code LIKE ? OR combination_lock LIKE ? LIMIT 10",
+            [`%${query}%`, `%${query}%`]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// GET /api/admin/search/members
+const searchMembers = async (req, res) => {
+    const query = req.query.q || '';
+    try {
+        const [rows] = await db.upbsPool.query(
+            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ? LIMIT 10",
+            [`%${query}%`, `%${query}%`, `%${query}%`]
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// POST /api/admin/bicycles/override
+const overrideBicycle = async (req, res) => {
+    const { bicycle_code, combination_lock, condition_status } = req.body;
+    try {
+        let updateQuery = "UPDATE bicycle_codes SET ";
+        let params = [];
+        if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
+        if (condition_status) { updateQuery += "condition_status = ?, "; params.push(condition_status); }
+        updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ?";
+        params.push(bicycle_code);
+
+        await db.upbsPool.query(updateQuery, params);
+        return res.json({ success: true, message: 'Bicycle successfully updated.' });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// DELETE /api/admin/locations/:name
+const deleteLocation = async (req, res) => {
+    const location_name = req.params.name;
+    try {
+        await db.upbsPool.query("DELETE FROM locations WHERE location_name = ?", [location_name]);
+        return res.json({ success: true, message: 'Station deleted.' });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// GET /api/admin/maintenance
+const getMaintenanceQueue = async (req, res) => {
+    try {
+        const [rows] = await db.upbsPool.query(
+            "SELECT bicycle_code, condition_status, new_location FROM bicycle_codes WHERE condition_status = 'Broken'"
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// GET /api/admin/honesty
+const getHonestyLogs = async (req, res) => {
+    try {
+        // Fetching members with trust points < 100 for honesty logs
+        const [rows] = await db.upbsPool.query(
+            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE CAST(trust_points AS SIGNED) < 100 ORDER BY trust_points ASC LIMIT 20"
+        );
+        return res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
 module.exports = {
     login,
     getMembers,
@@ -159,5 +247,11 @@ module.exports = {
     addBicycle,
     addLocation,
     toggleLocation,
-    resolveDispute
+    resolveDispute,
+    searchBicycles,
+    searchMembers,
+    overrideBicycle,
+    deleteLocation,
+    getMaintenanceQueue,
+    getHonestyLogs
 };

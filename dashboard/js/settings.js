@@ -3,9 +3,20 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const navSettings = document.getElementById('nav-settings');
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsModalCard = document.getElementById('settings-modal-card');
-    const closeSettings = document.getElementById('close-settings');
+    const navRegistration = document.getElementById('nav-registration');
+    const navLogs = document.getElementById('nav-logs');
+
+    const registrationContainer = document.getElementById('registration-container');
+    const settingsContainer = document.getElementById('settings-container');
+    const logsContainer = document.getElementById('logs-container');
+
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navAnalytics = document.getElementById('nav-analytics');
+    const navMap = document.getElementById('nav-map');
+    const dashboardGrid = document.getElementById('dashboard-container');
+    const analyticsContainer = document.getElementById('analytics-container');
+    const heroMap = document.querySelector('.hero-map-section');
+    const mainWrapper = document.querySelector('.main-wrapper');
 
     const loginView = document.getElementById('settings-login-view');
     const adminView = document.getElementById('settings-admin-view');
@@ -115,63 +126,116 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (!navSettings || !settingsModal || !closeSettings) {
-        console.error('[settings.js] Settings modal elements not found.');
-        return;
+    function hideAllViews() {
+        if (heroMap) heroMap.style.display = 'none';
+        if (dashboardGrid) dashboardGrid.style.display = 'none';
+        if (analyticsContainer) analyticsContainer.style.display = 'none';
+        if (registrationContainer) registrationContainer.style.display = 'none';
+        if (settingsContainer) settingsContainer.style.display = 'none';
+        if (logsContainer) logsContainer.style.display = 'none';
+
+        if (navDashboard) navDashboard.classList.remove('active');
+        if (navMap) navMap.classList.remove('active');
+        if (navAnalytics) navAnalytics.classList.remove('active');
+        if (navRegistration) navRegistration.classList.remove('active');
+        if (navSettings) navSettings.classList.remove('active');
+        if (navLogs) navLogs.classList.remove('active');
     }
 
-    // Modal display control
-    navSettings.addEventListener('click', (e) => {
-        e.preventDefault();
-        settingsModal.style.display = 'flex';
-        checkSession();
-    });
-
-    closeSettings.addEventListener('click', () => {
-        settingsModal.style.display = 'none';
-        // Auto-logout when closing the modal
-        sessionStorage.removeItem('adminToken');
-        checkSession();
-
-        // Reset states
-        loginUsername.value = '';
-        loginPassword.value = '';
-        loginError.style.display = 'none';
-        if (settingsModalCard) {
-            settingsModalCard.classList.remove('admin-active');
+    // Intercept clicks on other nav items to hide our new containers
+    [navDashboard, navMap, navAnalytics].forEach(nav => {
+        if (nav) {
+            nav.addEventListener('click', () => {
+                if (registrationContainer) registrationContainer.style.display = 'none';
+                if (settingsContainer) settingsContainer.style.display = 'none';
+                if (logsContainer) logsContainer.style.display = 'none';
+                if (navRegistration) navRegistration.classList.remove('active');
+                if (navSettings) navSettings.classList.remove('active');
+                if (navLogs) navLogs.classList.remove('active');
+            });
         }
     });
 
-    // Close on click outside modal-card
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) {
-            settingsModal.style.display = 'none';
-            // Auto-logout when closing the modal
+    if (navRegistration) {
+        navRegistration.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideAllViews();
+            navRegistration.classList.add('active');
+            if (registrationContainer) registrationContainer.style.display = 'block';
+            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            // Auto-logout admin when leaving settings view
             sessionStorage.removeItem('adminToken');
             checkSession();
+        });
+    }
 
-            if (settingsModalCard) {
-                settingsModalCard.classList.remove('admin-active');
+    if (navSettings) {
+        navSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideAllViews();
+            navSettings.classList.add('active');
+            if (settingsContainer) settingsContainer.style.display = 'block';
+            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            checkSession();
+        });
+    }
+
+    if (navLogs) {
+        navLogs.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideAllViews();
+            navLogs.classList.add('active');
+            if (logsContainer) logsContainer.style.display = 'block';
+            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            loadLogs();
+        });
+    }
+
+    async function loadLogs() {
+        const qList = document.getElementById('maintenance-queue-list');
+        const hList = document.getElementById('honesty-logs-list');
+        if (!qList || !hList) return;
+
+        // Fetch Maintenance Queue
+        try {
+            const res = await fetch('/api/admin/maintenance', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (data.success && data.data.length > 0) {
+                qList.innerHTML = data.data.map(b => `<div class="card p-3 border shadow-sm">
+                    <strong>🚲 Bike #${b.bicycle_code}</strong>
+                    <div class="text-danger small mt-1">Status: ${b.condition_status}</div>
+                    <div class="text-muted small">Location: ${b.new_location}</div>
+                </div>`).join('');
+            } else {
+                qList.innerHTML = '<div class="text-muted small">No broken bikes.</div>';
             }
-        }
-    });
+        } catch (e) { qList.innerHTML = 'Error loading.'; }
+
+        // Fetch Honesty Logs
+        try {
+            const res = await fetch('/api/admin/honesty', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (data.success && data.data.length > 0) {
+                hList.innerHTML = data.data.map(m => `<div class="card p-3 border shadow-sm">
+                    <strong>👤 ${m.firstname} ${m.lastname} (${m.phone_number})</strong>
+                    <div class="text-danger fw-bold small mt-1">Trust Points: ${m.trust_points}</div>
+                </div>`).join('');
+            } else {
+                hList.innerHTML = '<div class="text-muted small">No honesty logs.</div>';
+            }
+        } catch (e) { hList.innerHTML = 'Error loading.'; }
+    }
 
     // Check login state
     function checkSession() {
         const token = sessionStorage.getItem('adminToken');
         if (token === 'admin-logged-in-token') {
-            loginView.style.display = 'none';
-            adminView.style.display = 'block';
-            if (settingsModalCard) {
-                settingsModalCard.classList.add('admin-active');
-            }
+            if (loginView) loginView.style.display = 'none';
+            if (adminView) adminView.style.display = 'block';
             loadAdminPanel();
         } else {
-            loginView.style.display = 'block';
-            adminView.style.display = 'none';
-            if (settingsModalCard) {
-                settingsModalCard.classList.remove('admin-active');
-            }
+            if (loginView) loginView.style.display = 'flex'; // Use flex for centered layout
+            if (adminView) adminView.style.display = 'none';
         }
     }
 
@@ -306,17 +370,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const checkboxId = `toggle-${stationName.replace(/\s+/g, '-').toLowerCase()}`;
 
             div.innerHTML = `
-                <div class="toggle-switch-info">
-                    <span class="toggle-switch-name">${stationName.toUpperCase()}</span>
-                    <span class="toggle-switch-status ${isDisabled ? 'offline' : 'online'}">
-                        ● ${isDisabled ? 'Offline' : 'Online'}
-                    </span>
+                <div class="d-flex align-items-center gap-2 w-100">
+                    <div class="toggle-switch-info flex-grow-1">
+                        <span class="toggle-switch-name">${stationName.toUpperCase()}</span>
+                        <span class="toggle-switch-status ${isDisabled ? 'offline' : 'online'}">
+                            ● ${isDisabled ? 'Offline' : 'Online'}
+                        </span>
+                    </div>
+                    <label class="switch-label mb-0" for="${checkboxId}">
+                        <input type="checkbox" id="${checkboxId}" ${!isDisabled ? 'checked' : ''}>
+                        <span class="switch-slider"></span>
+                    </label>
+                    <button class="btn btn-sm btn-outline-danger ms-2 btn-delete-station" data-station="${stationName}">🗑️</button>
                 </div>
-                <label class="switch-label" for="${checkboxId}">
-                    <input type="checkbox" id="${checkboxId}" ${!isDisabled ? 'checked' : ''}>
-                    <span class="switch-slider"></span>
-                </label>
             `;
+
+            const btnDelete = div.querySelector('.btn-delete-station');
+            btnDelete.addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to delete station ${stationName}?`)) {
+                    try {
+                        const res = await fetch(`/api/admin/locations/${encodeURIComponent(stationName)}`, {
+                            method: 'DELETE',
+                            headers: getAdminHeaders()
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            div.remove();
+                            if (window.initDashboard) await window.initDashboard();
+                        } else {
+                            alert('Failed to delete station.');
+                        }
+                    } catch (e) {
+                        alert('Error deleting station.');
+                    }
+                }
+            });
 
             const checkbox = div.querySelector('input[type="checkbox"]');
             checkbox.addEventListener('change', async () => {
@@ -581,4 +669,53 @@ document.addEventListener('DOMContentLoaded', () => {
             btnAddStation.textContent = 'Add Station';
         }
     });
+
+    // Quick Bike Override Listeners (Real Database Connection)
+    const btnOverrideLock = document.getElementById('btn-quick-override-lock');
+    const btnOverrideStatus = document.getElementById('btn-quick-override-status');
+    const targetBike = document.getElementById('override-target-bike');
+    const newLock = document.getElementById('override-new-lock');
+    const newStatus = document.getElementById('override-new-status');
+    const overrideMsg = document.getElementById('quick-override-msg');
+
+    const saveOverride = async (code, payload) => {
+        try {
+            const res = await fetch('/api/admin/bicycles/override', {
+                method: 'POST',
+                headers: getAdminHeaders(),
+                body: JSON.stringify({ bicycle_code: code, ...payload })
+            });
+            const data = await res.json();
+            if (data.success) {
+                overrideMsg.textContent = 'Bike successfully updated!';
+                overrideMsg.className = 'alert alert-success py-2 px-3 small mt-2';
+            } else {
+                overrideMsg.textContent = 'Failed to update.';
+                overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
+            }
+            overrideMsg.style.display = 'block';
+        } catch (e) {
+            overrideMsg.textContent = 'Network error.';
+            overrideMsg.className = 'alert alert-danger py-2 px-3 small mt-2';
+            overrideMsg.style.display = 'block';
+        }
+    };
+
+    if (btnOverrideLock) {
+        btnOverrideLock.addEventListener('click', () => {
+            const code = targetBike.value.trim();
+            const lock = newLock.value.trim();
+            if (!code || !lock) return;
+            saveOverride(code, { combination_lock: lock });
+        });
+    }
+
+    if (btnOverrideStatus) {
+        btnOverrideStatus.addEventListener('click', () => {
+            const code = targetBike.value.trim();
+            const stat = newStatus.value;
+            if (!code) return;
+            saveOverride(code, { condition_status: stat });
+        });
+    }
 });
