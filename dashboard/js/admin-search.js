@@ -10,10 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderBikeCard = (bike) => `
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="fw-bold h6 mb-0">🚲 Bike #${bike.code}</div>
+                <h6 class="fw-bold text-dark mb-0">🚲 Bike #${bike.code}</h6>
                 <span class="badge ${bike.status === 'Good' ? 'bg-success' : (bike.status === 'Broken' ? 'bg-danger' : 'bg-warning')}">${bike.status}</span>
             </div>
-            <div class="small text-muted mb-2">📍 Location: ${bike.location || 'Unknown'}</div>
+            <div class="small text-muted mb-2">📍 Location: <span class="text-dark fw-semibold">${bike.location || 'Unknown'}</span></div>
             <div class="d-flex flex-column gap-1 border-top pt-2 mt-2">
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="small fw-semibold text-muted">Lock Code:</span>
@@ -39,13 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="fw-bold h6 mb-0">👤 ${member.firstname} ${member.lastname}</div>
+                <h6 class="fw-bold text-dark mb-0">👤 ${member.firstname} ${member.lastname}</h6>
             </div>
-            <div class="small text-muted mb-3">📱 ${member.phone_number}</div>
+            <div class="small text-muted mb-3">📱 <span class="text-dark font-monospace">${member.phone_number}</span></div>
             
             <div class="border-top pt-3 mt-1 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="small fw-semibold">Trust Points:</span>
+                    <span class="small fw-semibold text-muted">Trust Points:</span>
                     <span class="badge bg-${trustColor} fs-6">${trustPoints}</span>
                 </div>
                 <div class="d-flex gap-2">
