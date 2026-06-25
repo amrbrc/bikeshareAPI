@@ -204,8 +204,8 @@ const resolveDispute = async (req, res) => {
 
             // Reward and text the reporter
             if (reporterPhone) {
-                // Reward the reporter with +5 points
-                await db.upbsPool.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [reporterPhone]);
+                // Reward the reporter with +5 points (ceiling 120)
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [reporterPhone]);
 
                 // Log the reward
                 await db.upbsPool.query(
@@ -289,6 +289,15 @@ const resolveDispute = async (req, res) => {
 
             // Text the reporter
             if (reporterPhone) {
+                // Reward the reporter with +5 points for correctly identifying a broken bike (ceiling 120)
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [reporterPhone]);
+
+                // Log the reward
+                await db.upbsPool.query(
+                    "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'Neutral Report Reward']
+                );
+
                 try {
                     await fetch(`${gatewayUrl}/api/sms/send`, {
                         method: 'POST',

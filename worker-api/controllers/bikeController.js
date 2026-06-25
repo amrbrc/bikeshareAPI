@@ -665,12 +665,10 @@ const broken = async (req, res) => {
                 [smsSender, bicycleCode]
             );
 
-            // Reward Reporter (Next User) with a ceiling of 120 points
-            await upbsConn.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [smsSender]);
-
+            // Log Dispute Request
             await upbsConn.query(
                 "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-                [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Broken Report']
+                [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Dispute Report']
             );
 
             // Freeze Previous User
