@@ -187,7 +187,7 @@ const resolveDispute = async (req, res) => {
         if (verdict === 'guilty') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 15) WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
-            
+
             // Text the borrower that they are guilty
             try {
                 await fetch(`${gatewayUrl}/api/sms/send`, {
@@ -202,15 +202,24 @@ const resolveDispute = async (req, res) => {
                 console.error("Failed to send guilty SMS reply:", e.message);
             }
 
-            // Text the reporter
+            // Reward and text the reporter
             if (reporterPhone) {
+                // Reward the reporter with +5 points
+                await db.upbsPool.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [reporterPhone]);
+
+                // Log the reward
+                await db.upbsPool.query(
+                    "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'Conflict Report Reward']
+                );
+
                 try {
                     await fetch(`${gatewayUrl}/api/sms/send`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `The dispute you reported has been resolved. The previous user was penalized. Thank you for keeping our bikes safe!`
+                            message: `The dispute you reported has been resolved. The previous user was penalized. You have earned +5 trust points. Thank you for keeping our bikes safe!`
                         })
                     });
                 } catch (e) {
@@ -221,7 +230,7 @@ const resolveDispute = async (req, res) => {
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
-            
+
             // Text the borrower that they are innocent
             try {
                 await fetch(`${gatewayUrl}/api/sms/send`, {
@@ -239,7 +248,7 @@ const resolveDispute = async (req, res) => {
             if (reporterPhone) {
                 // Penalize the false reporter with a -5 points demerit
                 await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5) WHERE phone_number = ?", [reporterPhone]);
-                
+
                 // Log the false report penalty
                 await db.upbsPool.query(
                     "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
