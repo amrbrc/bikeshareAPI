@@ -117,15 +117,15 @@ const startHandshakeReminderJob = () => {
 
 // Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
 const startUnrepairedDamageJob = () => {
-    cron.schedule('0 * * * *', async () => {
-        console.log('[Cron] Running 48-Hour Unrepaired Damage check...');
+    cron.schedule('* * * * *', async () => {
+        console.log('[Cron-TESTING] Running 48-Hour (2-Minute) Unrepaired Damage check...');
         try {
             // Query for broken bikes older than 48 hours without penalty applied
             const query = `
                 SELECT bicycle_code, broken_reported_at
                 FROM bicycle_codes
                 WHERE condition_status = 'Broken'
-                  AND broken_reported_at < NOW() - INTERVAL 48 HOUR
+                  AND broken_reported_at < NOW() - INTERVAL 2 MINUTE
                   AND penalty_applied = 0
             `;
             const [brokenBikes] = await db.upbsPool.query(query);
@@ -171,12 +171,105 @@ const startUnrepairedDamageJob = () => {
     });
 };
 
-// Initialize all cron jobs
+// Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
+const startUnrepairedDamageJob = () => {
+    cron.schedule('0 * * * *', async () => {
+        console.log('[Cron] Running 48-Hour Unrepaired Damage check...');
+        try {
+            const query = `
+                SELECT bicycle_code, broken_reported_at
+                FROM bicycle_codes
+                WHERE condition_status = 'Broken'
+                  AND broken_reported_at < NOW() - INTERVAL 48 HOUR
+                  AND penalty_applied = 0
+            `;
+            const [brokenBikes] = await db.upbsPool.query(query);
+
+            for (const bike of brokenBikes) {
+                const borrowerQuery = `
+                    SELECT bh.id AS history_id, bh.borrowed_by, m.phone_number, m.trust_points
+                    FROM bicycle_history bh
+                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+                    WHERE bh.bicycle_code = ?
+                    ORDER BY bh.borrowed_at DESC
+                    LIMIT 1
+                `;
+                const [members] = await db.upbsPool.query(borrowerQuery, [bike.bicycle_code]);
+
+                if (members.length > 0) {
+                    const member = members[0];
+                    console.log(`[Cron] Applying penalty for Bike ${bike.bicycle_code} to ${member.borrowed_by}`);
+
+                    await db.upbsPool.query(
+                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 20) WHERE phone_number = ?',
+                        [member.phone_number]
+                    );
+
+                    await db.upbsPool.query(
+                        'UPDATE bicycle_codes SET penalty_applied = 1 WHERE bicycle_code = ?',
+                        [bike.bicycle_code]
+                    );
+
+                    const text = `ALERT: The 48-hour grace period to repair Bike ${bike.bicycle_code} has expired. A -20 demerit has been applied to your account.`;
+                    await sendSMS(member.phone_number, text);
+                }
+            }
+        } catch (err) {
+            console.error('[Cron] Error in unrepaired damage job:', err);
+        }
+    });
+};
+
+// Job 4: 24-Hour Repair Warning Reminder
+const start24hReminderJob = () => {
+    cron.schedule('0 * * * *', async () => {
+        console.log('[Cron] Running 24-Hour Repair Warning check...');
+        try {
+            const query = `
+                SELECT bicycle_code, broken_reported_at
+                FROM bicycle_codes
+                WHERE condition_status = 'Broken'
+                  AND broken_reported_at < NOW() - INTERVAL 24 HOUR
+                  AND reminder_24h_sent = 0
+            `;
+            const [brokenBikes] = await db.upbsPool.query(query);
+
+            for (const bike of brokenBikes) {
+                const borrowerQuery = `
+                    SELECT bh.id AS history_id, bh.borrowed_by, m.phone_number
+                    FROM bicycle_history bh
+                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+                    WHERE bh.bicycle_code = ?
+                    ORDER BY bh.borrowed_at DESC
+                    LIMIT 1
+                `;
+                const [members] = await db.upbsPool.query(borrowerQuery, [bike.bicycle_code]);
+
+                if (members.length > 0) {
+                    const member = members[0];
+                    console.log(`[Cron] Sending 24h repair warning for Bike ${bike.bicycle_code}`);
+
+                    const text = `REMINDER: You have 24 hours left to repair Bike ${bike.bicycle_code} before a -20 demerit is applied to your account.`;
+                    await sendSMS(member.phone_number, text);
+
+                    await db.upbsPool.query(
+                        'UPDATE bicycle_codes SET reminder_24h_sent = 1 WHERE bicycle_code = ?',
+                        [bike.bicycle_code]
+                    );
+                }
+            }
+        } catch (err) {
+            console.error('[Cron] Error in 24h reminder job:', err);
+        }
+    });
+};
+
 const initCronJobs = () => {
     console.log('[Cron] Initializing background timer tasks...');
     startBorrowRemindersJob();
     startHandshakeReminderJob();
     startUnrepairedDamageJob();
+    start24hReminderJob();
 };
 
 module.exports = { initCronJobs };
