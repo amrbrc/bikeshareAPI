@@ -209,12 +209,13 @@ const resolveDispute = async (req, res) => {
             try {
                 const deduction = conditionStatus === 'Missing' ? 50 : 15;
                 const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
+                const repairWarning = conditionStatus === 'Missing' ? '' : ' You have 48 hours to repair it before an additional 10-point penalty is applied.';
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven guilty of ${offense} a bike. ${deduction} points were deducted from your trust points.`
+                        message: `You have been proven guilty of ${offense} a bike. ${deduction} points were deducted from your trust points.${repairWarning}`
                     })
                 });
             } catch (e) {
