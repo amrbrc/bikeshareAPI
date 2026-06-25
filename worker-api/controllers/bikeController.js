@@ -365,9 +365,23 @@ const borrow = async (req, res) => {
         const bicycle = bicycles[0];
 
         // Apply Gatekeeper check for bicycle condition
-        if (bicycle.condition_status !== 'Good') {
+        if (bicycle.condition_status !== 'Good' && bicycle.condition_status !== 'Pending_Status') {
             await upbsConn.rollback();
             return res.json({ reply: "Bike unavailable." });
+        }
+
+        // Auto-Good Resolution: If the bike was in Pending_Status, the next user borrowing it automatically implies it is Good!
+        if (bicycle.condition_status === 'Pending_Status') {
+            // Find the last history row for this bike to reward the previous user
+            const [lastHistory] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1", [bicycleCode]);
+
+            if (lastHistory.length > 0) {
+                // Mark the condition confirmed in history
+                await upbsConn.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [lastHistory[0].id]);
+
+                // Reward previous user for being honest (ceiling of 120 points)
+                await upbsConn.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", [lastHistory[0].borrowed_by]);
+            }
         }
 
         // Helper function for location validation inside the handler
@@ -516,7 +530,7 @@ const done = async (req, res) => {
             [bicycleCode]
         );
 
-        return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply '${bicycleCode} GOOD' or '${bicycleCode} BROKEN'. Please take a photo of the bike at the rack as proof.` });
+        return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply 'GOOD ${bicycleCode}' or 'BROKEN ${bicycleCode}'. Please take a photo of the bike at the rack as proof.` });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Database error processing done request' });
