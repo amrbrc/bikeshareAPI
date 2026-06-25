@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const db = require('../db');
 
 // POST /api/admin/login
@@ -8,7 +9,8 @@ const login = async (req, res) => {
     const envPassword = process.env.ADMIN_PASSWORD || 'upbsadmin2026';
 
     if (username === envUsername && password === envPassword) {
-        return res.json({ success: true, token: 'admin-logged-in-token' });
+        const token = jwt.sign({ username }, process.env.JWT_SECRET || 'upbs-super-secret-key-2026', { expiresIn: '24h' });
+        return res.json({ success: true, token });
     } else {
         return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
@@ -17,7 +19,7 @@ const login = async (req, res) => {
 // GET /api/admin/members
 const getMembers = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE is_active = 1 ORDER BY lastname ASC, firstname ASC');
+        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE (is_active = 1 OR is_active IS NULL) ORDER BY lastname ASC, firstname ASC');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getMembers controller:', err);
@@ -36,6 +38,14 @@ const addMember = async (req, res) => {
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM members WHERE phone_number = ?', [phone_number]);
         if (existing.length > 0) {
+            const member = existing[0];
+            if (member.is_active === 0 || member.is_active === false) {
+                await db.upbsPool.query(
+                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, trust_points = 100, points_frozen = 0 WHERE phone_number = ?',
+                    [firstname, lastname, phone_number]
+                );
+                return res.json({ success: true, message: 'User account re-activated and updated successfully!' });
+            }
             return res.status(400).json({ success: false, error: 'Phone number already registered' });
         }
 
@@ -62,6 +72,14 @@ const addBicycle = async (req, res) => {
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM bicycle_codes WHERE bicycle_code = ?', [bicycle_code]);
         if (existing.length > 0) {
+            const bike = existing[0];
+            if (bike.is_active === 0 || bike.is_active === false) {
+                await db.upbsPool.query(
+                    'UPDATE bicycle_codes SET combination_lock = ?, previous_location = ?, new_location = ?, is_active = 1, condition_status = "Good", is_disabled = 0 WHERE bicycle_code = ?',
+                    [combination_lock, initial_location, initial_location, bicycle_code]
+                );
+                return res.json({ success: true, message: 'Bicycle re-activated and updated successfully!' });
+            }
             return res.status(400).json({ success: false, error: 'Bicycle code already exists' });
         }
 
@@ -88,6 +106,14 @@ const addLocation = async (req, res) => {
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM locations WHERE location_name = ?', [location_name]);
         if (existing.length > 0) {
+            const loc = existing[0];
+            if (loc.is_active === 0 || loc.is_active === false) {
+                await db.upbsPool.query(
+                    'UPDATE locations SET is_active = 1, is_disabled = 0 WHERE location_name = ?',
+                    [location_name]
+                );
+                return res.json({ success: true, message: 'Station re-activated successfully!' });
+            }
             return res.status(400).json({ success: false, error: 'Location name already exists' });
         }
 
@@ -191,7 +217,7 @@ const searchMembers = async (req, res) => {
     const query = req.query.q || '';
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 10",
+            "SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 50",
             [`%${query}%`, `%${query}%`, `%${query}%`]
         );
         return res.json({ success: true, data: rows });
@@ -201,9 +227,13 @@ const searchMembers = async (req, res) => {
     }
 };
 
-// POST /api/admin/bicycles/override
 const overrideBicycle = async (req, res) => {
     const { bicycle_code, combination_lock, condition_status } = req.body;
+
+    if (!combination_lock && !condition_status) {
+        return res.status(400).json({ success: false, error: 'At least one field (combination_lock or condition_status) is required' });
+    }
+
     try {
         let updateQuery = "UPDATE bicycle_codes SET ";
         let params = [];

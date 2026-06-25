@@ -177,52 +177,69 @@ function addLegend() {
 
 // ─────────────────────────────────────────────
 // PLOT MARKERS
-// Adds a pin for each station in STATION_COORDS.
+// Adds a pin for each station in STATION_COORDS if it is active in the database.
 // ─────────────────────────────────────────────
-function plotStationMarkers() {
+async function plotStationMarkers() {
     if (!leafletMap) return;
 
-    Object.entries(STATION_COORDS).forEach(([key, coords]) => {
-        const color = STATION_COLORS[key];
-        const label = STATION_LABELS[key] || key;
+    try {
+        const res = await fetch('/api/locations');
+        const data = await res.json();
+        if (data.success) {
+            const activeStations = data.data
+                .filter(loc => Number(loc.is_disabled) !== 1)
+                .map(loc => loc.location_name.toLowerCase().trim());
 
-        const marker = L.marker(coords, {
-            icon: createStationIcon(color),
-        }).addTo(leafletMap);
+            Object.entries(STATION_COORDS).forEach(([key, coords]) => {
+                const normalizedKey = key.toLowerCase().trim();
+                
+                // Only plot if the station is in the active list fetched from database
+                if (activeStations.includes(normalizedKey)) {
+                    const color = STATION_COLORS[key];
+                    const label = STATION_LABELS[key] || key;
 
-        stationMarkers[key] = marker; // save marker reference
+                    const marker = L.marker(coords, {
+                        icon: createStationIcon(color),
+                    }).addTo(leafletMap);
 
-        // Popup shown when you click a marker
-        marker.bindPopup(`
-            <div style="
-                font-family: Inter, sans-serif;
-                padding: 4px 2px;
-                min-width: 130px;
-            ">
-                <div style="
-                    font-size: 0.85rem;
-                    font-weight: 700;
-                    color: ${color};
-                    margin-bottom: 4px;
-                ">📍 ${label}</div>
-                <div style="
-                    font-size: 0.72rem;
-                    color: #9ca3af;
-                ">UP Bikeshare Station</div>
-            </div>
-        `, {
-            className: 'custom-popup',
-            maxWidth: 180,
-        });
+                    stationMarkers[key] = marker; // save marker reference
 
-        // Tooltip shown on hover (always visible)
-        marker.bindTooltip(label, {
-            permanent: false,
-            direction: 'top',
-            className: 'station-tooltip',
-            offset: [0, -30],
-        });
-    });
+                    // Popup shown when you click a marker
+                    marker.bindPopup(`
+                        <div style="
+                            font-family: Inter, sans-serif;
+                            padding: 4px 2px;
+                            min-width: 130px;
+                        ">
+                            <div style="
+                                font-size: 0.85rem;
+                                font-weight: 700;
+                                color: ${color};
+                                margin-bottom: 4px;
+                            ">📍 ${label}</div>
+                            <div style="
+                                font-size: 0.72rem;
+                                color: #9ca3af;
+                            ">UP Bikeshare Station</div>
+                        </div>
+                    `, {
+                        className: 'custom-popup',
+                        maxWidth: 180,
+                    });
+
+                    // Tooltip shown on hover (always visible)
+                    marker.bindTooltip(label, {
+                        permanent: false,
+                        direction: 'top',
+                        className: 'station-tooltip',
+                        offset: [0, -30],
+                    });
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Failed to fetch locations for map markers:", err);
+    }
 }
 
 // ─────────────────────────────────────────────

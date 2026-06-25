@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchType.value === 'bike') {
             searchInput.placeholder = "Enter Bicycle Code (Leave empty to show all bikes)";
         } else {
-            searchInput.placeholder = "Enter Phone, First Name, or Last Name...";
+            searchInput.placeholder = "Enter Phone, First Name, or Last Name (Leave empty to show all)";
         }
     };
     searchType.addEventListener('change', updatePlaceholder);
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     `;
 
-    // UI Template: Member Result Card (Contains color-coded Trust Points and Adjust/Delete buttons)
+    // UI Template: Member Result Card (Contains color-coded Trust Points, view-only)
     const renderMemberCard = (member) => {
         let trustColor = 'success';
         let trustPoints = parseInt(member.trust_points) || 100;
@@ -47,10 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trustPoints < 50) trustColor = 'danger';
         else if (trustPoints < 80) trustColor = 'warning';
 
+        const isFrozen = member.points_frozen == 1 || member.points_frozen === true || member.points_frozen === 'true';
+        const frozenBadge = isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; font-weight: 600;">FROZEN</span>' : '';
+
         return `
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="fw-bold text-dark mb-0">👤 ${member.firstname} ${member.lastname}</h6>
+                <h6 class="fw-bold text-dark mb-0">👤 ${member.firstname} ${member.lastname} ${frozenBadge}</h6>
             </div>
             <div class="small text-muted mb-3">📱 <span class="text-dark font-monospace">${member.phone_number}</span></div>
             
@@ -58,10 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="d-flex align-items-center gap-2">
                     <span class="small fw-semibold text-muted">Trust Points:</span>
                     <span class="badge bg-${trustColor} fs-6">${trustPoints}</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-warning btn-adjust-points" data-phone="${member.phone_number}">Adjust</button>
-                    <button class="btn btn-sm btn-outline-danger btn-delete-member" data-phone="${member.phone_number}">Delete</button>
                 </div>
             </div>
         </div>
@@ -72,11 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSearch.addEventListener('click', async () => {
         const type = searchType.value;
         const query = searchInput.value.trim();
-
-        if (type !== 'bike' && !query) {
-            searchResults.innerHTML = `<div class="alert alert-warning py-2 small">Please enter a search query.</div>`;
-            return;
-        }
 
         const token = sessionStorage.getItem('adminToken');
         if (!token) {

@@ -9,7 +9,7 @@ const checkMember = async (req, res) => {
 
     try {
         const [rows] = await db.upbsPool.query(
-            'SELECT * FROM members WHERE phone_number = ?',
+            'SELECT * FROM members WHERE phone_number = ? AND is_active = 1',
             [phone_number]
         );
 

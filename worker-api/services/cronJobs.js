@@ -10,7 +10,10 @@ async function sendSMS(phoneNumber, text) {
         console.log(`[Cron] Sending SMS to ${phoneNumber}: "${text}"`);
         const response = await fetch(`${GATEWAY_URL}/api/sms/send`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+            },
             body: JSON.stringify({ phoneNumber, message: text })
         });
         if (!response.ok) {

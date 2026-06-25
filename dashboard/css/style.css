@@ -424,7 +424,7 @@ body {
 }
 
 .modal-card.admin-active {
-    width: 820px;
+    width: 1080px;
     padding: 2.25rem 2.25rem;
     max-height: 98vh;
     overflow-y: hidden;
@@ -815,4 +815,42 @@ body {
 /* Custom text muted class color mapping to support dark mode */
 .text-muted {
     color: var(--text-muted) !important;
+}
+
+/* Admin Settings Sidebar & Tabs Layout */
+.admin-tab-btn {
+    transition: all 0.2s ease;
+    border-radius: var(--radius-sm) !important;
+    text-align: left !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+}
+
+.admin-tab-btn:hover {
+    background-color: var(--bg-main) !important;
+    color: var(--text-h) !important;
+}
+
+.admin-tab-btn.active {
+    background-color: var(--up-maroon) !important;
+    color: #ffffff !important;
+}
+
+.admin-tab-content {
+    animation: fadeIn 0.25s ease-out;
+}
+
+#station-toggle-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 0.75rem !important;
+    align-content: start;
+}
+
+#bike-override-list,
+#members-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)) !important;
+    gap: 1rem !important;
+    align-content: start;
 }

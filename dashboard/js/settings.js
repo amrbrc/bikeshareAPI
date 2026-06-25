@@ -133,6 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (registrationContainer) registrationContainer.style.display = 'none';
         if (settingsContainer) settingsContainer.style.display = 'none';
         if (logsContainer) logsContainer.style.display = 'none';
+        if (mainWrapper) {
+            mainWrapper.style.overflowY = 'auto';
+            mainWrapper.scrollTop = 0;
+        }
 
         if (navDashboard) navDashboard.classList.remove('active');
         if (navMap) navMap.classList.remove('active');
@@ -195,8 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             hideAllViews();
             navLogs.classList.add('active');
-            if (logsContainer) logsContainer.style.display = 'block';
-            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            if (logsContainer) logsContainer.style.display = 'flex';
+            if (mainWrapper) mainWrapper.style.overflowY = 'hidden';
             loadLogs();
         });
     }
@@ -246,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = sessionStorage.getItem('adminToken');
         const settingsModalCard = document.getElementById('settings-modal-card');
         const btnCloseSettings = document.getElementById('btn-close-settings');
-        if (token === 'admin-logged-in-token') {
+        if (token) {
             if (loginView) {
                 loginView.classList.add('d-none');
                 loginView.classList.remove('d-flex');
@@ -578,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isDisabled = bike.is_disabled === 1;
 
             const div = document.createElement('div');
-            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item d-none';
+            div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item';
             div.style.background = 'var(--bg-main)';
             div.dataset.bikeCode = code;
 
@@ -598,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="row g-2 align-items-center mt-1">
                     <div class="col-5">
-                        <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">Lock Code</label>
+                        <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">New Lock Code</label>
                         <input type="text" class="form-control form-control-sm border-0 shadow-sm bike-lock-input" placeholder="0000">
                     </div>
                     <div class="col-4">
@@ -747,6 +751,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const frozenBadge = isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; font-weight: 600;">FROZEN</span>' : '';
 
             const div = document.createElement('div');
+            div.className = 'member-item';
+            div.dataset.phone = mem.phone_number || '';
+            div.dataset.name = `${mem.firstname} ${mem.lastname}`.toLowerCase();
             div.style.background = 'var(--bg-main)';
             div.style.padding = '10px 14px';
             div.style.borderRadius = 'var(--radius-sm)';
@@ -953,6 +960,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Run initial session check to gate the dashboard on page load
     checkSession();
 
+    // Admin Settings Tab Switching Logic
+    const tabBtns = document.querySelectorAll('.admin-tab-btn');
+    const tabContents = document.querySelectorAll('.admin-tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            const targetId = btn.dataset.target;
+            tabContents.forEach(content => {
+                if (content.id === targetId) {
+                    content.classList.remove('d-none');
+                } else {
+                    content.classList.add('d-none');
+                }
+            });
+        });
+    });
+
     // Quick Bike Override Search Filter
     const searchBikeOverride = document.getElementById('search-bike-override');
     const btnSearchBikeOverride = document.getElementById('btn-search-bike-override');
@@ -975,6 +1004,32 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSearchBikeOverride.addEventListener('click', executeSearch);
         searchBikeOverride.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') executeSearch();
+        });
+    }
+
+    // Quick Member Search Filter
+    const searchMemberOverride = document.getElementById('search-member-override');
+    const btnSearchMemberOverride = document.getElementById('btn-search-member-override');
+
+    if (searchMemberOverride && btnSearchMemberOverride) {
+        const executeMemberSearch = () => {
+            const query = searchMemberOverride.value.trim().toLowerCase();
+            const items = document.querySelectorAll('.member-item');
+
+            items.forEach(item => {
+                const phone = (item.dataset.phone || '').toLowerCase();
+                const name = (item.dataset.name || '').toLowerCase();
+                if (query === '' || phone.includes(query) || name.includes(query)) {
+                    item.classList.remove('d-none');
+                } else {
+                    item.classList.add('d-none');
+                }
+            });
+        };
+
+        btnSearchMemberOverride.addEventListener('click', executeMemberSearch);
+        searchMemberOverride.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeMemberSearch();
         });
     }
 });

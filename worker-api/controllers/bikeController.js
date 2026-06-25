@@ -9,11 +9,11 @@ const search = async (req, res) => {
     }
 
     try {
-        // 1. Retrieve member information
+        // 1. Retrieve member information (must be active)
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
@@ -23,34 +23,71 @@ const search = async (req, res) => {
 
         const { lastname, firstname, phone_number } = memberRecords[0];
 
-        // 2. Retrieve the location of the bicycle
-        const locationQuery = `
-            SELECT new_location
-            FROM bicycle_codes
-            WHERE bicycle_code = ?
-        `;
-        const [locationRecords] = await db.upbsPool.query(locationQuery, [bicycleCode]);
+        // 2. Check if the query is a location/building name instead of a bike code
+        const [locationRows] = await db.upbsPool.query(
+            "SELECT location_name FROM locations WHERE location_name = ? AND is_active = 1",
+            [bicycleCode]
+        );
 
-        if (locationRecords.length === 0) {
-            return res.json({ reply: `Bicycle code ${bicycleCode} not found.` });
+        let replyMessage = "";
+
+        if (locationRows.length > 0) {
+            // It is a building search! Fetch all active and enabled bikes at this location
+            const [bikes] = await db.upbsPool.query(
+                "SELECT bicycle_code, condition_status FROM bicycle_codes WHERE new_location = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)",
+                [bicycleCode]
+            );
+
+            if (bikes.length === 0) {
+                replyMessage = `There are no bicycles available at ${bicycleCode.toUpperCase()} at the moment.`;
+            } else {
+                const list = bikes.map(b => `${b.bicycle_code} (${b.condition_status})`).join(', ');
+                replyMessage = `Bicycles currently at ${bicycleCode.toUpperCase()}: ${list}.`;
+            }
+
+            // Log search building request
+            const logQuery = `
+                INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                VALUES (?, ?, ?, ?, NOW(), ?, ?)
+            `;
+            await db.upbsPool.query(logQuery, [
+                lastname,
+                firstname,
+                phone_number,
+                smsSender,
+                'Search Bldg Request',
+                messageId
+            ]);
+        } else {
+            // It is a bike code search! Retrieve the location of the bicycle
+            const locationQuery = `
+                SELECT new_location
+                FROM bicycle_codes
+                WHERE bicycle_code = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)
+            `;
+            const [locationRecords] = await db.upbsPool.query(locationQuery, [bicycleCode]);
+
+            if (locationRecords.length === 0) {
+                replyMessage = `Bicycle or station code "${bicycleCode}" not found.`;
+            } else {
+                const newLocation = locationRecords[0].new_location;
+                replyMessage = `At the moment, the current location of ${bicycleCode} is at ${newLocation}.`;
+            }
+
+            // Log the search request
+            const logQuery = `
+                INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
+                VALUES (?, ?, ?, ?, NOW(), ?, ?)
+            `;
+            await db.upbsPool.query(logQuery, [
+                lastname,
+                firstname,
+                phone_number,
+                smsSender,
+                'Search Request',
+                messageId
+            ]);
         }
-
-        const newLocation = locationRecords[0].new_location;
-        const replyMessage = `At the moment, the current location of ${bicycleCode} is at ${newLocation}.`;
-
-        // 3. Log the search request
-        const logQuery = `
-            INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID) 
-            VALUES (?, ?, ?, ?, NOW(), ?, ?)
-        `;
-        await db.upbsPool.query(logQuery, [
-            lastname,
-            firstname,
-            phone_number,
-            smsSender,
-            'Search Request',
-            messageId
-        ]);
 
         return res.json({ reply: replyMessage });
 
@@ -73,7 +110,7 @@ const searchAll = async (req, res) => {
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
@@ -83,7 +120,7 @@ const searchAll = async (req, res) => {
         }
 
         // 2. Query to fetch bicycle locations
-        const bicycleQuery = "SELECT bicycle_code, new_location, previous_location FROM bicycle_codes";
+        const bicycleQuery = "SELECT bicycle_code, new_location, previous_location FROM bicycle_codes WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)";
         const [bicycles] = await db.upbsPool.query(bicycleQuery);
 
         let replyMessage = "";
@@ -132,7 +169,7 @@ const locations = async (req, res) => {
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
@@ -189,7 +226,7 @@ const usage = async (req, res) => {
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
@@ -200,7 +237,7 @@ const usage = async (req, res) => {
         const { lastname, firstname, phone_number } = memberRecords[0];
 
         // 2. Validate Bicycle Code
-        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ?";
+        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1";
         const [bicycles] = await db.upbsPool.query(bikeQuery, [bicycleCode]);
 
         if (bicycles.length === 0) {
@@ -580,9 +617,13 @@ const broken = async (req, res) => {
 
                     // Alert the previous user using the new Gateway /api/sms/send endpoint using global fetch
                     try {
-                        await fetch('http://localhost:3000/api/sms/send', {
+                        const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
+                        await fetch(`${gatewayUrl}/api/sms/send`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+                            },
                             body: JSON.stringify({
                                 phoneNumber: prevMember[0].phone_number,
                                 message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`

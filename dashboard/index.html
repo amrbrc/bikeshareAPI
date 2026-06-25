@@ -399,39 +399,109 @@
             </div>
 
             <!-- Admin View -->
-            <div id="settings-admin-view" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 pe-5">
-                    <h3 class="h4 fw-bold text-dark mb-0" style="letter-spacing: -0.02em;">Admin Settings</h3>
-                </div>
-                <div class="row g-4 settings-grid mt-1">
-                    <div class="col-md-6 settings-col d-flex flex-column gap-3">
-                        <div class="settings-section border rounded p-4 d-flex flex-column gap-3 flex-grow-1 shadow-sm"
-                            style="height: 500px;">
-                            <h4 class="settings-section-title h6 fw-bold text-dark mb-2 border-bottom pb-2">Station
-                                Status Control</h4>
-                            <div id="station-toggle-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto"
-                                style="flex: 1; padding-right: 8px;">
-                                <!-- Dynamically populated station status toggles -->
+            <div id="settings-admin-view" style="display: none; height: 100%;">
+                <div class="d-flex h-100" style="min-height: 520px;">
+                    <!-- Left Sidebar Tabs -->
+                    <div class="admin-sidebar border-end pe-3 d-flex flex-column gap-2"
+                        style="width: 220px; flex-shrink: 0;">
+                        <h4 class="h5 fw-bold text-dark mb-3 px-2 mt-1" style="letter-spacing: -0.02em;">Admin Settings
+                        </h4>
+
+                        <button
+                            class="btn admin-tab-btn active d-flex align-items-center gap-2 text-start w-100 py-2.5 px-3 border-0"
+                            data-target="tab-stations" style="background: none; font-size: 0.85rem; font-weight: 600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            Stations Control
+                        </button>
+
+                        <button
+                            class="btn admin-tab-btn d-flex align-items-center gap-2 text-start w-100 py-2.5 px-3 border-0"
+                            data-target="tab-bikes" style="background: none; font-size: 0.85rem; font-weight: 600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <path d="M12 18h.01"></path>
+                            </svg>
+                            Bicycle Fleet
+                        </button>
+
+                        <button
+                            class="btn admin-tab-btn d-flex align-items-center gap-2 text-start w-100 py-2.5 px-3 border-0"
+                            data-target="tab-members" style="background: none; font-size: 0.85rem; font-weight: 600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Registered Members
+                        </button>
+                    </div>
+
+                    <!-- Right Content Area -->
+                    <div class="admin-content-pane flex-grow-1 ps-4 pe-5 overflow-hidden d-flex flex-column"
+                        style="height: 520px;">
+
+                        <!-- Tab 1: Stations Control -->
+                        <div id="tab-stations" class="admin-tab-content d-flex flex-column h-100 gap-3">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <h5 class="fw-bold text-dark mb-0">Station Status Control</h5>
+                                <span class="text-muted small">Toggle station active/disabled status</span>
+                            </div>
+                            <div id="station-toggle-list"
+                                class="custom-scroll d-flex flex-column gap-2 overflow-auto flex-grow-1"
+                                style="padding-right: 8px;">
+                                <!-- Dynamically populated -->
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6 settings-col d-flex flex-column gap-3">
-                        <div class="settings-section border rounded p-4 d-flex flex-column gap-3 flex-grow-1 shadow-sm"
-                            style="height: 500px;">
-                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                <h4 class="settings-section-title h6 fw-bold text-dark mb-0">Bike Modification</h4>
-                                <div class="input-group input-group-sm shadow-sm" style="width: 200px;">
+
+                        <!-- Tab 2: Bicycle Fleet -->
+                        <div id="tab-bikes" class="admin-tab-content d-none d-flex flex-column h-100 gap-3">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <h5 class="fw-bold text-dark mb-0">Bicycle Modification</h5>
+                                <div class="input-group input-group-sm shadow-sm"
+                                    style="width: 220px; margin-bottom: 0;">
                                     <input type="text" id="search-bike-override" class="form-control border-0"
-                                        placeholder="Search Bike" style="font-size: 0.75rem;">
-                                    <button class="btn btn-primary fw-bold px-2 border-0" id="btn-search-bike-override"
-                                        style="background-color: var(--up-maroon); font-size: 0.75rem;">Search</button>
+                                        placeholder="Enter Bike Code" style="font-size: 0.75rem;">
+                                    <button class="btn btn-primary fw-bold px-3 border-0" id="btn-search-bike-override"
+                                        style="background-color: var(--up-maroon); font-size: 0.75rem;">Go</button>
                                 </div>
                             </div>
-                            <div id="bike-override-list" class="custom-scroll d-flex flex-column gap-3 overflow-auto"
-                                style="flex: 1; padding-right: 8px;">
-                                <!-- Dynamically populated bike override controls -->
+                            <div id="bike-override-list"
+                                class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1"
+                                style="padding-right: 8px;">
+                                <!-- Dynamically populated -->
                             </div>
                         </div>
+
+                        <!-- Tab 3: Registered Members -->
+                        <div id="tab-members" class="admin-tab-content d-none d-flex flex-column h-100 gap-3">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <h5 class="fw-bold text-dark mb-0">Registered Members</h5>
+                                <div class="input-group input-group-sm shadow-sm"
+                                    style="width: 220px; margin-bottom: 0;">
+                                    <input type="text" id="search-member-override" class="form-control border-0"
+                                        placeholder="Enter Name or Phone" style="font-size: 0.50rem;">
+                                    <button class="btn btn-primary fw-bold px-3 border-0"
+                                        id="btn-search-member-override"
+                                        style="background-color: var(--up-maroon); font-size: 0.75rem;">Go</button>
+                                </div>
+                            </div>
+                            <div id="members-list"
+                                class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1"
+                                style="padding-right: 8px;">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -440,8 +510,8 @@
 
     <!-- REPORT LOGS CONTAINER -->
     <div id="logs-container" class="data-container container-fluid px-4 py-3"
-        style="display: none; height: calc(100vh - 3rem); box-sizing: border-box; overflow: auto;">
-        <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+        style="display: none; height: 100%; box-sizing: border-box; overflow: hidden; flex-direction: column; padding-bottom: 0 !important;">
+        <div class="d-flex align-items-center mb-4 pb-3 border-bottom flex-shrink-0">
             <div
                 style="width: 5px; height: 32px; background-color: var(--up-maroon); border-radius: 4px; margin-right: 12px;">
             </div>
@@ -453,17 +523,21 @@
                     dispute logs</p>
             </div>
         </div>
-        <div class="row g-4">
+        <div class="row g-4 flex-grow-1 overflow-hidden" style="min-height: 0; margin-bottom: 0; padding-bottom: 1.5rem;">
             <!-- Left Column: Maintenance Queue -->
-            <div class="col-md-6 d-flex flex-column gap-3">
-                <div class="settings-section border-0 rounded-4 p-4 p-xl-5 d-flex flex-column gap-4 shadow h-100" style="background-color: var(--bg-panel); min-height: 400px;">
-                    <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-1">
+            <div class="col-md-6 d-flex flex-column h-100 overflow-hidden">
+                <div class="settings-section border-0 rounded-4 p-4 p-xl-5 d-flex flex-column gap-4 shadow h-100 overflow-hidden"
+                    style="background-color: var(--bg-panel); min-height: 0;">
+                    <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-1 flex-shrink-0">
                         <div>
-                            <h4 class="settings-section-title h5 fw-bolder mb-0" style="letter-spacing: -0.02em; color: var(--text-h);">Maintenance Queue</h4>
-                            <p class="small mb-0" style="font-weight: 500; color: var(--text-muted);">Bikes reported as broken and needing repair.</p>
+                            <h4 class="settings-section-title h5 fw-bolder mb-0"
+                                style="letter-spacing: -0.02em; color: var(--text-h);">Maintenance Queue</h4>
+                            <p class="small mb-0" style="font-weight: 500; color: var(--text-muted);">Bikes reported as
+                                broken and needing repair.</p>
                         </div>
                     </div>
-                    <div id="maintenance-queue-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto" style="flex: 1; padding-right: 5px;">
+                    <div id="maintenance-queue-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto flex-grow-1"
+                        style="padding-right: 5px;">
                         <!-- We will populate this with real database records in Step 5 -->
                         <div class="text-center small text-muted mt-4">Loading queue...</div>
                     </div>
@@ -471,15 +545,19 @@
             </div>
 
             <!-- Right Column: Honesty Logs -->
-            <div class="col-md-6 d-flex flex-column gap-3">
-                <div class="settings-section border-0 rounded-4 p-4 p-xl-5 d-flex flex-column gap-4 shadow h-100" style="background-color: var(--bg-panel); min-height: 400px;">
-                    <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-1">
+            <div class="col-md-6 d-flex flex-column h-100 overflow-hidden">
+                <div class="settings-section border-0 rounded-4 p-4 p-xl-5 d-flex flex-column gap-4 shadow h-100 overflow-hidden"
+                    style="background-color: var(--bg-panel); min-height: 0;">
+                    <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-1 flex-shrink-0">
                         <div>
-                            <h4 class="settings-section-title h5 fw-bolder mb-0" style="letter-spacing: -0.02em; color: var(--text-h);">Honesty & Dispute Logs</h4>
-                            <p class="small mb-0" style="font-weight: 500; color: var(--text-muted);">Recent trust point deductions and dispute history.</p>
+                            <h4 class="settings-section-title h5 fw-bolder mb-0"
+                                style="letter-spacing: -0.02em; color: var(--text-h);">Honesty & Dispute Logs</h4>
+                            <p class="small mb-0" style="font-weight: 500; color: var(--text-muted);">Recent trust point
+                                deductions and dispute history.</p>
                         </div>
                     </div>
-                    <div id="honesty-logs-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto" style="flex: 1; padding-right: 5px;">
+                    <div id="honesty-logs-list" class="custom-scroll d-flex flex-column gap-2 overflow-auto flex-grow-1"
+                        style="padding-right: 5px;">
                         <!-- We will populate this with real database records in Step 5 -->
                         <div class="text-center small text-muted mt-4">Loading logs...</div>
                     </div>

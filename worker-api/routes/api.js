@@ -34,6 +34,7 @@ router.post('/how', helpController.how);
 router.post('/admin/login', adminController.login);
 
 // Admin Routes (Secured with authMiddleware)
+router.get('/admin/members', authMiddleware, adminController.getMembers);
 router.post('/admin/members', authMiddleware, adminController.addMember);
 router.post('/admin/bicycles', authMiddleware, adminController.addBicycle);
 router.post('/admin/locations', authMiddleware, adminController.addLocation);

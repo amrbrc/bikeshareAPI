@@ -1,4 +1,5 @@
 // gateway-server/server.js
+require('dotenv').config();
 
 // Import required dependencies
 const db = require('./db');
@@ -11,6 +12,13 @@ app.use(express.json());
 
 // This endpoint allows the worker-api to trigger an outgoing SMS
 app.post('/api/sms/send', async (req, res) => {
+    const apiKey = req.headers['x-api-key'];
+    const configuredApiKey = process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026';
+
+    if (!apiKey || apiKey !== configuredApiKey) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
+    }
+
     const { phoneNumber, message } = req.body;
     if (!phoneNumber || !message) {
         return res.status(400).json({ error: 'Missing phoneNumber or message' });
@@ -175,6 +183,11 @@ function sendReply(phoneNumber, text) {
 
         // This runs the actual terminal command to the modem
         const gammu = spawn('gammu-smsd-inject', ['TEXT', phoneNumber, '-text', text]);
+
+        gammu.on('error', (err) => {
+            console.error(`Failed to spawn gammu-smsd-inject:`, err.message);
+            resolve(); // Resolve to avoid blocking the queue
+        });
 
         gammu.on('close', (code) => {
             if (code === 0) {
