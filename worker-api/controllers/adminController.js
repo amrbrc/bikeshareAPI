@@ -185,6 +185,17 @@ const resolveDispute = async (req, res) => {
 
         const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
 
+        // Retrieve reporter's actual name if available
+        let reporterLastName = 'System';
+        let reporterFirstName = 'Dispute Resolution';
+        if (reporterPhone) {
+            const [reporterRows] = await db.upbsPool.query("SELECT firstname, lastname FROM members WHERE phone_number = ?", [reporterPhone]);
+            if (reporterRows.length > 0) {
+                reporterLastName = reporterRows[0].lastname;
+                reporterFirstName = reporterRows[0].firstname;
+            }
+        }
+
         if (verdict === 'guilty') {
             if (conditionStatus === 'Missing') {
                 await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 50) WHERE phone_number = ?", [phone_number]);
@@ -218,7 +229,7 @@ const resolveDispute = async (req, res) => {
                 // Log the reward
                 await db.upbsPool.query(
                     "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'Conflict Report Reward']
+                    [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Conflict Report Reward']
                 );
 
                 try {
@@ -260,7 +271,7 @@ const resolveDispute = async (req, res) => {
                 // Log the false report penalty
                 await db.upbsPool.query(
                     "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'False Report Penalty']
+                    [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'False Report Penalty']
                 );
 
                 // Text the false reporter about their points deduction
@@ -312,7 +323,7 @@ const resolveDispute = async (req, res) => {
                 // Log the reward
                 await db.upbsPool.query(
                     "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-                    ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'Neutral Report Reward']
+                    [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Neutral Report Reward']
                 );
 
                 try {
