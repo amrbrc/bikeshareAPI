@@ -547,6 +547,9 @@ const good = async (req, res) => {
         await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycleCode]);
         await db.upbsPool.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [history[0].id]);
 
+        // Reward previous user for being honest (ceiling of 120 points)
+        await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+
         return res.json({ reply: `Thank you! Bike ${bicycleCode} condition confirmed as Good.` });
     } catch (err) {
         console.error(err);
@@ -626,8 +629,8 @@ const broken = async (req, res) => {
                 [smsSender, bicycleCode]
             );
 
-            // Reward Reporter (Next User)
-            await upbsConn.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [smsSender]);
+            // Reward Reporter (Next User) with a ceiling of 120 points
+            await upbsConn.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [smsSender]);
 
             await upbsConn.query(
                 "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",

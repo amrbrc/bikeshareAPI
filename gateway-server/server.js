@@ -99,7 +99,7 @@ async function pollInbox() {
                 const goodMatch = smsMessage.match(/^(\w+)\s+good$|^good\s+(\w+)$/i);
                 const brokenMatch = smsMessage.match(/^(\w+)\s+broken$|^broken\s+(\w+)$/i);
                 const fixedMatch = smsMessage.match(/^(\w+)\s+fixed$|^fixed\s+(\w+)$/i);
-                const pointsMatch = smsMessage.match(/^(trust\s*points|points|score)$/i);
+                const pointsMatch = smsMessage.match(/^points$/i);
 
                 if (smsMessage === 'search all') {
                     endpoint = '/api/search-all';
