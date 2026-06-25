@@ -500,9 +500,10 @@ const overridePoints = async (req, res) => {
     }
 
     try {
+        let clampedPoints = Math.max(0, Math.min(120, Number(trust_points)));
         const [result] = await db.upbsPool.query(
             "UPDATE members SET trust_points = ? WHERE phone_number = ? AND (is_active = 1 OR is_active IS NULL)",
-            [Number(trust_points), phone_number]
+            [clampedPoints, phone_number]
         );
 
         if (result.affectedRows === 0) {
