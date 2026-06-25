@@ -854,3 +854,220 @@ body {
     gap: 1rem !important;
     align-content: start;
 }
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVENESS & CELLPHONE OPTIMIZATIONS
+   ═══════════════════════════════════════════ */
+
+/* Mobile Header (Hidden on large screens by default) */
+.mobile-header {
+    display: none !important;
+}
+
+@media (max-width: 991.98px) {
+    body {
+        flex-direction: column;
+        height: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    /* Show mobile header */
+    .mobile-header {
+        display: flex !important;
+    }
+
+    /* Sidebar transforms into offcanvas drawer */
+    .sidebar {
+        position: fixed !important;
+        top: 0;
+        left: -280px;
+        height: 100vh !important;
+        width: 280px !important;
+        z-index: 1050 !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15) !important;
+        transform: translateX(0);
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(280px) !important;
+    }
+
+    /* Sidebar backdrop */
+    .sidebar-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 1040;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Main wrapper fits full screen width */
+    .main-wrapper {
+        width: 100% !important;
+        min-height: calc(100vh - 60px);
+        overflow-y: visible !important;
+    }
+
+    /* Map section height */
+    .hero-map-section {
+        height: 280px !important;
+    }
+
+    /* Data container single column */
+    .data-container {
+        grid-template-columns: 1fr !important;
+        padding: 1rem 1.25rem !important;
+        gap: 1.25rem !important;
+    }
+
+    .col-left {
+        position: static !important; /* Remove sticky on mobile */
+    }
+
+    /* Stats flex-wrap */
+    .top-stats {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    .stat-box {
+        padding: 0.85rem 1.25rem !important;
+    }
+
+    /* Grid layouts inside settings list overrides */
+    #station-toggle-list {
+        grid-template-columns: 1fr !important;
+    }
+
+    #bike-override-list,
+    #members-list {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Modal dialog overrides for mobile */
+    .modal-card {
+        width: 95% !important;
+        padding: 1.5rem !important;
+        margin: 10px auto;
+        max-height: 95vh;
+    }
+
+    .modal-card.admin-active {
+        width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        padding: 1.5rem !important;
+        overflow-y: auto !important;
+    }
+
+    .modal-card.admin-active #settings-admin-view {
+        overflow-y: visible;
+        padding-bottom: 3rem;
+    }
+
+    .modal-card.admin-active .settings-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1.5rem !important;
+    }
+
+    /* Admin Settings sidebar and panels layout overrides */
+    .modal-card.admin-active .d-flex.h-100 {
+        flex-direction: column !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
+
+    .modal-card.admin-active .admin-sidebar {
+        width: 100% !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding-bottom: 0.75rem !important;
+        padding-right: 0 !important;
+        margin-bottom: 1.25rem !important;
+        flex-shrink: 0 !important;
+        gap: 0.5rem !important;
+        /* hide scrollbar */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .modal-card.admin-active .admin-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .modal-card.admin-active .admin-sidebar h4 {
+        display: none !important;
+    }
+
+    .modal-card.admin-active .admin-sidebar button {
+        white-space: nowrap !important;
+        flex: 1 0 auto !important;
+        text-align: center !important;
+        padding: 8px 16px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .modal-card.admin-active .admin-content-pane {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow: visible !important;
+    }
+
+    .modal-card.admin-active .admin-tab-content .d-flex.justify-content-between {
+        flex-direction: column !important;
+        align-items: start !important;
+        gap: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .modal-card.admin-active .admin-tab-content .input-group {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .modal-card.admin-active .custom-scroll {
+        overflow-y: visible !important;
+        max-height: none !important;
+    }
+
+    .modal-card.admin-active .settings-section {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    /* Analytics containers size */
+    #analytics-container {
+        height: auto !important;
+        overflow-y: visible !important;
+        padding: 1rem 1.25rem !important;
+    }
+
+    #analytics-container > .row {
+        height: auto !important;
+    }
+
+    #analytics-container .col-lg-6 {
+        height: 350px !important;
+        margin-bottom: 1rem;
+    }
+}

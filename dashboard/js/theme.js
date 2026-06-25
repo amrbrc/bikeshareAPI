@@ -40,4 +40,38 @@ initTheme();
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('theme-toggle');
     if (btn) btn.addEventListener('click', toggleTheme);
+
+    // --- Mobile Menu Toggle & Backdrop Overlay ---
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+
+    const toggleBtn = document.getElementById('mobile-menu-toggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-open');
+        });
+    }
+
+    // Close sidebar on backdrop click
+    backdrop.addEventListener('click', () => {
+        document.body.classList.remove('sidebar-open');
+    });
+
+    // Auto-close sidebar when clicking any navigation link
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            document.body.classList.remove('sidebar-open');
+        });
+    });
+
+    // Mobile live clock handler
+    const mobileTimeEl = document.getElementById('mobile-live-time');
+    if (mobileTimeEl) {
+        setInterval(() => {
+            const now = new Date();
+            mobileTimeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }, 1000);
+    }
 });

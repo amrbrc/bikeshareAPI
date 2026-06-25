@@ -660,12 +660,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </label>
                 </div>
                 
-                <div class="row g-2 align-items-center mt-1">
-                    <div class="col-5">
+                <div class="row g-2 align-items-end mt-1">
+                    <div class="col-6 col-sm-5">
                         <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">New Lock Code</label>
                         <input type="text" class="form-control form-control-sm border-0 shadow-sm bike-lock-input" placeholder="0000">
                     </div>
-                    <div class="col-4">
+                    <div class="col-6 col-sm-4">
                         <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">Status</label>
                         <select class="form-select form-select-sm border-0 shadow-sm bike-status-select">
                             <option value="Good" ${bike.condition_status === 'Good' ? 'selected' : ''}>Good</option>
@@ -674,8 +674,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <option value="Missing" ${bike.condition_status === 'Missing' ? 'selected' : ''}>Missing</option>
                         </select>
                     </div>
-                    <div class="col-3 d-flex align-items-end">
-                        <button class="btn btn-sm btn-primary w-100 fw-bold border-0 btn-save-bike" style="background-color: var(--up-maroon);">Save</button>
+                    <div class="col-12 col-sm-3 mt-2 mt-sm-0">
+                        <button class="btn btn-sm btn-primary w-100 fw-bold border-0 btn-save-bike" style="background-color: var(--up-maroon); height: 31px;">Save</button>
                     </div>
                 </div>
 
@@ -848,12 +848,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionDiv.style.borderTop = '1px dashed var(--border)';
 
                 actionDiv.innerHTML = `
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Resolve Dispute (Enter Disputed Bike Code):</div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <input type="text" class="form-control settings-input" placeholder="Bike Code" style="height: 28px; font-size: 0.75rem; width: 80px;">
-                        <button class="btn btn-sm btn-success py-0 px-2 btn-innocent" style="font-size: 0.7rem; font-weight: 600;">Innocent</button>
-                        <button class="btn btn-sm btn-danger py-0 px-2 btn-guilty" style="font-size: 0.7rem; font-weight: 600;">Guilty</button>
-                        <button class="btn btn-sm btn-secondary py-0 px-2 btn-neutral" style="font-size: 0.7rem; font-weight: 600;">Neutral</button>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Resolve Dispute (Enter Disputed Bike Code):</div>
+                    <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+                        <input type="text" class="form-control settings-input flex-grow-1" placeholder="Bike Code" style="height: 32px; font-size: 0.75rem; min-width: 70px;">
+                        <div class="d-flex gap-1 flex-grow-1">
+                            <button class="btn btn-sm btn-success flex-fill btn-innocent" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                            <button class="btn btn-sm btn-danger flex-fill btn-guilty" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                            <button class="btn btn-sm btn-secondary flex-fill btn-neutral" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                        </div>
                     </div>
                 `;
 
