@@ -41,7 +41,11 @@ app.listen(GATEWAY_PORT, () => {
 const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
 
 // Main polling function to check for new SMS messages
+let isPolling = false;
 async function pollInbox() {
+    if (isPolling) return;
+    isPolling = true;
+
     try {
         // Select all columns from 'inbox' where Processed is 'false'
         const [rows] = await db.query("SELECT * FROM inbox WHERE Processed='false'");
@@ -169,6 +173,8 @@ async function pollInbox() {
         }
     } catch (error) {
         console.error("Database polling error:", error);
+    } finally {
+        isPolling = false;
     }
 }
 
