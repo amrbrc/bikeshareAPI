@@ -159,7 +159,7 @@ const startHandshakeReminderJob = () => {
 
             for (const row of records) {
                 console.log(`[Cron] Sending handshake reminder for Bike ${row.bicycle_code}`);
-                const text = `Reminder: Please confirm the condition of Bike ${row.bicycle_code}. Reply '${row.bicycle_code} GOOD' or '${row.bicycle_code} BROKEN' and take a photo of the bike at the rack as proof.`;
+                const text = `Reminder: Please confirm the condition of Bike ${row.bicycle_code}. Reply 'GOOD ${row.bicycle_code}' or 'BROKEN ${row.bicycle_code}' and take a photo of the bike at the rack as proof.`;
                 const success = await sendSMS(row.phone_number, text);
                 if (success) {
                     await db.upbsPool.query(
