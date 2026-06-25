@@ -87,6 +87,55 @@ const startBorrowRemindersJob = () => {
     });
 };
 
+// Job 1.5 (Every 10 mins): 6-Hour Timeout Penalty
+const startSixHourPenaltyJob = () => {
+    cron.schedule('*/10 * * * *', async () => {
+        console.log('[Cron] Running 6-Hour borrow limit check...');
+        try {
+            // Find active borrowings that exceed 6 hours and haven't been penalized yet
+            const query = `
+                SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.borrowed_at, 
+                       m.phone_number
+                FROM bicycle_history bh
+                JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
+                WHERE bh.done_text_received = 0 
+                  AND bc.condition_status = 'Borrowed'
+                  AND bh.penalty_6h_applied = 0
+                  AND bh.borrowed_at < NOW() - INTERVAL 6 HOUR
+            `;
+            const [records] = await db.upbsPool.query(query);
+
+            for (const row of records) {
+                console.log(`[Cron] Applying 6-hour penalty for Bike ${row.bicycle_code} to ${row.borrowed_by}`);
+                
+                // Deduct 5 points
+                await db.upbsPool.query(
+                    'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5) WHERE phone_number = ?',
+                    [row.phone_number]
+                );
+
+                // Log the penalty
+                await db.upbsPool.query(
+                    "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                    ['System', 'Cron Jobs', row.phone_number, row.phone_number, '6-Hour Penalty Applied']
+                );
+
+                // Mark penalty as applied
+                await db.upbsPool.query(
+                    'UPDATE bicycle_history SET penalty_6h_applied = 1 WHERE id = ?',
+                    [row.id]
+                );
+
+                const text = `ALERT: Your 6-hour borrow limit for Bike ${row.bicycle_code} has expired. A -5 point penalty has been applied to your trust points. Please return the bike immediately.`;
+                await sendSMS(row.phone_number, text);
+            }
+        } catch (err) {
+            console.error('[Cron] Error in 6H penalty job:', err);
+        }
+    });
+};
+
 // Job 2 (Every 2 mins): 5-Minute Pending_Status handshake photo proof reminder
 const startHandshakeReminderJob = () => {
     cron.schedule('*/2 * * * *', async () => {
@@ -222,6 +271,7 @@ const start24hReminderJob = () => {
 const initCronJobs = () => {
     console.log('[Cron] Initializing background timer tasks...');
     startBorrowRemindersJob();
+    startSixHourPenaltyJob();
     startHandshakeReminderJob();
     startUnrepairedDamageJob();
     start24hReminderJob();

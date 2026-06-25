@@ -353,6 +353,14 @@ const borrow = async (req, res) => {
             return res.json({ reply: "Account frozen due to dispute." });
         }
 
+        // Apply Gatekeeper check for multiple simultaneous borrows
+        const currentUserName = `${user.firstname} ${user.lastname}`;
+        const [activeTrips] = await upbsConn.query("SELECT id FROM bicycle_history WHERE borrowed_by = ? AND done_text_received = 0 LIMIT 1", [currentUserName]);
+        if (activeTrips.length > 0) {
+            await upbsConn.rollback();
+            return res.json({ reply: "You already have an active bike checked out. Please return it and text 'done' before borrowing another." });
+        }
+
         // 2. Validate Bicycle Code
         const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL) FOR UPDATE";
         const [bicycles] = await upbsConn.query(bikeQuery, [bicycleCode]);
