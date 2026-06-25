@@ -365,24 +365,11 @@ const borrow = async (req, res) => {
         const bicycle = bicycles[0];
 
         // Apply Gatekeeper check for bicycle condition
-        if (bicycle.condition_status !== 'Good' && bicycle.condition_status !== 'Pending_Status') {
+        if (bicycle.condition_status !== 'Good') {
             await upbsConn.rollback();
             return res.json({ reply: "Bike unavailable." });
         }
 
-        // Auto-Good Resolution: If the bike was in Pending_Status, the next user borrowing it automatically implies it is Good!
-        if (bicycle.condition_status === 'Pending_Status') {
-            // Find the last history row for this bike to reward the previous user
-            const [lastHistory] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1", [bicycleCode]);
-
-            if (lastHistory.length > 0) {
-                // Mark the condition confirmed in history
-                await upbsConn.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [lastHistory[0].id]);
-
-                // Reward previous user for being honest (ceiling of 120 points)
-                await upbsConn.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", [lastHistory[0].borrowed_by]);
-            }
-        }
 
         // Helper function for location validation inside the handler
         const validateLoc = async (loc) => {
@@ -530,6 +517,23 @@ const done = async (req, res) => {
             [bicycleCode]
         );
 
+        // Reward the PREVIOUS user if they accurately confirmed the condition as good
+        const [historyRecords] = await db.upbsPool.query(
+            "SELECT borrowed_by, condition_confirmed FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2",
+            [bicycleCode]
+        );
+        
+        if (historyRecords.length > 1) {
+            const prevUser = historyRecords[1];
+            if (prevUser.condition_confirmed === 1) {
+                // Reward previous user for being honest (ceiling of 120 points)
+                await db.upbsPool.query(
+                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", 
+                    [prevUser.borrowed_by]
+                );
+            }
+        }
+
         return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply 'GOOD ${bicycleCode}' or 'BROKEN ${bicycleCode}'. Please take a photo of the bike at the rack as proof.` });
     } catch (err) {
         console.error(err);
@@ -561,8 +565,7 @@ const good = async (req, res) => {
         await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycleCode]);
         await db.upbsPool.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [history[0].id]);
 
-        // Reward previous user for being honest (ceiling of 120 points)
-        await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+
 
         return res.json({ reply: `Thank you! Bike ${bicycleCode} condition confirmed as Good.` });
     } catch (err) {

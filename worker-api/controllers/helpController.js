@@ -22,7 +22,7 @@ const help = async (req, res) => {
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
-        const replyMessage = 'Cmds: 1. <bike> <from> to <dest> | 2. locations | 3. search <bike/bldg> | 4. done <bike> | 5. broken <bike> | 6. points';
+        const replyMessage = 'Cmds: 1. <bike> <from> to <dest> | 2. locations | 3. search <bike/bldg> | 4. done <bike> | 5. good/broken <bike> | 6. points';
 
         // 2. Log the help request
         const logQuery = `
