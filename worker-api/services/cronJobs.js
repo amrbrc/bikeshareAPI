@@ -108,7 +108,7 @@ const startSixHourPenaltyJob = () => {
 
             for (const row of records) {
                 console.log(`[Cron] Applying 6-hour penalty for Bike ${row.bicycle_code} to ${row.borrowed_by}`);
-                
+
                 // Deduct 5 points
                 await db.upbsPool.query(
                     'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5) WHERE phone_number = ?',
@@ -252,7 +252,7 @@ const start24hReminderJob = () => {
                     const member = members[0];
                     console.log(`[Cron] Sending 24h repair warning for Bike ${bike.bicycle_code}`);
 
-                    const text = `REMINDER: You have 24 hours left to repair Bike ${bike.bicycle_code} before a -20 demerit is applied to your account.`;
+                    const text = `REMINDER: You have 24 hours left to repair Bike ${bike.bicycle_code} before a -10 demerit is applied to your account.`;
                     const success = await sendSMS(member.phone_number, text);
 
                     if (success) {
