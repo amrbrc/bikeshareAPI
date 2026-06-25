@@ -171,7 +171,7 @@ const resolveDispute = async (req, res) => {
         const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
 
         if (verdict === 'guilty') {
-            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 30) WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 15) WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             
             // Text the borrower that they are guilty
@@ -184,7 +184,7 @@ const resolveDispute = async (req, res) => {
                     },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven guilty. A point was deducted to ur trust point.`
+                        message: `You have been proven guilty. 15 points were deducted from your trust points.`
                     })
                 });
             } catch (e) {

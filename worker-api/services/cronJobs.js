@@ -147,7 +147,7 @@ const startUnrepairedDamageJob = () => {
                     console.log(`[Cron] Applying penalty for Bike ${bike.bicycle_code} to ${member.borrowed_by}`);
 
                     await db.upbsPool.query(
-                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 20) WHERE phone_number = ?',
+                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 10) WHERE phone_number = ?',
                         [member.phone_number]
                     );
 
@@ -156,7 +156,7 @@ const startUnrepairedDamageJob = () => {
                         [bike.bicycle_code]
                     );
 
-                    const text = `ALERT: The 48-hour grace period to repair Bike ${bike.bicycle_code} has expired. A -20 demerit has been applied to your account.`;
+                    const text = `ALERT: The 48-hour grace period to repair Bike ${bike.bicycle_code} has expired. A -10 demerit has been applied to your account.`;
                     await sendSMS(member.phone_number, text);
                 }
             }
