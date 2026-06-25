@@ -323,15 +323,20 @@ const borrow = async (req, res) => {
     }
 
     try {
+        // 4. Start the database transaction (Moved here for concurrency safety)
+        await upbsConn.beginTransaction();
+
         // 1. Retrieve member information (required)
         const memberQuery = `
             SELECT lastname, firstname, phone_number, trust_points, points_frozen
             FROM members
             WHERE phone_number = ? AND is_active = 1
+            FOR UPDATE
         `;
         const [memberRecords] = await upbsConn.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
+            await upbsConn.rollback();
             return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
         }
 
@@ -339,18 +344,21 @@ const borrow = async (req, res) => {
 
         // Apply Gatekeeper checks for member trust points and frozen status
         if (user.trust_points < 50) {
+            await upbsConn.rollback();
             return res.json({ reply: "Account suspended." });
         }
 
         if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
+            await upbsConn.rollback();
             return res.json({ reply: "Account frozen due to dispute." });
         }
 
         // 2. Validate Bicycle Code
-        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)";
+        const bikeQuery = "SELECT * FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL) FOR UPDATE";
         const [bicycles] = await upbsConn.query(bikeQuery, [bicycleCode]);
 
         if (bicycles.length === 0) {
+            await upbsConn.rollback();
             return res.json({ invalidBicycle: true });
         }
 
@@ -358,6 +366,7 @@ const borrow = async (req, res) => {
 
         // Apply Gatekeeper check for bicycle condition
         if (bicycle.condition_status !== 'Good') {
+            await upbsConn.rollback();
             return res.json({ reply: "Bike unavailable." });
         }
 
@@ -372,11 +381,9 @@ const borrow = async (req, res) => {
         const validTo = await validateLoc(toLocation);
 
         if (!validFrom || !validTo) {
+            await upbsConn.rollback();
             return res.json({ reply: "One or both locations are invalid, offline, or unavailable at the moment." });
         }
-
-        // 4. Start the database transaction
-        await upbsConn.beginTransaction();
 
         // Update bicycle location and set condition_status to 'Borrowed'
         const updateBicycleQuery = `
@@ -449,7 +456,8 @@ const getBicycles = async (req, res) => {
 
 const getLocations = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT location_name, is_disabled FROM locations WHERE is_active = 1');
+        // Include is_active = 1 AND is_active IS NULL just in case old records were created without the flag
+        const [rows] = await db.upbsPool.query('SELECT location_name, is_disabled, latitude, longitude FROM locations WHERE is_active = 1 OR is_active IS NULL');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getLocations:', err);
@@ -548,62 +556,80 @@ const good = async (req, res) => {
 
 const broken = async (req, res) => {
     const { smsSender, bicycleCode } = req.body;
+    let upbsConn;
     try {
-        const [member] = await db.upbsPool.query("SELECT firstname, lastname, phone_number FROM members WHERE phone_number = ? AND is_active = 1", [smsSender]);
+        upbsConn = await db.upbsPool.getConnection();
+    } catch (dbErr) {
+        console.error('Failed to acquire database connection for broken:', dbErr);
+        return res.status(500).json({ error: 'Database connection failed' });
+    }
+
+    try {
+        await upbsConn.beginTransaction();
+
+        const [member] = await upbsConn.query("SELECT firstname, lastname, phone_number FROM members WHERE phone_number = ? AND is_active = 1", [smsSender]);
         if (member.length === 0) {
+            await upbsConn.rollback();
             return res.json({ reply: "Sorry, you must be a registered UP Bike Share member to use this service." });
         }
         const currentUserName = `${member[0].firstname} ${member[0].lastname}`;
 
-        const [bike] = await db.upbsPool.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1", [bicycleCode]);
-        if (bike.length === 0) return res.json({ reply: "Bike not found." });
+        const [bike] = await upbsConn.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1", [bicycleCode]);
+        if (bike.length === 0) {
+            await upbsConn.rollback();
+            return res.json({ reply: "Bike not found." });
+        }
 
         if (bike[0].condition_status === 'Disputed') {
+            await upbsConn.rollback();
             return res.json({ reply: `Bike ${bicycleCode} is already disputed for admin review.` });
         }
         if (bike[0].condition_status === 'Broken') {
+            await upbsConn.rollback();
             return res.json({ reply: `Bike ${bicycleCode} is already reported broken and undergoing repairs.` });
         }
 
-        const [history] = await db.upbsPool.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
 
         // Determine if this is the immediate user or the next user
         let isImmediateUser = history.length > 0 && history[0].borrowed_by === currentUserName;
 
         if (isImmediateUser) {
             // Immediate user reporting broken (Honesty Policy)
-            await db.upbsPool.query(
+            await upbsConn.query(
                 "UPDATE bicycle_codes SET condition_status = 'Broken', broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?",
                 [bicycleCode]
             );
 
-            await db.upbsPool.query(
+            await upbsConn.query(
                 "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1 WHERE id = ?",
                 [history[0].id]
             );
 
-            await db.upbsPool.query(
+            await upbsConn.query(
                 "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
                 [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Broken Report']
             );
 
+            await upbsConn.commit();
             return res.json({ reply: `Bike ${bicycleCode} marked broken. Please repair it within 48 hours to avoid penalty. Reply '${bicycleCode} fixed' when done.` });
         } else {
             // If the bike is currently actively borrowed by another user, outsiders cannot dispute it.
             if (bike[0].condition_status === 'Borrowed') {
+                await upbsConn.rollback();
                 return res.json({ reply: `Bike ${bicycleCode} is currently checked out by another member.` });
             }
 
             // Conflict! Next user is reporting it broken after previous user said Good.
-            await db.upbsPool.query(
+            await upbsConn.query(
                 "UPDATE bicycle_codes SET condition_status = 'Disputed', dispute_reported_by = ? WHERE bicycle_code = ?",
                 [smsSender, bicycleCode]
             );
 
             // Reward Reporter (Next User)
-            await db.upbsPool.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [smsSender]);
+            await upbsConn.query("UPDATE members SET trust_points = CAST(trust_points AS SIGNED) + 5 WHERE phone_number = ?", [smsSender]);
 
-            await db.upbsPool.query(
+            await upbsConn.query(
                 "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
                 [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Broken Report']
             );
@@ -611,9 +637,9 @@ const broken = async (req, res) => {
             // Freeze Previous User
             if (history.length > 0) {
                 // Get previous user's phone number
-                const [prevMember] = await db.upbsPool.query("SELECT phone_number FROM members WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+                const [prevMember] = await upbsConn.query("SELECT phone_number FROM members WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
                 if (prevMember.length > 0) {
-                    await db.upbsPool.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMember[0].phone_number]);
+                    await upbsConn.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMember[0].phone_number]);
 
                     // Alert the previous user using the new Gateway /api/sms/send endpoint using global fetch
                     try {
@@ -633,11 +659,21 @@ const broken = async (req, res) => {
                 }
             }
 
+            await upbsConn.commit();
             return res.json({ reply: `Thank you for reporting. You've earned +5 Trust Points. Bike ${bicycleCode} is marked as Disputed for admin review.` });
         }
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Database error' });
+        console.error('Error during transaction inside broken controller:', err);
+        try {
+            await upbsConn.rollback();
+        } catch (rollbackErr) {
+            console.error('Error during transaction rollback:', rollbackErr);
+        }
+        return res.status(500).json({ error: 'Database transaction error' });
+    } finally {
+        if (upbsConn) {
+            upbsConn.release();
+        }
     }
 };
 

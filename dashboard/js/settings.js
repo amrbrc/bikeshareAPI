@@ -47,8 +47,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const addMemberMsg = document.getElementById('add-member-msg');
     const membersList = document.getElementById('members-list');
 
+    // Generic confirmation modal logic
+    function confirmAction(title, text, onConfirm) {
+        const modal = document.getElementById('action-confirm-modal');
+        const titleEl = document.getElementById('action-confirm-title');
+        const textEl = document.getElementById('action-confirm-text');
+        const btnCancel = document.getElementById('btn-action-cancel');
+        const btnConfirm = document.getElementById('btn-action-confirm');
+
+        if (!modal) {
+            if (confirm(text)) onConfirm();
+            return;
+        }
+
+        titleEl.textContent = title;
+        textEl.textContent = text;
+        modal.style.display = 'flex';
+
+        const newBtnCancel = btnCancel.cloneNode(true);
+        const newBtnConfirm = btnConfirm.cloneNode(true);
+        btnCancel.replaceWith(newBtnCancel);
+        btnConfirm.replaceWith(newBtnConfirm);
+
+        newBtnCancel.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        newBtnConfirm.addEventListener('click', () => {
+            modal.style.display = 'none';
+            onConfirm();
+        });
+    }
+
     // Event handler for registering member
-    btnAddMember.addEventListener('click', async () => {
+    btnAddMember.addEventListener('click', () => {
         const firstname = newMemberFirstname.value.trim();
         const lastname = newMemberLastname.value.trim();
         let phone = newMemberPhone.value.trim();
@@ -84,46 +116,48 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        btnAddMember.disabled = true;
-        btnAddMember.textContent = 'Registering...';
-        try {
-            const res = await fetch('/api/admin/members', {
-                method: 'POST',
-                headers: getAdminHeaders(),
-                body: JSON.stringify({
-                    firstname,
-                    lastname,
-                    phone_number: phone
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                newMemberFirstname.value = '';
-                newMemberLastname.value = '';
-                newMemberPhone.value = '';
-                addMemberMsg.textContent = data.message || 'User registered successfully!';
-                addMemberMsg.style.background = 'rgba(0, 106, 78, 0.1)';
-                addMemberMsg.style.color = 'var(--up-green)';
-                addMemberMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
-                addMemberMsg.style.display = 'block';
-                await renderMembersList();
-            } else {
-                addMemberMsg.textContent = data.error || 'Failed to register user.';
+        confirmAction('Register Member', `Are you sure you want to register ${firstname} ${lastname}?`, async () => {
+            btnAddMember.disabled = true;
+            btnAddMember.textContent = 'Registering...';
+            try {
+                const res = await fetch('/api/admin/members', {
+                    method: 'POST',
+                    headers: getAdminHeaders(),
+                    body: JSON.stringify({
+                        firstname,
+                        lastname,
+                        phone_number: phone
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    newMemberFirstname.value = '';
+                    newMemberLastname.value = '';
+                    newMemberPhone.value = '';
+                    addMemberMsg.textContent = data.message || 'User registered successfully!';
+                    addMemberMsg.style.background = 'rgba(0, 106, 78, 0.1)';
+                    addMemberMsg.style.color = 'var(--up-green)';
+                    addMemberMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
+                    addMemberMsg.style.display = 'block';
+                    await renderMembersList();
+                } else {
+                    addMemberMsg.textContent = data.error || 'Failed to register user.';
+                    addMemberMsg.style.background = 'rgba(239, 68, 68, 0.1)';
+                    addMemberMsg.style.color = '#ef4444';
+                    addMemberMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                    addMemberMsg.style.display = 'block';
+                }
+            } catch (e) {
+                addMemberMsg.textContent = 'Connection error. Please try again.';
                 addMemberMsg.style.background = 'rgba(239, 68, 68, 0.1)';
                 addMemberMsg.style.color = '#ef4444';
                 addMemberMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
                 addMemberMsg.style.display = 'block';
+            } finally {
+                btnAddMember.disabled = false;
+                btnAddMember.textContent = 'Register User';
             }
-        } catch (e) {
-            addMemberMsg.textContent = 'Connection error. Please try again.';
-            addMemberMsg.style.background = 'rgba(239, 68, 68, 0.1)';
-            addMemberMsg.style.color = '#ef4444';
-            addMemberMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
-            addMemberMsg.style.display = 'block';
-        } finally {
-            btnAddMember.disabled = false;
-            btnAddMember.textContent = 'Register User';
-        }
+        });
     });
 
     function hideAllViews() {
@@ -374,12 +408,38 @@ document.addEventListener('DOMContentLoaded', () => {
     loginUsername.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
     loginPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
 
-    // Handle Logout (Legacy / Optional Button)
+    // Handle Logout (Custom Modal)
     if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            sessionStorage.removeItem('adminToken');
-            checkSession();
+        const logoutModal = document.getElementById('logout-confirm-modal');
+        const btnLogoutCancel = document.getElementById('btn-logout-cancel');
+        const btnLogoutConfirm = document.getElementById('btn-logout-confirm');
+
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (logoutModal) {
+                logoutModal.style.display = 'flex';
+            } else {
+                // Fallback to default confirm if modal is missing
+                if (confirm("Are you sure you want to log out?")) {
+                    sessionStorage.removeItem('adminToken');
+                    checkSession();
+                }
+            }
         });
+
+        if (btnLogoutCancel) {
+            btnLogoutCancel.addEventListener('click', () => {
+                if (logoutModal) logoutModal.style.display = 'none';
+            });
+        }
+
+        if (btnLogoutConfirm) {
+            btnLogoutConfirm.addEventListener('click', () => {
+                if (logoutModal) logoutModal.style.display = 'none';
+                sessionStorage.removeItem('adminToken');
+                checkSession();
+            });
+        }
     }
 
     // Helper: Build Admin Headers
@@ -490,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const btnDelete = div.querySelector('.btn-delete-station');
             btnDelete.addEventListener('click', async () => {
-                if (confirm(`Are you sure you want to delete station ${stationName}?`)) {
+                confirmAction('Delete Station', `Are you absolutely sure you want to delete station ${stationName}?`, async () => {
                     try {
                         const res = await fetch('/api/admin/delete-location', {
                             method: 'POST',
@@ -507,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (e) {
                         alert('Error deleting station.');
                     }
-                }
+                });
             });
 
             const checkbox = div.querySelector('input[type="checkbox"]');
@@ -670,35 +730,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (Object.keys(payload).length === 0) return alert('No changes to save.');
 
-                btnSave.disabled = true;
-                btnSave.textContent = '...';
-                try {
-                    const res = await fetch('/api/admin/bicycles/override', {
-                        method: 'POST',
-                        headers: getAdminHeaders(),
-                        body: JSON.stringify({ bicycle_code: code, ...payload })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Bike successfully updated!');
-                        lockInput.value = '';
-                        bike.condition_status = statusSelect.value; // update local state
-                        if (window.initDashboard) await window.initDashboard();
-                    } else {
-                        alert(data.error || 'Failed to update bike.');
+                confirmAction('Update Bicycle', `Are you sure you want to update bicycle ${code}?`, async () => {
+                    btnSave.disabled = true;
+                    btnSave.textContent = '...';
+                    try {
+                        const res = await fetch('/api/admin/bicycles/override', {
+                            method: 'POST',
+                            headers: getAdminHeaders(),
+                            body: JSON.stringify({ bicycle_code: code, ...payload })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            lockInput.value = '';
+                            bike.condition_status = statusSelect.value; // update local state
+                            if (window.initDashboard) await window.initDashboard();
+                        } else {
+                            alert(data.error || 'Failed to update bike.');
+                        }
+                    } catch (e) {
+                        alert('Network error.');
+                    } finally {
+                        btnSave.disabled = false;
+                        btnSave.textContent = 'Save';
                     }
-                } catch (e) {
-                    alert('Network error.');
-                } finally {
-                    btnSave.disabled = false;
-                    btnSave.textContent = 'Save';
-                }
+                });
             });
 
             // Delete logic
             const btnDelete = div.querySelector('.btn-delete-bike');
             btnDelete.addEventListener('click', async () => {
-                if (confirm(`Are you absolutely sure you want to delete bike ${code}?`)) {
+                confirmAction('Delete Bicycle', `Are you absolutely sure you want to delete bicycle ${code}?`, async () => {
                     btnDelete.disabled = true;
                     try {
                         const res = await fetch('/api/admin/delete-bike', {
@@ -718,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Error deleting bike.');
                         btnDelete.disabled = false;
                     }
-                }
+                });
             });
 
             list.appendChild(div);
@@ -803,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const bikeCode = bikeInput.value.trim();
                     if (!bikeCode) return alert("Please enter the Disputed Bike Code first!");
 
-                    if (confirm(`Mark user ${mem.firstname} as ${verdict} for bike ${bikeCode}?`)) {
+                    confirmAction('Resolve Dispute', `Mark user ${mem.firstname} as ${verdict} for bike ${bikeCode}?`, async () => {
                         try {
                             const res = await fetch('/api/admin/resolve-dispute', {
                                 method: 'POST',
@@ -821,7 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } catch (e) {
                             alert("Error resolving dispute.");
                         }
-                    }
+                    });
                 };
 
                 btnInnocent.addEventListener('click', () => handleResolve('innocent'));
@@ -835,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add Bicycle Form Submit
-    btnAddBike.addEventListener('click', async () => {
+    btnAddBike.addEventListener('click', () => {
         const code = newBikeCode.value.trim();
         const lock = newBikeLock.value.trim();
         const loc = newBikeLocation.value;
@@ -851,60 +912,65 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        btnAddBike.disabled = true;
-        btnAddBike.textContent = 'Adding...';
+        confirmAction('Add Bicycle', `Are you sure you want to add bicycle ${code} to ${loc}?`, async () => {
+            btnAddBike.disabled = true;
+            btnAddBike.textContent = 'Adding...';
+            try {
+                const res = await fetch('/api/admin/bicycles', {
+                    method: 'POST',
+                    headers: getAdminHeaders(),
+                    body: JSON.stringify({
+                        bicycle_code: code,
+                        combination_lock: lock,
+                        initial_location: loc
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    newBikeCode.value = '';
+                    newBikeLock.value = '';
+                    addBikeMsg.textContent = data.message || 'Bicycle successfully added!';
+                    addBikeMsg.style.background = 'rgba(0, 106, 78, 0.1)';
+                    addBikeMsg.style.color = 'var(--up-green)';
+                    addBikeMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
+                    addBikeMsg.style.display = 'block';
 
-        try {
-            const res = await fetch('/api/admin/bicycles', {
-                method: 'POST',
-                headers: getAdminHeaders(),
-                body: JSON.stringify({
-                    bicycle_code: code,
-                    combination_lock: lock,
-                    initial_location: loc
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                newBikeCode.value = '';
-                newBikeLock.value = '';
-                addBikeMsg.textContent = data.message || 'Bicycle successfully added!';
-                addBikeMsg.style.background = 'rgba(0, 106, 78, 0.1)';
-                addBikeMsg.style.color = 'var(--up-green)';
-                addBikeMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
-                addBikeMsg.style.display = 'block';
-
-                if (window.initDashboard) {
-                    await window.initDashboard();
+                    if (window.initDashboard) {
+                        await window.initDashboard();
+                    }
+                } else {
+                    addBikeMsg.textContent = data.error || 'Failed to add bicycle.';
+                    addBikeMsg.style.background = 'rgba(239, 68, 68, 0.1)';
+                    addBikeMsg.style.color = '#ef4444';
+                    addBikeMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                    addBikeMsg.style.display = 'block';
                 }
-            } else {
-                addBikeMsg.textContent = data.error || 'Failed to add bicycle.';
+            } catch (err) {
+                console.error('[settings.js] Error adding bike:', err);
+                addBikeMsg.textContent = 'Connection error. Please try again.';
                 addBikeMsg.style.background = 'rgba(239, 68, 68, 0.1)';
                 addBikeMsg.style.color = '#ef4444';
                 addBikeMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
                 addBikeMsg.style.display = 'block';
+            } finally {
+                btnAddBike.disabled = false;
+                btnAddBike.textContent = 'Add to Fleet';
             }
-        } catch (err) {
-            console.error('[settings.js] Error adding bike:', err);
-            addBikeMsg.textContent = 'Connection error. Please try again.';
-            addBikeMsg.style.background = 'rgba(239, 68, 68, 0.1)';
-            addBikeMsg.style.color = '#ef4444';
-            addBikeMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
-            addBikeMsg.style.display = 'block';
-        } finally {
-            btnAddBike.disabled = false;
-            btnAddBike.textContent = 'Add to Fleet';
-        }
+        });
     });
 
     // Add Station Form Submit
-    btnAddStation.addEventListener('click', async () => {
+    btnAddStation.addEventListener('click', () => {
         const name = newStationName.value.trim();
+        const latInput = document.getElementById('new-station-lat');
+        const lngInput = document.getElementById('new-station-lng');
+        const lat = latInput ? parseFloat(latInput.value) : NaN;
+        const lng = lngInput ? parseFloat(lngInput.value) : NaN;
 
         addStationMsg.style.display = 'none';
 
-        if (!name) {
-            addStationMsg.textContent = 'Station name is required.';
+        if (!name || isNaN(lat) || isNaN(lng)) {
+            addStationMsg.textContent = 'Station name, latitude, and longitude are required.';
             addStationMsg.style.background = 'rgba(239, 68, 68, 0.1)';
             addStationMsg.style.color = '#ef4444';
             addStationMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
@@ -912,49 +978,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        btnAddStation.disabled = true;
-        btnAddStation.textContent = 'Adding...';
+        confirmAction('Add Station', `Are you sure you want to add the station "${name}"?`, async () => {
+            btnAddStation.disabled = true;
+            btnAddStation.textContent = 'Adding...';
 
-        try {
-            const res = await fetch('/api/admin/locations', {
-                method: 'POST',
-                headers: getAdminHeaders(),
-                body: JSON.stringify({
-                    location_name: name
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                newStationName.value = '';
-                addStationMsg.textContent = data.message || 'Station successfully added!';
-                addStationMsg.style.background = 'rgba(0, 106, 78, 0.1)';
-                addStationMsg.style.color = 'var(--up-green)';
-                addStationMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
-                addStationMsg.style.display = 'block';
+            try {
+                const res = await fetch('/api/admin/locations', {
+                    method: 'POST',
+                    headers: getAdminHeaders(),
+                    body: JSON.stringify({
+                        location_name: name,
+                        latitude: lat,
+                        longitude: lng
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    newStationName.value = '';
+                    if (latInput) latInput.value = '';
+                    if (lngInput) lngInput.value = '';
+                    addStationMsg.textContent = data.message || 'Station successfully added!';
+                    addStationMsg.style.background = 'rgba(0, 106, 78, 0.1)';
+                    addStationMsg.style.color = 'var(--up-green)';
+                    addStationMsg.style.border = '1px solid rgba(0, 106, 78, 0.2)';
+                    addStationMsg.style.display = 'block';
 
-                await loadAdminPanel();
+                    await loadAdminPanel();
 
-                if (window.initDashboard) {
-                    await window.initDashboard();
+                    if (window.initDashboard) {
+                        await window.initDashboard();
+                    }
+                } else {
+                    addStationMsg.textContent = data.error || 'Failed to add station.';
+                    addStationMsg.style.background = 'rgba(239, 68, 68, 0.1)';
+                    addStationMsg.style.color = '#ef4444';
+                    addStationMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                    addStationMsg.style.display = 'block';
                 }
-            } else {
-                addStationMsg.textContent = data.error || 'Failed to add station.';
+            } catch (err) {
+                console.error('[settings.js] Error adding station:', err);
+                addStationMsg.textContent = 'Connection error. Please try again.';
                 addStationMsg.style.background = 'rgba(239, 68, 68, 0.1)';
                 addStationMsg.style.color = '#ef4444';
                 addStationMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
                 addStationMsg.style.display = 'block';
+            } finally {
+                btnAddStation.disabled = false;
+                btnAddStation.textContent = 'Add Station';
             }
-        } catch (err) {
-            console.error('[settings.js] Error adding station:', err);
-            addStationMsg.textContent = 'Connection error. Please try again.';
-            addStationMsg.style.background = 'rgba(239, 68, 68, 0.1)';
-            addStationMsg.style.color = '#ef4444';
-            addStationMsg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
-            addStationMsg.style.display = 'block';
-        } finally {
-            btnAddStation.disabled = false;
-            btnAddStation.textContent = 'Add Station';
-        }
+        });
     });
 
     // Run initial session check to gate the dashboard on page load

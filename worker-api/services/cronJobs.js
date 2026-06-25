@@ -18,11 +18,14 @@ async function sendSMS(phoneNumber, text) {
         });
         if (!response.ok) {
             console.error(`[Cron] Gateway returned status ${response.status} when sending SMS to ${phoneNumber}`);
+            return false;
         } else {
             console.log(`[Cron] SMS successfully sent to ${phoneNumber}`);
+            return true;
         }
     } catch (err) {
         console.error(`[Cron] Failed to send SMS to ${phoneNumber}:`, err);
+        return false;
     }
 }
 
@@ -59,19 +62,23 @@ const startBorrowRemindersJob = () => {
                 if (row.reminder_4h_sent === 0 && borrowHours >= 4) {
                     // Send 4-Hour Reminder
                     const text = `Reminder: You have 2 hours left on Bike ${row.bicycle_code}. Please return it to a station soon. Remember to text 'done ${row.bicycle_code}' when finished.`;
-                    await sendSMS(row.phone_number, text);
-                    await db.upbsPool.query(
-                        'UPDATE bicycle_history SET reminder_1h_sent = 1, reminder_4h_sent = 1 WHERE id = ?',
-                        [row.id]
-                    );
+                    const success = await sendSMS(row.phone_number, text);
+                    if (success) {
+                        await db.upbsPool.query(
+                            'UPDATE bicycle_history SET reminder_1h_sent = 1, reminder_4h_sent = 1 WHERE id = ?',
+                            [row.id]
+                        );
+                    }
                 } else if (row.reminder_1h_sent === 0 && borrowHours >= 1) {
                     // Send 1-Hour Reminder
                     const text = `Hope you're enjoying the ride! Remember to text 'done ${row.bicycle_code}' when finished.`;
-                    await sendSMS(row.phone_number, text);
-                    await db.upbsPool.query(
-                        'UPDATE bicycle_history SET reminder_1h_sent = 1 WHERE id = ?',
-                        [row.id]
-                    );
+                    const success = await sendSMS(row.phone_number, text);
+                    if (success) {
+                        await db.upbsPool.query(
+                            'UPDATE bicycle_history SET reminder_1h_sent = 1 WHERE id = ?',
+                            [row.id]
+                        );
+                    }
                 }
             }
         } catch (err) {
@@ -103,11 +110,13 @@ const startHandshakeReminderJob = () => {
 
             for (const row of records) {
                 const text = `Reminder: Please confirm the condition of Bike ${row.bicycle_code}. Reply '${row.bicycle_code} GOOD' or '${row.bicycle_code} BROKEN' and take a photo of the bike at the rack as proof.`;
-                await sendSMS(row.phone_number, text);
-                await db.upbsPool.query(
-                    'UPDATE bicycle_history SET reminder_pending_sent = 1 WHERE id = ?',
-                    [row.id]
-                );
+                const success = await sendSMS(row.phone_number, text);
+                if (success) {
+                    await db.upbsPool.query(
+                        'UPDATE bicycle_history SET reminder_pending_sent = 1 WHERE id = ?',
+                        [row.id]
+                    );
+                }
             }
         } catch (err) {
             console.error('[Cron] Error in handshake reminder job:', err);
@@ -194,12 +203,14 @@ const start24hReminderJob = () => {
                     console.log(`[Cron] Sending 24h repair warning for Bike ${bike.bicycle_code}`);
 
                     const text = `REMINDER: You have 24 hours left to repair Bike ${bike.bicycle_code} before a -20 demerit is applied to your account.`;
-                    await sendSMS(member.phone_number, text);
+                    const success = await sendSMS(member.phone_number, text);
 
-                    await db.upbsPool.query(
-                        'UPDATE bicycle_codes SET reminder_24h_sent = 1 WHERE bicycle_code = ?',
-                        [bike.bicycle_code]
-                    );
+                    if (success) {
+                        await db.upbsPool.query(
+                            'UPDATE bicycle_codes SET reminder_24h_sent = 1 WHERE bicycle_code = ?',
+                            [bike.bicycle_code]
+                        );
+                    }
                 }
             }
         } catch (err) {

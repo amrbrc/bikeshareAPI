@@ -168,7 +168,16 @@ async function pollInbox() {
 
             } catch (apiError) {
                 console.error(`Worker API error or failed for ${smsSender}:`, apiError.message);
-                // We do NOT mark the message as processed, so the loop will try again later!
+                
+                // Determine if it's a 4xx client-level error (bad request, not found, etc.)
+                if (apiError.response && apiError.response.status >= 400 && apiError.response.status < 500) {
+                    console.log(`Marking message ${messageId} as processed due to client-level error: ${apiError.response.status}`);
+                    await db.query("UPDATE inbox SET Processed='true' WHERE ID=?", [messageId]);
+                } else {
+                    // It's a 5xx server error or network issue (transient).
+                    // We do NOT mark the message as processed, so the loop will try again later!
+                    console.log(`Transient error encountered for message ${messageId}. Will retry later.`);
+                }
             }
         }
     } catch (error) {
@@ -184,7 +193,7 @@ setInterval(pollInbox, 200);
 
 // Helper function to send SMS via Gammu hardware
 function sendReply(phoneNumber, text) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         console.log(`Sending SMS to ${phoneNumber}: "${text}"`);
 
         // This runs the actual terminal command to the modem
@@ -192,16 +201,17 @@ function sendReply(phoneNumber, text) {
 
         gammu.on('error', (err) => {
             console.error(`Failed to spawn gammu-smsd-inject:`, err.message);
-            resolve(); // Resolve to avoid blocking the queue
+            reject(new Error(`Failed to spawn gammu-smsd-inject: ${err.message}`));
         });
 
         gammu.on('close', (code) => {
             if (code === 0) {
                 console.log(`SMS successfully sent to ${phoneNumber}`);
+                resolve();
             } else {
                 console.error(`Gammu failed to send. Exit code ${code}`);
+                reject(new Error(`Gammu failed with exit code ${code}`));
             }
-            resolve(); // Always resolve to avoid blocking the queue indefinitely
         });
     });
 }

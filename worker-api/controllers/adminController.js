@@ -97,10 +97,10 @@ const addBicycle = async (req, res) => {
 
 // POST /api/admin/locations
 const addLocation = async (req, res) => {
-    const { location_name } = req.body;
+    const { location_name, latitude, longitude } = req.body;
 
-    if (!location_name) {
-        return res.status(400).json({ success: false, error: 'location_name is required' });
+    if (!location_name || latitude === undefined || longitude === undefined) {
+        return res.status(400).json({ success: false, error: 'location_name, latitude, and longitude are required' });
     }
 
     try {
@@ -109,8 +109,8 @@ const addLocation = async (req, res) => {
             const loc = existing[0];
             if (loc.is_active === 0 || loc.is_active === false) {
                 await db.upbsPool.query(
-                    'UPDATE locations SET is_active = 1, is_disabled = 0 WHERE location_name = ?',
-                    [location_name]
+                    'UPDATE locations SET is_active = 1, is_disabled = 0, latitude = ?, longitude = ? WHERE location_name = ?',
+                    [latitude, longitude, location_name]
                 );
                 return res.json({ success: true, message: 'Station re-activated successfully!' });
             }
@@ -118,8 +118,8 @@ const addLocation = async (req, res) => {
         }
 
         await db.upbsPool.query(
-            'INSERT INTO locations (location_name, is_disabled) VALUES (?, 0)',
-            [location_name]
+            'INSERT INTO locations (location_name, is_active, is_disabled, latitude, longitude) VALUES (?, 1, 0, ?, ?)',
+            [location_name, latitude, longitude]
         );
 
         return res.json({ success: true, message: 'Station successfully added!' });

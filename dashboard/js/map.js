@@ -133,45 +133,11 @@ function initMap() {
     // Plot all known stations
     plotStationMarkers();
 
-    // Add legend
-    addLegend();
-
     // Force Leaflet to recalculate its size after a brief delay
     // This fixes the issue where the map tiles leave an empty black space at the bottom
     setTimeout(() => {
         if (leafletMap) leafletMap.invalidateSize();
     }, 500);
-}
-
-function addLegend() {
-    const legend = L.control({ position: 'bottomright' });
-
-    legend.onAdd = function () {
-        const div = L.DomUtil.create('div', 'map-legend');
-        div.style.backgroundColor = 'rgba(15, 17, 23, 0.85)';
-        div.style.padding = '10px 14px';
-        div.style.borderRadius = '8px';
-        div.style.border = '1px solid rgba(255,255,255,0.1)';
-        div.style.color = '#e8eaf6';
-        div.style.fontSize = '0.75rem';
-        div.style.fontFamily = 'Inter, sans-serif';
-
-        let labels = ['<div style="font-weight:700; margin-bottom:6px; color:#22d3ee;">Legend</div>'];
-
-        for (const [key, label] of Object.entries(STATION_LABELS)) {
-            const color = STATION_COLORS[key];
-            labels.push(
-                `<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                    <div style="width:10px; height:10px; border-radius:50%; background:${color}; box-shadow:0 0 6px ${color};"></div>
-                    <span>${label}</span>
-                </div>`
-            );
-        }
-        div.innerHTML = labels.join('');
-        return div;
-    };
-
-    legend.addTo(leafletMap);
 }
 
 
@@ -187,55 +153,111 @@ async function plotStationMarkers() {
         const data = await res.json();
         if (data.success) {
             const activeStations = data.data
-                .filter(loc => Number(loc.is_disabled) !== 1)
-                .map(loc => loc.location_name.toLowerCase().trim());
+                .filter(loc => Number(loc.is_disabled) !== 1);
 
-            Object.entries(STATION_COORDS).forEach(([key, coords]) => {
-                const normalizedKey = key.toLowerCase().trim();
-                
-                // Only plot if the station is in the active list fetched from database
-                if (activeStations.includes(normalizedKey)) {
-                    const color = STATION_COLORS[key];
-                    const label = STATION_LABELS[key] || key;
+            const allMarkers = []; // Store markers to fit bounds
+            let legendHtml = ['<div style="font-weight:700; margin-bottom:6px; color:#22d3ee;">Legend</div>'];
+            const EXTRA_COLORS = ['#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#f97316', '#0ea5e9', '#84cc16'];
+            let extraColorIndex = 0;
 
-                    const marker = L.marker(coords, {
-                        icon: createStationIcon(color),
-                    }).addTo(leafletMap);
+            activeStations.forEach(loc => {
+                const key = loc.location_name.toLowerCase().trim();
+                let coords = STATION_COORDS[key];
 
-                    stationMarkers[key] = marker; // save marker reference
-
-                    // Popup shown when you click a marker
-                    marker.bindPopup(`
-                        <div style="
-                            font-family: Inter, sans-serif;
-                            padding: 4px 2px;
-                            min-width: 130px;
-                        ">
-                            <div style="
-                                font-size: 0.85rem;
-                                font-weight: 700;
-                                color: ${color};
-                                margin-bottom: 4px;
-                            ">📍 ${label}</div>
-                            <div style="
-                                font-size: 0.72rem;
-                                color: #9ca3af;
-                            ">UP Bikeshare Station</div>
-                        </div>
-                    `, {
-                        className: 'custom-popup',
-                        maxWidth: 180,
-                    });
-
-                    // Tooltip shown on hover (always visible)
-                    marker.bindTooltip(label, {
-                        permanent: false,
-                        direction: 'top',
-                        className: 'station-tooltip',
-                        offset: [0, -30],
-                    });
+                // Override with database coords if they exist
+                if (loc.latitude !== undefined && loc.latitude !== null && loc.longitude !== undefined && loc.longitude !== null) {
+                    coords = [parseFloat(loc.latitude), parseFloat(loc.longitude)];
+                    // Save to global STATION_COORDS so zoomToStation works
+                    STATION_COORDS[key] = coords;
                 }
+                
+                if (!coords) {
+                    alert(`SYSTEM MESSAGE:\nThe new station "${loc.location_name}" was successfully retrieved from the database, but its Latitude is "${loc.latitude}" and Longitude is "${loc.longitude}".\n\nBecause the coordinates are missing/empty in the database, it cannot be plotted on the map. This usually happens if the backend server wasn't fully restarted after the update, so it saved the station with empty coordinates.`);
+                    return; // Skip if no coordinates known
+                }
+
+                let color = STATION_COLORS[key];
+                if (!color) {
+                    color = EXTRA_COLORS[extraColorIndex % EXTRA_COLORS.length];
+                    STATION_COLORS[key] = color;
+                    extraColorIndex++;
+                }
+
+                const label = STATION_LABELS[key] || loc.location_name;
+
+                legendHtml.push(
+                    `<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <div style="width:10px; height:10px; border-radius:50%; background:${color}; box-shadow:0 0 6px ${color};"></div>
+                        <span>${label}</span>
+                    </div>`
+                );
+
+                const marker = L.marker(coords, {
+                    icon: createStationIcon(color),
+                }).addTo(leafletMap);
+
+                stationMarkers[key] = marker; // save marker reference
+
+                // Popup shown when you click a marker
+                marker.bindPopup(`
+                    <div style="
+                        font-family: Inter, sans-serif;
+                        padding: 4px 2px;
+                        min-width: 130px;
+                    ">
+                        <div style="
+                            font-size: 0.85rem;
+                            font-weight: 700;
+                            color: ${color};
+                            margin-bottom: 4px;
+                        ">📍 ${label}</div>
+                        <div style="
+                            font-size: 0.72rem;
+                            color: #9ca3af;
+                        ">UP Bikeshare Station</div>
+                    </div>
+                `, {
+                    className: 'custom-popup',
+                    maxWidth: 180,
+                });
+
+                // Tooltip shown on hover (always visible)
+                marker.bindTooltip(label, {
+                    permanent: false,
+                    direction: 'top',
+                    className: 'station-tooltip',
+                    offset: [0, -30],
+                });
+
+                allMarkers.push(marker);
             });
+
+            // Adjust the map view to fit all plotted stations
+            if (allMarkers.length > 0) {
+                const group = new L.featureGroup(allMarkers);
+                // Add padding so markers aren't on the exact edge, and limit maxZoom so it doesn't zoom too close if there's only 1 station
+                leafletMap.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 });
+            }
+
+            // Remove existing legend if any
+            const existingLegendElements = document.querySelectorAll('.map-legend');
+            existingLegendElements.forEach(el => el.remove());
+
+            // Add dynamic legend
+            const legendControl = L.control({ position: 'bottomright' });
+            legendControl.onAdd = function () {
+                const div = L.DomUtil.create('div', 'map-legend');
+                div.style.backgroundColor = 'rgba(15, 17, 23, 0.85)';
+                div.style.padding = '10px 14px';
+                div.style.borderRadius = '8px';
+                div.style.border = '1px solid rgba(255,255,255,0.1)';
+                div.style.color = '#e8eaf6';
+                div.style.fontSize = '0.75rem';
+                div.style.fontFamily = 'Inter, sans-serif';
+                div.innerHTML = legendHtml.join('');
+                return div;
+            };
+            legendControl.addTo(leafletMap);
         }
     } catch (err) {
         console.error("Failed to fetch locations for map markers:", err);
