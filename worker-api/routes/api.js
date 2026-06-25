@@ -26,6 +26,7 @@ router.post('/done', bikeController.done);
 router.post('/good', bikeController.good);
 router.post('/broken', bikeController.broken);
 router.post('/fixed', bikeController.fixed);
+router.post('/points', bikeController.points);
 
 // Help Routes
 router.post('/help', helpController.help);

@@ -849,16 +849,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 actionDiv.innerHTML = `
                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Resolve Dispute (Enter Disputed Bike Code):</div>
-                    <div style="display: flex; gap: 6px;">
-                        <input type="text" class="form-control settings-input" placeholder="Bike Code" style="height: 28px; font-size: 0.75rem; width: 90px;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <input type="text" class="form-control settings-input" placeholder="Bike Code" style="height: 28px; font-size: 0.75rem; width: 80px;">
                         <button class="btn btn-sm btn-success py-0 px-2 btn-innocent" style="font-size: 0.7rem; font-weight: 600;">Innocent</button>
-                        <button class="btn btn-sm btn-danger py-0 px-2 btn-guilty" style="font-size: 0.7rem; font-weight: 600;">Guilty (-30 pts)</button>
+                        <button class="btn btn-sm btn-danger py-0 px-2 btn-guilty" style="font-size: 0.7rem; font-weight: 600;">Guilty</button>
+                        <button class="btn btn-sm btn-secondary py-0 px-2 btn-neutral" style="font-size: 0.7rem; font-weight: 600;">Neutral</button>
                     </div>
                 `;
 
                 const bikeInput = actionDiv.querySelector('input');
                 const btnInnocent = actionDiv.querySelector('.btn-innocent');
                 const btnGuilty = actionDiv.querySelector('.btn-guilty');
+                const btnNeutral = actionDiv.querySelector('.btn-neutral');
 
                 const handleResolve = async (verdict) => {
                     const bikeCode = bikeInput.value.trim();
@@ -887,6 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 btnInnocent.addEventListener('click', () => handleResolve('innocent'));
                 btnGuilty.addEventListener('click', () => handleResolve('guilty'));
+                btnNeutral.addEventListener('click', () => handleResolve('neutral'));
 
                 div.appendChild(actionDiv);
             }

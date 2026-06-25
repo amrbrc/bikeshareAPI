@@ -710,6 +710,26 @@ const fixed = async (req, res) => {
     }
 };
 
+// Handle points command
+const points = async (req, res) => {
+    const { smsSender } = req.body;
+
+    try {
+        const [memberData] = await db.upbsPool.query('SELECT trust_points FROM members WHERE phone_number = ?', [smsSender]);
+
+        if (memberData.length === 0) {
+            return res.json({ reply: "Sorry, you are not registered with UP Bike Share." });
+        }
+
+        const trustPoints = memberData[0].trust_points;
+        return res.json({ reply: `Your current UP Bike Share trust points: ${trustPoints}. Keep it up!` });
+
+    } catch (err) {
+        console.error('Error in points controller:', err);
+        return res.json({ reply: "An error occurred while fetching your points." });
+    }
+};
+
 module.exports = {
     search,
     searchAll,
@@ -722,5 +742,6 @@ module.exports = {
     done,
     good,
     broken,
-    fixed
+    fixed,
+    points
 };

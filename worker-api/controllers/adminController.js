@@ -37,6 +37,8 @@ const addMember = async (req, res) => {
 
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM members WHERE phone_number = ?', [phone_number]);
+        const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
+
         if (existing.length > 0) {
             const member = existing[0];
             if (member.is_active === 0 || member.is_active === false) {
@@ -44,6 +46,7 @@ const addMember = async (req, res) => {
                     'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, trust_points = 100, points_frozen = 0 WHERE phone_number = ?',
                     [firstname, lastname, phone_number]
                 );
+
                 return res.json({ success: true, message: 'User account re-activated and updated successfully!' });
             }
             return res.status(400).json({ success: false, error: 'Phone number already registered' });
@@ -53,6 +56,17 @@ const addMember = async (req, res) => {
             'INSERT INTO members (firstname, lastname, phone_number) VALUES (?, ?, ?)',
             [firstname, lastname, phone_number]
         );
+
+        try {
+            await fetch(`${gatewayUrl}/api/sms/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
+                body: JSON.stringify({
+                    phoneNumber: phone_number,
+                    message: `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`
+                })
+            });
+        } catch (e) {}
 
         return res.json({ success: true, message: 'User registered successfully!' });
     } catch (err) {
@@ -178,17 +192,30 @@ const resolveDispute = async (req, res) => {
             try {
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven guilty. 15 points were deducted from your trust points.`
+                        message: `You have been proven guilty of damaging a bike. 15 points were deducted from your trust points.`
                     })
                 });
             } catch (e) {
                 console.error("Failed to send guilty SMS reply:", e.message);
+            }
+
+            // Text the reporter
+            if (reporterPhone) {
+                try {
+                    await fetch(`${gatewayUrl}/api/sms/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
+                        body: JSON.stringify({
+                            phoneNumber: reporterPhone,
+                            message: `The dispute you reported has been resolved. The previous user was penalized. Thank you for keeping our bikes safe!`
+                        })
+                    });
+                } catch (e) {
+                    console.error("Failed to send guilty SMS to reporter:", e.message);
+                }
             }
 
         } else if (verdict === 'innocent') {
@@ -199,13 +226,10 @@ const resolveDispute = async (req, res) => {
             try {
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven innocent. Nothing changed in ur point.`
+                        message: `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`
                     })
                 });
             } catch (e) {
@@ -226,17 +250,47 @@ const resolveDispute = async (req, res) => {
                 try {
                     await fetch(`${gatewayUrl}/api/sms/send`, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-                    },
+                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `Wrong report - u deducted 5 points to falsely reporting`
+                            message: `Your recent damage report was found to be false. A 5-point penalty has been applied to your trust points.`
                         })
                     });
                 } catch (e) {
                     console.error("Failed to send false report SMS reply:", e.message);
+                }
+            }
+        } else if (verdict === 'neutral') {
+            await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            
+            // Text the borrower
+            try {
+                await fetch(`${gatewayUrl}/api/sms/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
+                    body: JSON.stringify({
+                        phoneNumber: phone_number,
+                        message: `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to send neutral SMS to borrower:", e.message);
+            }
+
+            // Text the reporter
+            if (reporterPhone) {
+                try {
+                    await fetch(`${gatewayUrl}/api/sms/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
+                        body: JSON.stringify({
+                            phoneNumber: reporterPhone,
+                            message: `The dispute has been resolved neutrally (external damage). The bike is marked broken, and no points were deducted from your account.`
+                        })
+                    });
+                } catch (e) {
+                    console.error("Failed to send neutral SMS to reporter:", e.message);
                 }
             }
         }
