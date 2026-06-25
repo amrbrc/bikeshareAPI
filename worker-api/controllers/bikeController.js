@@ -399,7 +399,7 @@ const borrow = async (req, res) => {
         ]);
 
         // Formulate the combination lock reply
-        const replyMessage = `Hi ${user.firstname} ${user.lastname}! The lock code for bicycle ${bicycle.bicycle_code} is ${bicycle.combination_lock}. You may proceed to ${toLocation}. Please don't forget to lock the bike at your destination. Have a safe ride.`;
+        const replyMessage = `Hi ${user.firstname} ${user.lastname}! The lock code for bicycle ${bicycle.bicycle_code} is ${bicycle.combination_lock}. You may proceed to ${toLocation}. Please don't forget to lock the bike at your destination and confirm it by replying 'DONE ${bicycleCode}' at this number. Have a safe ride!`;
 
         // Log the borrowing request
         const logQuery = `
@@ -620,7 +620,7 @@ const broken = async (req, res) => {
                         const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
                         await fetch(`${gatewayUrl}/api/sms/send`, {
                             method: 'POST',
-                            headers: { 
+                            headers: {
                                 'Content-Type': 'application/json',
                                 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
                             },

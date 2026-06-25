@@ -10,7 +10,7 @@ async function sendSMS(phoneNumber, text) {
         console.log(`[Cron] Sending SMS to ${phoneNumber}: "${text}"`);
         const response = await fetch(`${GATEWAY_URL}/api/sms/send`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
             },
@@ -114,8 +114,6 @@ const startHandshakeReminderJob = () => {
         }
     });
 };
-
-
 
 // Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
 const startUnrepairedDamageJob = () => {
