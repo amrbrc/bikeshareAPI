@@ -304,7 +304,7 @@ const resolveDispute = async (req, res) => {
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `The dispute has been resolved neutrally (external damage). The bike is marked broken, and no points were deducted from your account.`
+                            message: `The dispute you reported has been resolved neutrally (external damage). You have earned +5 trust points for accurately reporting the broken bike. Thank you!`
                         })
                     });
                 } catch (e) {
