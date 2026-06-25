@@ -355,7 +355,16 @@ const borrow = async (req, res) => {
 
         // Apply Gatekeeper check for multiple simultaneous borrows
         const currentUserName = `${user.firstname} ${user.lastname}`;
-        const [activeTrips] = await upbsConn.query("SELECT id FROM bicycle_history WHERE borrowed_by = ? AND done_text_received = 0 LIMIT 1", [currentUserName]);
+        const activeTripQuery = `
+            SELECT bh.id 
+            FROM bicycle_history bh
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
+            WHERE bh.borrowed_by = ? 
+              AND bh.done_text_received = 0 
+              AND bc.condition_status = 'Borrowed'
+            LIMIT 1
+        `;
+        const [activeTrips] = await upbsConn.query(activeTripQuery, [currentUserName]);
         if (activeTrips.length > 0) {
             await upbsConn.rollback();
             return res.json({ reply: "You already have an active bike checked out. Please return it and text 'done' before borrowing another." });

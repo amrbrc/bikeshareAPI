@@ -101,8 +101,8 @@ const startSixHourPenaltyJob = () => {
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 0 
                   AND bc.condition_status = 'Borrowed'
-                  AND bh.penalty_6h_applied = 0
                   AND bh.borrowed_at < NOW() - INTERVAL 6 HOUR
+                  AND (bh.last_penalty_time IS NULL OR bh.last_penalty_time < NOW() - INTERVAL 1 HOUR)
             `;
             const [records] = await db.upbsPool.query(query);
 
@@ -121,13 +121,13 @@ const startSixHourPenaltyJob = () => {
                     ['System', 'Cron Jobs', row.phone_number, row.phone_number, '6-Hour Penalty Applied']
                 );
 
-                // Mark penalty as applied
+                // Mark penalty timestamp
                 await db.upbsPool.query(
-                    'UPDATE bicycle_history SET penalty_6h_applied = 1 WHERE id = ?',
+                    'UPDATE bicycle_history SET last_penalty_time = NOW() WHERE id = ?',
                     [row.id]
                 );
 
-                const text = `ALERT: Your 6-hour borrow limit for Bike ${row.bicycle_code} has expired. A -5 point penalty has been applied to your trust points. Please return the bike immediately.`;
+                const text = `ALERT: You have exceeded the borrow time limit for Bike ${row.bicycle_code}. A -5 point penalty has been applied. You will continue to lose 5 points EVERY HOUR until the bike is returned.`;
                 await sendSMS(row.phone_number, text);
             }
         } catch (err) {
@@ -145,19 +145,20 @@ const startHandshakeReminderJob = () => {
             // that are older than 5 minutes and haven't had a reminder sent yet
             const query = `
                 SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.pending_status_time,
-                       m.phone_number
+                       m.phone_number, bh.reminder_pending_sent, bc.condition_status
                 FROM bicycle_history bh
                 JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 1 
                   AND bh.condition_confirmed = 0
-                  AND bh.reminder_pending_sent = 0
+                  AND (bh.reminder_pending_sent = 0 OR bh.reminder_pending_sent IS NULL)
                   AND bc.condition_status = 'Pending_Status'
                   AND bh.pending_status_time < NOW() - INTERVAL 5 MINUTE
             `;
             const [records] = await db.upbsPool.query(query);
 
             for (const row of records) {
+                console.log(`[Cron] Sending handshake reminder for Bike ${row.bicycle_code}`);
                 const text = `Reminder: Please confirm the condition of Bike ${row.bicycle_code}. Reply '${row.bicycle_code} GOOD' or '${row.bicycle_code} BROKEN' and take a photo of the bike at the rack as proof.`;
                 const success = await sendSMS(row.phone_number, text);
                 if (success) {
