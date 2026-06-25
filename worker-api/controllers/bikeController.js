@@ -609,10 +609,18 @@ const broken = async (req, res) => {
             return res.json({ reply: `Bike ${bicycleCode} is already reported broken and undergoing repairs.` });
         }
 
-        const [history] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by, done_text_received FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
 
         // Determine if this is the immediate user or the next user
         let isImmediateUser = history.length > 0 && history[0].borrowed_by === currentUserName;
+        let isAbortedTrip = false;
+
+        // If the current user borrowed the bike but hasn't finished the trip (no done text), 
+        // and they are reporting it broken, they are ABORTING their trip and blaming the previous user!
+        if (isImmediateUser && history[0].done_text_received === 0) {
+            isAbortedTrip = true;
+            isImmediateUser = false; // Treat them as the next user disputing the bike
+        }
 
         if (isImmediateUser) {
             // Immediate user reporting broken (Honesty Policy)
@@ -635,9 +643,20 @@ const broken = async (req, res) => {
             return res.json({ reply: `Bike ${bicycleCode} marked broken. Please repair it within 48 hours to avoid penalty. Reply '${bicycleCode} fixed' when done.` });
         } else {
             // If the bike is currently actively borrowed by another user, outsiders cannot dispute it.
-            if (bike[0].condition_status === 'Borrowed') {
+            if (bike[0].condition_status === 'Borrowed' && !isAbortedTrip) {
                 await upbsConn.rollback();
                 return res.json({ reply: `Bike ${bicycleCode} is currently checked out by another member.` });
+            }
+
+            if (isAbortedTrip) {
+                // Delete the aborted trip from history so the blame correctly falls on the previous user
+                await upbsConn.query("DELETE FROM bicycle_history WHERE id = ?", [history[0].id]);
+                // Shift history array so history[0] points to the previous user for the freeze logic below
+                if (history.length > 1) {
+                    history[0] = history[1]; 
+                } else {
+                    history.shift();
+                }
             }
 
             // Conflict! Next user is reporting it broken after previous user said Good.
