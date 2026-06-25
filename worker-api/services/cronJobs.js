@@ -115,61 +115,7 @@ const startHandshakeReminderJob = () => {
     });
 };
 
-// Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
-const startUnrepairedDamageJob = () => {
-    cron.schedule('* * * * *', async () => {
-        console.log('[Cron-TESTING] Running 48-Hour (2-Minute) Unrepaired Damage check...');
-        try {
-            // Query for broken bikes older than 48 hours without penalty applied
-            const query = `
-                SELECT bicycle_code, broken_reported_at
-                FROM bicycle_codes
-                WHERE condition_status = 'Broken'
-                  AND broken_reported_at < NOW() - INTERVAL 2 MINUTE
-                  AND penalty_applied = 0
-            `;
-            const [brokenBikes] = await db.upbsPool.query(query);
 
-            for (const bike of brokenBikes) {
-                // Find the member who reported it broken (the last borrower in history)
-                const borrowerQuery = `
-                    SELECT bh.id AS history_id, bh.borrowed_by, m.phone_number, m.trust_points
-                    FROM bicycle_history bh
-                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
-                    WHERE bh.bicycle_code = ?
-                    ORDER BY bh.borrowed_at DESC
-                    LIMIT 1
-                `;
-                const [members] = await db.upbsPool.query(borrowerQuery, [bike.bicycle_code]);
-
-                if (members.length > 0) {
-                    const member = members[0];
-                    console.log(`[Cron] Applying 48h penalty for Bike ${bike.bicycle_code} to ${member.borrowed_by}`);
-
-                    // Deduct 20 points
-                    await db.upbsPool.query(
-                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 20) WHERE phone_number = ?',
-                        [member.phone_number]
-                    );
-
-                    // Mark penalty as applied
-                    await db.upbsPool.query(
-                        'UPDATE bicycle_codes SET penalty_applied = 1 WHERE bicycle_code = ?',
-                        [bike.bicycle_code]
-                    );
-
-                    // Send SMS notification
-                    const text = `ALERT: The 48-hour grace period to repair Bike ${bike.bicycle_code} has expired. A -20 demerit has been applied to your account.`;
-                    await sendSMS(member.phone_number, text);
-                } else {
-                    console.warn(`[Cron] Could not find reporter member for broken Bike ${bike.bicycle_code}`);
-                }
-            }
-        } catch (err) {
-            console.error('[Cron] Error in unrepaired damage job:', err);
-        }
-    });
-};
 
 // Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
 const startUnrepairedDamageJob = () => {
