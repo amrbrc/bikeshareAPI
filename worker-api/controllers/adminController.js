@@ -168,22 +168,76 @@ const resolveDispute = async (req, res) => {
         const [bike] = await db.upbsPool.query("SELECT dispute_reported_by FROM bicycle_codes WHERE bicycle_code = ?", [bicycle_code]);
         const reporterPhone = bike.length > 0 ? bike[0].dispute_reported_by : null;
 
+        const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
+
         if (verdict === 'guilty') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 30) WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            
+            // Text the borrower that they are guilty
+            try {
+                await fetch(`${gatewayUrl}/api/sms/send`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phone_number,
+                        message: `You have been proven guilty. A point was deducted to ur trust point.`
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to send guilty SMS reply:", e.message);
+            }
+
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
             
+            // Text the borrower that they are innocent
+            try {
+                await fetch(`${gatewayUrl}/api/sms/send`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phone_number,
+                        message: `You have been proven innocent. Nothing changed in ur point.`
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to send innocent SMS reply:", e.message);
+            }
+
             if (reporterPhone) {
-                // Penalize the false reporter with a -10 points demerit
-                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 10) WHERE phone_number = ?", [reporterPhone]);
+                // Penalize the false reporter with a -5 points demerit
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5) WHERE phone_number = ?", [reporterPhone]);
                 
                 // Log the false report penalty
                 await db.upbsPool.query(
                     "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
                     ['System', 'Dispute Resolution', reporterPhone, reporterPhone, 'False Report Penalty']
                 );
+
+                // Text the false reporter about their points deduction
+                try {
+                    await fetch(`${gatewayUrl}/api/sms/send`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+                    },
+                        body: JSON.stringify({
+                            phoneNumber: reporterPhone,
+                            message: `Wrong report - u deducted 5 points to falsely reporting`
+                        })
+                    });
+                } catch (e) {
+                    console.error("Failed to send false report SMS reply:", e.message);
+                }
             }
         }
         return res.json({ success: true, message: `Dispute resolved as ${verdict}.` });
