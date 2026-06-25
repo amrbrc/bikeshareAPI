@@ -406,7 +406,7 @@ const borrow = async (req, res) => {
         ]);
 
         // Formulate the combination lock reply
-        const replyMessage = `Hi ${user.firstname}! Bike ${bicycle.bicycle_code} lock code: ${bicycle.combination_lock}. Proceed to ${toLocation}. Remember to lock it & reply DONE ${bicycleCode} when finished. Safe ride!`;
+        const replyMessage = `Hi ${user.firstname}! Bike ${bicycle.bicycle_code} lock code: ${bicycle.combination_lock}. Proceed to ${toLocation}. Remember to lock it & reply 'DONE ${bicycleCode}' when finished. Safe ride!`;
 
         // Log the borrowing request
         const logQuery = `
