@@ -731,6 +731,88 @@ const broken = async (req, res) => {
     }
 };
 
+const missing = async (req, res) => {
+    const { smsSender, bicycleCode } = req.body;
+    let upbsConn;
+    
+    try {
+        upbsConn = await db.upbsPool.getConnection();
+        await upbsConn.beginTransaction();
+
+        const [member] = await upbsConn.query("SELECT firstname, lastname, phone_number FROM members WHERE phone_number = ? AND is_active = 1", [smsSender]);
+        if (member.length === 0) {
+            await upbsConn.rollback();
+            return res.json({ reply: "Sorry, you must be a registered UP Bike Share member to use this service." });
+        }
+        const currentUserName = `${member[0].firstname} ${member[0].lastname}`;
+
+        const [bike] = await upbsConn.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)", [bicycleCode]);
+        if (bike.length === 0) {
+            await upbsConn.rollback();
+            return res.json({ reply: "Bike not found." });
+        }
+
+        if (bike[0].condition_status === 'Disputed') {
+            await upbsConn.rollback();
+            return res.json({ reply: `Bike ${bicycleCode} is already disputed for admin review.` });
+        }
+        if (bike[0].condition_status === 'Missing') {
+            await upbsConn.rollback();
+            return res.json({ reply: `Bike ${bicycleCode} is already reported missing and under investigation.` });
+        }
+
+        if (bike[0].condition_status === 'Borrowed' || bike[0].condition_status === 'Pending_Status') {
+            await upbsConn.rollback();
+            return res.json({ reply: `Bike ${bicycleCode} is currently checked out by another member or pending a condition check.` });
+        }
+
+        // It is currently Good, but they can't find it.
+        await upbsConn.query(
+            "UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = ? WHERE bicycle_code = ?",
+            [smsSender, bicycleCode]
+        );
+
+        await upbsConn.query(
+            "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+            [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Missing Report']
+        );
+
+        const [history] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1", [bicycleCode]);
+
+        if (history.length > 0) {
+            const [prevMember] = await upbsConn.query("SELECT phone_number FROM members WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+            if (prevMember.length > 0) {
+                await upbsConn.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMember[0].phone_number]);
+
+                try {
+                    const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
+                    await fetch(`${gatewayUrl}/api/sms/send`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
+                        },
+                        body: JSON.stringify({
+                            phoneNumber: prevMember[0].phone_number,
+                            message: `ALERT: Bike ${bicycleCode} was reported MISSING by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`
+                        })
+                    });
+                } catch (e) { console.error("Failed to send missing alert", e.message); }
+            }
+        }
+
+        await upbsConn.commit();
+        return res.json({ reply: `Thank you for reporting. Bike ${bicycleCode} is marked as Missing for admin review. You will be rewarded trust points if this is verified.` });
+
+    } catch (err) {
+        console.error('Error during transaction inside missing controller:', err);
+        if (upbsConn) await upbsConn.rollback();
+        return res.status(500).json({ error: 'Database transaction error' });
+    } finally {
+        if (upbsConn) upbsConn.release();
+    }
+};
+
 const fixed = async (req, res) => {
     const { smsSender, bicycleCode } = req.body;
     try {
@@ -797,5 +879,6 @@ module.exports = {
     good,
     broken,
     fixed,
+    missing,
     points
 };

@@ -98,6 +98,7 @@ async function pollInbox() {
                 const doneMatch = smsMessage.match(/^done\s+(\w+)$/i);
                 const goodMatch = smsMessage.match(/^(\w+)\s+good$|^good\s+(\w+)$/i);
                 const brokenMatch = smsMessage.match(/^(\w+)\s+broken$|^broken\s+(\w+)$/i);
+                const missingMatch = smsMessage.match(/^(\w+)\s+missing$|^missing\s+(\w+)$/i);
                 const fixedMatch = smsMessage.match(/^(\w+)\s+fixed$|^fixed\s+(\w+)$/i);
                 const pointsMatch = smsMessage.match(/^points$/i);
 
@@ -129,6 +130,9 @@ async function pollInbox() {
                 } else if (brokenMatch) {
                     endpoint = '/api/broken';
                     payload.bicycleCode = (brokenMatch[1] || brokenMatch[2]).toLowerCase();
+                } else if (missingMatch) {
+                    endpoint = '/api/missing';
+                    payload.bicycleCode = (missingMatch[1] || missingMatch[2]).toLowerCase();
                 } else if (fixedMatch) {
                     endpoint = '/api/fixed';
                     payload.bicycleCode = (fixedMatch[1] || fixedMatch[2]).toLowerCase();

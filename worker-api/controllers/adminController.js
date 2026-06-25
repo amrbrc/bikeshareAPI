@@ -179,23 +179,31 @@ const resolveDispute = async (req, res) => {
 
     try {
         // Retrieve the dispute_reported_by phone number from bicycle_codes
-        const [bike] = await db.upbsPool.query("SELECT dispute_reported_by FROM bicycle_codes WHERE bicycle_code = ?", [bicycle_code]);
+        const [bike] = await db.upbsPool.query("SELECT dispute_reported_by, condition_status FROM bicycle_codes WHERE bicycle_code = ?", [bicycle_code]);
         const reporterPhone = bike.length > 0 ? bike[0].dispute_reported_by : null;
+        const conditionStatus = bike.length > 0 ? bike[0].condition_status : 'Broken';
 
         const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
 
         if (verdict === 'guilty') {
-            await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 15) WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            if (conditionStatus === 'Missing') {
+                await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 50) WHERE phone_number = ?", [phone_number]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+            } else {
+                await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 15) WHERE phone_number = ?", [phone_number]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            }
 
             // Text the borrower that they are guilty
             try {
+                const deduction = conditionStatus === 'Missing' ? 50 : 15;
+                const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven guilty of damaging a bike. 15 points were deducted from your trust points.`
+                        message: `You have been proven guilty of ${offense} a bike. ${deduction} points were deducted from your trust points.`
                     })
                 });
             } catch (e) {
@@ -262,7 +270,7 @@ const resolveDispute = async (req, res) => {
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `Your recent damage report was found to be false. A 5-point penalty has been applied to your trust points.`
+                            message: `Your recent missing or damage report was found to be false. A 5-point penalty has been applied to your trust points.`
                         })
                     });
                 } catch (e) {
@@ -271,16 +279,25 @@ const resolveDispute = async (req, res) => {
             }
         } else if (verdict === 'neutral') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            
+            if (conditionStatus === 'Missing') {
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+            } else {
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+            }
             
             // Text the borrower
             try {
+                const neutralMsg = conditionStatus === 'Missing' ? 
+                    `The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account.` :
+                    `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`;
+                
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`
+                        message: neutralMsg
                     })
                 });
             } catch (e) {
