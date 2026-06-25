@@ -697,7 +697,7 @@ const broken = async (req, res) => {
             }
 
             await upbsConn.commit();
-            return res.json({ reply: `Thank you for reporting. You've earned +5 Trust Points. Bike ${bicycleCode} is marked as Disputed for admin review.` });
+            return res.json({ reply: `Thank you for reporting. Bike ${bicycleCode} is marked as Disputed for admin review. You will be rewarded trust points if this is verified.` });
         }
     } catch (err) {
         console.error('Error during transaction inside broken controller:', err);
