@@ -31,7 +31,6 @@ Amer is responsible for all database migrations, backend endpoints, scheduled ti
 * [ ] **Table Upgrades**: Create and run the SQL migrations for:
   - Adding `role VARCHAR(20) DEFAULT 'student'` and `consecutive_good_rides INT DEFAULT 0` to the `members` table.
   - Creating the `system_settings` table to store rules and values dynamically.
-  - Creating the `login_otps` table to hold 4-digit verification pins, mobile numbers, and expiry timestamps.
 * [ ] **Defaults Injection**: Populate `system_settings` with the default points settings (e.g., `'penalty_hit_and_run' = -35`, `'suspension_limit' = 50`, etc.).
 * [ ] **Initial Role Data**: Run a script to set specific existing user phone numbers to have `role = 'admin'` for dashboard management access.
 
@@ -56,10 +55,8 @@ Amer is responsible for all database migrations, backend endpoints, scheduled ti
 * [ ] **Waiver Logic**: Update `POST /api/admin/resolve-dispute` to accept `waive_penalty` in the payload.
 * [ ] **Point Bypass**: If verdict is guilty and `waive_penalty` is true, resolve the dispute (unfreeze user, mark bike as broken), but skip the point deduction query. Send a custom SMS explaining that the points deduction was waived.
 
-### 6. Authentication & OTP API Endpoints
-* [ ] **OTP Endpoints**: Implement `POST /api/auth/request-otp` and `POST /api/auth/verify-otp`.
-  - **Request OTP**: Checks if the phone number exists in `members`. Generates a 4-digit numeric code, saves it to `login_otps` (5-minute expiry), and invokes the Gateway SMS dispatcher to text the code to the user.
-  - **Verify OTP**: Checks if the submitted code matches the valid record in `login_otps`. If correct, deletes the OTP and returns a signed JWT containing user's `phone_number` and `role`.
+### 6. Authentication API Endpoints
+* [ ] **Login Endpoint**: Implement `POST /api/auth/login` (checks if the submitted phone number exists in `members` table and returns a signed JWT containing user's `phone_number` and `role`).
 * [ ] **Admin credentials API**: Maintain the `/api/admin/login` fallback route checking against environment credentials.
 
 ---
@@ -70,8 +67,8 @@ Jhirick is responsible for updating the unified login layout, creating the Stude
 
 ### 1. Unified Portal Login UI (`dashboard/index.html` & `dashboard/js/settings.js`)
 * [ ] **UPBS Portal Login design**: Rename the settings panel login card to "UPBS Portal Login".
-* [ ] **OTP Request layout**: Add an input field for phone numbers, a "Request OTP" button, and an OTP validation input field that displays after requesting.
-* [ ] **Login actions**: Connect buttons to Amer's OTP endpoints (`/api/auth/request-otp` and `/api/auth/verify-otp`). Show loading states ("Sending code...", "Verifying...") during authentication.
+* [ ] **Login Layout**: Add an input field for registered mobile number and a "Sign In" button.
+* [ ] **Login actions**: Connect buttons to Amer's login endpoint (`/api/auth/login`). Show loading states during authentication.
 * [ ] **Admin override**: Provide a togglable link ("Admin Credentials Login") to display the original username/password input for system fallbacks.
 
 ### 2. View Routing & Access Control
