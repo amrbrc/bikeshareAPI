@@ -2,6 +2,34 @@
 // Manages the Admin Settings Panel overlay and operations.
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Login UI Elements
+    const toggleLoginModeBtn = document.getElementById('toggle-login-mode');
+    const studentLoginForm = document.getElementById('student-login-form');
+    const adminLoginForm = document.getElementById('admin-login-form');
+    const loginDescription = document.querySelector('#settings-login-view p.text-muted');
+
+    let isStudentLogin = true; // Track which mode we are in
+
+    // Handle toggling between Student and Admin login
+    if (toggleLoginModeBtn) {
+        toggleLoginModeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isStudentLogin = !isStudentLogin;
+
+            if (isStudentLogin) {
+                studentLoginForm.style.setProperty('display', 'flex', 'important');
+                adminLoginForm.style.setProperty('display', 'none', 'important');
+                toggleLoginModeBtn.textContent = "Admin Credentials Login";
+                loginDescription.textContent = "Enter your registered mobile number to sign in.";
+            } else {
+                studentLoginForm.style.setProperty('display', 'none', 'important');
+                adminLoginForm.style.setProperty('display', 'flex', 'important');
+                toggleLoginModeBtn.textContent = "Student Mobile Login";
+                loginDescription.textContent = "Please authenticate with admin credentials.";
+            }
+        });
+    }
+
     const navSettings = document.getElementById('nav-settings');
     const navRegistration = document.getElementById('nav-registration');
     const navLogs = document.getElementById('nav-logs');
