@@ -4,6 +4,25 @@ This document establishes the division of labor between **Amer** (Backend, DB, &
 
 ---
 
+## 🚀 Prerequisites & Workflow Rules (Conflict Prevention)
+
+To prevent merge conflicts and ensure a smooth integration, both developers must adhere to the following order of operations and rules:
+
+1. **Database Schema Setup First (Critical Prerequisite)**:
+   - **Amer** MUST prioritize completing and sharing `worker-api/schema_update.sql` (Task A.1). 
+   - **Jhirick** must run Amer's migration script on their local database before testing frontend API integrations to prevent "missing table/column" errors.
+   - *Action:* Avoid completely dropping/deleting the database. Use `ALTER TABLE` and `CREATE TABLE IF NOT EXISTS` in migration scripts to preserve existing data.
+
+2. **API Contracts & Payload Synchronization**:
+   - Both developers must strictly follow the agreed payload structures (e.g., `waive_penalty` boolean flag, OTP JSON bodies). Any changes to API endpoint URLs or JSON request/response structures must be communicated immediately.
+   - **Amer** must ensure the backend endpoints for OTP (`/api/auth/*`) and Settings (`/api/admin/settings`) are functioning before **Jhirick** wires up the frontend fetch requests.
+
+3. **Isolated Workspaces (Zero Code Overlap)**:
+   - Git merge conflicts will be naturally avoided if developers stay within their designated directories.
+   - **Rule:** Amer strictly works inside the `worker-api/` directory. Jhirick strictly works inside the `dashboard/` directory. Do not modify files in each other's directories without coordination.
+
+---
+
 ## 👨‍💻 Developer A (Amer - Worker API, DB, & Security Lead)
 
 Amer is responsible for all database migrations, backend endpoints, scheduled timers (cron jobs), dynamic string queries, OTP logic, and de-hardcoding database queries.
