@@ -16,7 +16,6 @@ To prevent merge conflicts and ensure a smooth integration, both developers must
 2. **API Contracts & Payload Synchronization**:
    - Both developers must strictly follow the agreed payload structures (e.g., `waive_penalty` boolean flag, login JSON bodies). Any changes to API endpoint URLs or JSON request/response structures must be communicated immediately.
    - **Amer** must ensure the backend endpoints for Login (`/api/auth/login`) and Settings (`/api/admin/settings`) are functioning before **Jhirick** wires up the frontend fetch requests.
-
 3. **Isolated Workspaces (Zero Code Overlap)**:
    - Git merge conflicts will be naturally avoided if developers stay within their designated directories.
    - **Rule:** Amer strictly works inside the `worker-api/` directory. Jhirick strictly works inside the `dashboard/` directory. Do not modify files in each other's directories without coordination.
@@ -28,36 +27,38 @@ To prevent merge conflicts and ensure a smooth integration, both developers must
 Amer is responsible for all database migrations, backend endpoints, scheduled timers (cron jobs), dynamic string queries, OTP logic, and de-hardcoding database queries.
 
 ### 1. Database Migrations (`worker-api/schema_update.sql`)
-* [ ] **Table Upgrades**: Create and run the SQL migrations for:
+* [x] **Table Upgrades**: Create and run the SQL migrations for:
   - Adding `role VARCHAR(20) DEFAULT 'student'` and `consecutive_good_rides INT DEFAULT 0` to the `members` table.
   - Creating the `system_settings` table to store rules and values dynamically.
-* [ ] **Defaults Injection**: Populate `system_settings` with the default points settings (e.g., `'penalty_hit_and_run' = -35`, `'suspension_limit' = 50`, etc.).
-* [ ] **Initial Role Data**: Run a script to set specific existing user phone numbers to have `role = 'admin'` for dashboard management access.
+* [x] **Defaults Injection**: Populate `system_settings` with the default points settings (e.g., `'penalty_hit_and_run' = -35`, `'suspension_limit' = 50`, etc.).
+* [x] **Initial Role Data**: Run a script to set specific existing user phone numbers to have `role = 'admin'` for dashboard management access.
 
 ### 2. Cron Jobs cleanup (`worker-api/services/cronJobs.js`)
-* [ ] **Timer Deletion**: Remove `startUnrepairedDamageJob` (48h countdown) and `start24hReminderJob` (24h warn) from the cron routines.
-* [ ] **Settings Integration**: Update `startSixHourPenaltyJob` to fetch `'penalty_overtime'` points amount dynamically from the settings table instead of subtracting a hardcoded `-5`.
+* [x] **Timer Deletion**: Remove `startUnrepairedDamageJob` (48h countdown) and `start24hReminderJob` (24h warn) from the cron routines.
+* [x] **Settings Integration**: Update `startSixHourPenaltyJob` to fetch `'penalty_overtime'` points amount dynamically from the settings table instead of subtracting a hardcoded `-5`.
 
 ### 3. Dynamic points & merits logic
-* [ ] **De-hardcoding Points**: Update the Worker API endpoints (`adminController.js` and `bikeController.js`) to query values from the `system_settings` table before applying additions/subtractions:
+* [x] **De-hardcoding Points**: Update the Worker API endpoints (`adminController.js` and `bikeController.js`) to query values from the `system_settings` table before applying additions/subtractions:
   - **Honesty Reward**: Query `'honesty_reward'` in `POST /api/done`.
   - **Borrow threshold**: Query `'suspension_limit'` in `POST /api/borrow`.
   - **Dispute verdicts**: Query `'penalty_hit_and_run'`, `'penalty_false_report'`, and `'reward_honest_report'` in `POST /api/admin/resolve-dispute`.
-* [ ] **Consistent Rider Routine**:
+* [x] **Consistent Rider Routine**:
   - In `POST /api/good` (when trip condition is confirmed Good): Increment user's `consecutive_good_rides`. If it reaches a multiple of 5, reward them with the `'consistent_rider_reward'` points (up to 120 max limit) and trigger an SMS notification.
   - In `POST /api/admin/resolve-dispute`: If a user is found Guilty, reset `consecutive_good_rides` to `0`.
 
 ### 4. Dynamic Hub Locations SMS listing
-* [ ] **Dynamic Locations**: Update `/api/help` and `/api/locations` inside `helpController.js` to query active location names (`SELECT location_name FROM locations WHERE is_active = 1...`) and construct the SMS reply dynamically:
+* [x] **Dynamic Locations**: Update `/api/help` and `/api/locations` inside `helpController.js` to query active location names (`SELECT location_name FROM locations WHERE is_active = 1...`) and construct the SMS reply dynamically:
   - `"UPBS Help: To borrow text '[bike] [from] to [to]'. Available stations: " + activeHubs + ". To end trip, text 'done [bike]'."`
 
 ### 5. Dispute "Waive" Checkbox Backend handler
-* [ ] **Waiver Logic**: Update `POST /api/admin/resolve-dispute` to accept `waive_penalty` in the payload.
-* [ ] **Point Bypass**: If verdict is guilty and `waive_penalty` is true, resolve the dispute (unfreeze user, mark bike as broken), but skip the point deduction query. Send a custom SMS explaining that the points deduction was waived.
+* [x] **Waiver Logic**: Update `POST /api/admin/resolve-dispute` to accept `waive_penalty` in the payload.
+* [x] **Point Bypass**: If verdict is guilty and `waive_penalty` is true, resolve the dispute (unfreeze user, mark bike as broken), but skip the point deduction query. Send a custom SMS explaining that the points deduction was waived.
+
 
 ### 6. Authentication API Endpoints
-* [ ] **Login Endpoint**: Implement `POST /api/auth/login` (checks if the submitted phone number exists in `members` table and returns a signed JWT containing user's `phone_number` and `role`).
-* [ ] **Admin credentials API**: Maintain the `/api/admin/login` fallback route checking against environment credentials.
+* [x] **Login Endpoint**: Implement `POST /api/auth/login` (checks if the submitted phone number exists in `members` table and returns a signed JWT containing user's `phone_number` and `role`).
+* [x] **Admin credentials API**: Maintain the `/api/admin/login` fallback route checking against environment credentials.
+
 
 ---
 

@@ -22,7 +22,13 @@ const help = async (req, res) => {
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
-        const replyMessage = 'Cmds: 1. <bike> <from> to <dest> | 2. locations | 3. search <bike/bldg> | 4. done <bike> | 5. good/broken/missing <bike> | 6. points | 7. fixed <bike>';
+
+        // Query active hubs dynamically from locations table
+        const [locationsRows] = await db.upbsPool.query(
+            "SELECT location_name FROM locations WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)"
+        );
+        const activeHubs = locationsRows.map(row => row.location_name.toUpperCase()).join(', ');
+        const replyMessage = `UPBS Help: To borrow text '[bike] [from] to [to]'. Available stations: ${activeHubs}. To end trip, text 'done [bike]'.`;
 
         // 2. Log the help request
         const logQuery = `

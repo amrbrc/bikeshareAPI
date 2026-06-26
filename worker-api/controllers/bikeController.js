@@ -1,5 +1,18 @@
 const db = require('../db');
 
+// Helper function to dynamically fetch settings from system_settings
+async function getSettingValue(name, defaultValue, conn = db.upbsPool) {
+    try {
+        const [rows] = await conn.query('SELECT setting_value FROM system_settings WHERE setting_name = ?', [name]);
+        if (rows.length > 0) {
+            return parseInt(rows[0].setting_value, 10);
+        }
+    } catch (err) {
+        console.error(`Failed to fetch setting ${name}:`, err);
+    }
+    return defaultValue;
+}
+
 // POST /api/search
 const search = async (req, res) => {
     const { smsSender, bicycleCode, messageId } = req.body;
@@ -343,7 +356,8 @@ const borrow = async (req, res) => {
         const user = memberRecords[0];
 
         // Apply Gatekeeper checks for member trust points and frozen status
-        if (user.trust_points < 50) {
+        const suspensionLimit = await getSettingValue('suspension_limit', 50, upbsConn);
+        if (user.trust_points < suspensionLimit) {
             await upbsConn.rollback();
             return res.json({ reply: "Account suspended." });
         }
@@ -544,9 +558,10 @@ const done = async (req, res) => {
             const prevUser = historyRecords[1];
             if (prevUser.condition_confirmed === 1) {
                 // Reward previous user for being honest (ceiling of 120 points)
+                const honestyReward = await getSettingValue('honesty_reward', 1);
                 await db.upbsPool.query(
-                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 1) WHERE CONCAT(firstname, ' ', lastname) = ?", 
-                    [prevUser.borrowed_by]
+                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE CONCAT(firstname, ' ', lastname) = ?", 
+                    [honestyReward, prevUser.borrowed_by]
                 );
             }
         }
@@ -582,9 +597,25 @@ const good = async (req, res) => {
         await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?", [bicycleCode]);
         await db.upbsPool.query("UPDATE bicycle_history SET condition_confirmed = 1 WHERE id = ?", [history[0].id]);
 
+        // Consistent Rider Logic (Merit System)
+        await db.upbsPool.query("UPDATE members SET consecutive_good_rides = consecutive_good_rides + 1 WHERE phone_number = ?", [smsSender]);
+        
+        // Fetch updated consecutive rides and trust points
+        const [memberData] = await db.upbsPool.query("SELECT consecutive_good_rides, trust_points FROM members WHERE phone_number = ?", [smsSender]);
+        let congratsMsg = "";
+        if (memberData.length > 0) {
+            const consecutive = memberData[0].consecutive_good_rides;
+            if (consecutive > 0 && consecutive % 5 === 0) {
+                const reward = await getSettingValue('consistent_rider_reward', 2);
+                await db.upbsPool.query(
+                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?",
+                    [reward, smsSender]
+                );
+                congratsMsg = ` Congratulations! You have completed ${consecutive} consecutive clean rides and earned +${reward} trust points!`;
+            }
+        }
 
-
-        return res.json({ reply: `Thank you! Bike ${bicycleCode} condition confirmed as Good.` });
+        return res.json({ reply: `Thank you! Bike ${bicycleCode} condition confirmed as Good.${congratsMsg}` });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Database error' });
@@ -657,7 +688,7 @@ const broken = async (req, res) => {
             );
 
             await upbsConn.commit();
-            return res.json({ reply: `Bike ${bicycleCode} marked broken. Please repair it within 48 hours to avoid penalty. Reply '${bicycleCode} fixed' when done.` });
+            return res.json({ reply: `Thank you for reporting. Please lock and leave Bike ${bicycleCode} at the designated UPBS Hub (or current location) for the maintenance team to collect.` });
         } else {
             // If the bike is currently actively borrowed by another user, outsiders cannot dispute it.
             if (bike[0].condition_status === 'Borrowed' && !isAbortedTrip) {
