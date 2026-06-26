@@ -33,10 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const navSettings = document.getElementById('nav-settings');
     const navRegistration = document.getElementById('nav-registration');
     const navLogs = document.getElementById('nav-logs');
+    const navPointsSettings = document.getElementById('nav-points-settings');
 
     const registrationContainer = document.getElementById('registration-container');
     const settingsContainer = document.getElementById('settings-container');
     const logsContainer = document.getElementById('logs-container');
+    const pointsSettingsContainer = document.getElementById('points-settings-container');
 
     const navDashboard = document.getElementById('nav-dashboard');
     const navAnalytics = document.getElementById('nav-analytics');
@@ -189,12 +191,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function hideAllViews() {
+        const studentDashboardContainer = document.getElementById('student-dashboard-container');
+        if (studentDashboardContainer) studentDashboardContainer.style.display = 'none';
         if (heroMap) heroMap.style.display = 'none';
         if (dashboardGrid) dashboardGrid.style.display = 'none';
         if (analyticsContainer) analyticsContainer.style.display = 'none';
         if (registrationContainer) registrationContainer.style.display = 'none';
         if (settingsContainer) settingsContainer.style.display = 'none';
         if (logsContainer) logsContainer.style.display = 'none';
+        if (pointsSettingsContainer) pointsSettingsContainer.style.display = 'none';
         if (mainWrapper) {
             mainWrapper.style.overflowY = 'auto';
             mainWrapper.scrollTop = 0;
@@ -206,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navRegistration) navRegistration.classList.remove('active');
         if (navSettings) navSettings.classList.remove('active');
         if (navLogs) navLogs.classList.remove('active');
+        if (navPointsSettings) navPointsSettings.classList.remove('active');
     }
 
     // Intercept clicks on other nav items to hide our new containers
@@ -215,9 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (registrationContainer) registrationContainer.style.display = 'none';
                 if (settingsContainer) settingsContainer.style.display = 'none';
                 if (logsContainer) logsContainer.style.display = 'none';
+                if (pointsSettingsContainer) pointsSettingsContainer.style.display = 'none';
                 if (navRegistration) navRegistration.classList.remove('active');
                 if (navSettings) navSettings.classList.remove('active');
                 if (navLogs) navLogs.classList.remove('active');
+                if (navPointsSettings) navPointsSettings.classList.remove('active');
             });
         }
     });
@@ -267,6 +275,81 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (navPointsSettings) {
+        navPointsSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideAllViews();
+            navPointsSettings.classList.add('active');
+            if (pointsSettingsContainer) pointsSettingsContainer.style.display = 'block';
+            if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+            loadPointsSettings();
+        });
+    }
+
+    async function loadPointsSettings() {
+        const grid = document.getElementById('points-settings-grid');
+        if (!grid) return;
+        
+        try {
+            const res = await fetch('/api/admin/settings', { headers: getAdminHeaders() });
+            const data = await res.json();
+            if (data.success) {
+                grid.innerHTML = '';
+                for (const [key, val] of Object.entries(data.data)) {
+                    const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const card = document.createElement('div');
+                    card.className = 'col-md-6 col-lg-4';
+                    card.innerHTML = `
+                        <div class="card p-3 shadow-sm border-0" style="background-color: var(--bg-panel); border-radius: var(--radius-md);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="fw-bold mb-1" style="color: var(--text-h); font-size: 0.9rem;">${formattedKey}</h6>
+                                    <p class="small text-muted mb-0 font-monospace">${key}</p>
+                                </div>
+                                <span class="badge ${parseInt(val) < 0 ? 'bg-danger' : 'bg-success'}" style="font-size: 0.85rem;">${val}</span>
+                            </div>
+                            <div class="mt-3 d-flex gap-2">
+                                <input type="number" class="form-control form-control-sm settings-val-input" value="${val}" style="max-width: 100px;">
+                                <button class="btn btn-sm btn-primary btn-save-setting" data-key="${key}" style="background-color: var(--up-maroon); border: none;">Save</button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+
+                grid.querySelectorAll('.btn-save-setting').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const k = e.target.getAttribute('data-key');
+                        const input = e.target.previousElementSibling;
+                        const v = parseInt(input.value);
+                        
+                        confirmAction('Update Setting', `Are you sure you want to change ${k} to ${v}?`, async () => {
+                            try {
+                                const saveRes = await fetch('/api/admin/settings', {
+                                    method: 'POST',
+                                    headers: getAdminHeaders(),
+                                    body: JSON.stringify({ key: k, value: v })
+                                });
+                                const saveData = await saveRes.json();
+                                if (saveData.success) {
+                                    loadPointsSettings();
+                                } else {
+                                    alert(saveData.error || 'Failed to update setting.');
+                                }
+                            } catch(err) {
+                                alert('Error updating setting.');
+                            }
+                        });
+                    });
+                });
+            } else {
+                grid.innerHTML = '<div class="col-12"><p class="text-danger small">Failed to load settings.</p></div>';
+            }
+        } catch (e) {
+            grid.innerHTML = '<div class="col-12"><p class="text-danger small">Error connecting to server.</p></div>';
+        }
+    }
+
     async function loadLogs() {
         const qList = document.getElementById('maintenance-queue-list');
         const hList = document.getElementById('honesty-logs-list');
@@ -310,35 +393,98 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check login state
     function checkSession(forceShowAdmin = false) {
         const token = sessionStorage.getItem('adminToken');
+        const role = sessionStorage.getItem('userRole') || 'admin';
+
         const settingsModalCard = document.getElementById('settings-modal-card');
         const btnCloseSettings = document.getElementById('btn-close-settings');
+        const studentDashboardContainer = document.getElementById('student-dashboard-container');
+
         if (token) {
             if (loginView) {
                 loginView.classList.add('d-none');
                 loginView.classList.remove('d-flex');
             }
-            if (adminView) {
-                adminView.classList.remove('d-none');
-                adminView.style.display = 'block';
-            }
             if (btnLogout) {
                 btnLogout.style.display = 'flex';
             }
-            if (settingsModalCard) settingsModalCard.classList.add('admin-active');
 
-            // If they clicked the settings tab explicitly, show the modal. Otherwise hide it.
-            if (forceShowAdmin) {
-                if (settingsContainer) {
-                    settingsContainer.style.display = 'flex';
-                    settingsContainer.style.background = 'rgba(11, 15, 25, 0.6)';
-                    settingsContainer.style.backdropFilter = 'blur(8px)';
+            if (role === 'student') {
+                // --- STUDENT ROUTING ---
+                if (adminView) {
+                    adminView.classList.add('d-none');
+                    adminView.style.display = 'none';
                 }
-                if (btnCloseSettings) btnCloseSettings.style.display = 'flex';
-            } else {
-                if (settingsContainer) settingsContainer.style.display = 'none';
-            }
+                if (settingsModalCard) settingsModalCard.classList.remove('admin-active');
 
-            loadAdminPanel();
+                // Hide modal and show student dashboard
+                if (settingsContainer) settingsContainer.style.display = 'none';
+                hideAllViews();
+                if (studentDashboardContainer) studentDashboardContainer.style.display = 'block';
+
+                // Trigger fake gauge animation and dynamic color
+                setTimeout(() => {
+                    const circle = document.getElementById('trust-score-circle');
+                    const text = document.getElementById('trust-score-text');
+                    const msg = document.getElementById('trust-score-msg');
+                    if(circle && text && msg) {
+                        const fakeScore = 85;
+                        const max = 120;
+                        const offset = 283 - (283 * (fakeScore / max));
+                        circle.style.strokeDashoffset = offset; 
+                        text.textContent = fakeScore;
+                        
+                        // Dynamic coloring
+                        if (fakeScore >= 90) {
+                            circle.style.stroke = 'var(--up-green, #006a4e)';
+                            msg.textContent = 'Excellent standing! Keep it up.';
+                        } else if (fakeScore >= 60) {
+                            circle.style.stroke = '#eab308'; // Yellow
+                            msg.textContent = 'Great standing! You can borrow bikes anytime.';
+                        } else {
+                            circle.style.stroke = '#ef4444'; // Red
+                            msg.textContent = 'Warning: Trust score is too low.';
+                        }
+                    }
+                }, 500);
+
+                // Fake Timer Interval (starts at 01:15:30)
+                const timerEl = document.getElementById('active-ride-timer');
+                if (timerEl) {
+                    let seconds = 4530; 
+                    if (window.studentTimerInterval) clearInterval(window.studentTimerInterval);
+                    window.studentTimerInterval = setInterval(() => {
+                        seconds++;
+                        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+                        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+                        const s = String(seconds % 60).padStart(2, '0');
+                        timerEl.textContent = `${h}:${m}:${s}`;
+                    }, 1000);
+                }
+
+            } else {
+                // --- ADMIN ROUTING ---
+                if (adminView) {
+                    adminView.classList.remove('d-none');
+                    adminView.style.display = 'block';
+                }
+                if (settingsModalCard) settingsModalCard.classList.add('admin-active');
+
+                // If they clicked the settings tab explicitly, show the modal. Otherwise hide it.
+                if (forceShowAdmin) {
+                    if (settingsContainer) {
+                        settingsContainer.style.display = 'flex';
+                        settingsContainer.style.background = 'rgba(11, 15, 25, 0.6)';
+                        settingsContainer.style.backdropFilter = 'blur(8px)';
+                    }
+                    if (btnCloseSettings) btnCloseSettings.style.display = 'flex';
+                } else {
+                    if (settingsContainer) settingsContainer.style.display = 'none';
+                }
+
+                if (heroMap) heroMap.style.display = 'block';
+                if (dashboardGrid) dashboardGrid.style.display = 'block';
+                loadAdminPanel();
+            }
         } else {
             if (loginView) {
                 loginView.classList.remove('d-none');
@@ -365,16 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle Login Submit
     async function handleLogin() {
-        const username = loginUsername.value.trim();
-        const password = loginPassword.value;
         loginError.style.display = 'none';
-
-        if (!username || !password) {
-            loginError.textContent = 'Username and password are required.';
-            loginError.style.display = 'block';
-            return;
-        }
-
         const btnText = document.getElementById('login-btn-text');
         const btnIcon = document.getElementById('login-success-icon');
         const originalBtnText = btnText ? btnText.textContent : 'Sign In';
@@ -385,16 +522,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btnText) btnText.textContent = 'Authenticating...';
             }
 
-            const res = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await res.json();
+            let res, data;
+
+            if (isStudentLogin) {
+                // --- 1. STUDENT LOGIN LOGIC ---
+                const studentPhoneInput = document.getElementById('student-phone');
+                const phone = studentPhoneInput ? studentPhoneInput.value.trim() : '';
+
+                if (!phone) {
+                    throw new Error("Mobile number is required.");
+                }
+
+                // Auto-format phone number to +639XXXXXXXXX
+                let formattedPhone = phone;
+                if (formattedPhone.startsWith('09') && formattedPhone.length === 11) {
+                    formattedPhone = '+63' + formattedPhone.substring(1);
+                } else if (formattedPhone.startsWith('9') && formattedPhone.length === 10) {
+                    formattedPhone = '+63' + formattedPhone;
+                } else if (formattedPhone.startsWith('639') && formattedPhone.length === 12) {
+                    formattedPhone = '+' + formattedPhone;
+                }
+
+                res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: formattedPhone })
+                });
+                data = await res.json();
+            } else {
+                // --- 2. ADMIN CREDENTIALS LOGIC ---
+                const username = loginUsername.value.trim();
+                const password = loginPassword.value;
+
+                if (!username || !password) {
+                    throw new Error("Username and password are required.");
+                }
+
+                res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                data = await res.json();
+            }
 
             if (data.success) {
                 sessionStorage.setItem('adminToken', data.token);
-                // Success feedback
+                // Also save the role if the backend provided it, else default to 'admin'
+                sessionStorage.setItem('userRole', data.role || 'admin');
+
+                // Success feedback UI
                 if (btnLoginSubmit) {
                     btnLoginSubmit.style.backgroundColor = 'var(--up-green)';
                     if (btnText) btnText.textContent = 'Login Successful!';
@@ -412,12 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }, 800);
             } else {
-                if (btnLoginSubmit) {
-                    btnLoginSubmit.disabled = false;
-                    if (btnText) btnText.textContent = originalBtnText;
-                }
-                loginError.textContent = data.error || 'Authentication failed.';
-                loginError.style.display = 'block';
+                throw new Error(data.error || 'Authentication failed.');
             }
         } catch (err) {
             console.error('[settings.js] Login error:', err);
@@ -425,7 +597,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnLoginSubmit.disabled = false;
                 if (btnText) btnText.textContent = originalBtnText;
             }
-            loginError.textContent = 'Server connection error. Please try again.';
+            // Show the exact error message (e.g. "Mobile number is required.")
+            loginError.textContent = err.message || 'Server connection error. Please try again.';
             loginError.style.display = 'block';
         }
     }
@@ -885,9 +1058,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn btn-sm btn-secondary flex-fill btn-neutral" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
                         </div>
                     </div>
+                    <label class="d-flex align-items-center gap-2 mt-2" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                        <input type="checkbox" class="waive-penalty-checkbox">
+                        Waive standard point penalty
+                    </label>
                 `;
 
-                const bikeInput = actionDiv.querySelector('input');
+                const bikeInput = actionDiv.querySelector('input[type="text"]');
+                const waiveCheckbox = actionDiv.querySelector('.waive-penalty-checkbox');
                 const btnInnocent = actionDiv.querySelector('.btn-innocent');
                 const btnGuilty = actionDiv.querySelector('.btn-guilty');
                 const btnNeutral = actionDiv.querySelector('.btn-neutral');
@@ -901,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const res = await fetch('/api/admin/resolve-dispute', {
                                 method: 'POST',
                                 headers: getAdminHeaders(),
-                                body: JSON.stringify({ phone_number: mem.phone_number, verdict: verdict, bicycle_code: bikeCode })
+                                body: JSON.stringify({ phone_number: mem.phone_number, verdict: verdict, bicycle_code: bikeCode, waive_penalty: waiveCheckbox.checked })
                             });
                             const data = await res.json();
                             if (data.success) {

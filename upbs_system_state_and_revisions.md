@@ -62,34 +62,34 @@ Amer is responsible for all database migrations, backend endpoints, scheduled ti
 
 ---
 
-## 👩‍💻 Developer B (Jhirick - Frontend & Dashboard Integration Lead)
+## 👩💻 Developer B (Jhirick - Frontend & Dashboard Integration Lead)
 
 Jhirick is responsible for updating the unified login layout, creating the Student Dashboard interface, building the Points Configuration settings tab, and adding the dispute resolution waive checkbox.
 
 ### 1. Unified Portal Login UI (`dashboard/index.html` & `dashboard/js/settings.js`)
-* [ ] **UPBS Portal Login design**: Rename the settings panel login card to "UPBS Portal Login".
-* [ ] **Login Layout**: Add an input field for registered mobile number and a "Sign In" button.
-* [ ] **Login actions**: Connect buttons to Amer's login endpoint (`/api/auth/login`). Show loading states during authentication.
-* [ ] **Admin override**: Provide a togglable link ("Admin Credentials Login") to display the original username/password input for system fallbacks.
+* [x] **UPBS Portal Login design**: Rename the settings panel login card to "UPBS Portal Login".
+* [x] **Login Layout**: Add an input field for registered mobile number and a "Sign In" button.
+* [x] **Login actions**: Connect buttons to Amer's login endpoint (`/api/auth/login`). Show loading states during authentication.
+* [x] **Admin override**: Provide a togglable link ("Admin Credentials Login") to display the original username/password input for system fallbacks.
 
 ### 2. View Routing & Access Control
-* [ ] **Role checking**: On successful login, decode the JWT token (or check the returned JSON payload) to verify the user's role.
-* [ ] **Dashboard display**:
+* [x] **Role checking**: On successful login, decode the JWT token (or check the returned JSON payload) to verify the user's role.
+* [x] **Dashboard display**:
   - If `role === 'admin'`: Open the full **Management Dashboard** (live occupancy grids, override settings, user search list, dispute resolution cards).
   - If `role === 'student'`: Render the brand-new **Student Dashboard** view.
 
 ### 3. Student Dashboard View (`dashboard/index.html` & CSS)
-* [ ] **Dashboard Panels**: Build the responsive student landing panel showing:
+* [x] **Dashboard Panels**: Build the responsive student landing panel showing:
   - **Trust Score Gauge**: An elegant circular SVG progress gauge displaying their trust score (e.g. `95/120`). Animate the meter bar. Color is calculated dynamically in JS: Green for >= 90, Yellow for 60 to 89, Red for < 60.
   - **Active Ride Timer**: If user has an active checkout, show a prominent widget with a ticking clock counting up to the 6-hour limit.
   - **Personal Ride Log**: A table listing the user's personal borrow history (dates, bike code, stations).
   - **Rules Checklist card**: Modern cards outlining the Honesty Policy commands.
 
 ### 4. Dispute "Waive" Checkbox UI
-* [ ] **Checkbox inclusion**: On the dispute cards in the admin members listing, add a checkbox: `[ ] Waive standard point penalty` next to the resolution actions.
-* [ ] **Payload update**: Include `waive_penalty: checkbox.checked` in the body of the fetch request to `/api/admin/resolve-dispute`.
+* [x] **Checkbox inclusion**: On the dispute cards in the admin members listing, add a checkbox: `[x] Waive standard point penalty` next to the resolution actions.
+* [x] **Payload update**: Include `waive_penalty: checkbox.checked` in the body of the fetch request to `/api/admin/resolve-dispute`.
 
 ### 5. Points Configuration Tab
-* [ ] **Tab Navigation**: Add a new tab button **"Points Settings"** in the Admin panel.
-* [ ] **Settings Grid**: Construct a dashboard table or list of settings cards populated via `GET /api/admin/settings`.
-* [ ] **Edit modals**: Add edit/save options to update any settings dynamically via `POST /api/admin/settings`.
+* [x] **Tab Navigation**: Add a new tab button **"Points Settings"** in the Admin panel.
+* [x] **Settings Grid**: Construct a dashboard table or list of settings cards populated via `GET /api/admin/settings`.
+* [x] **Edit modals**: Add edit/save options to update any settings dynamically via `POST /api/admin/settings`.
