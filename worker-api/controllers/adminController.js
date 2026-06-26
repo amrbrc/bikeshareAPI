@@ -1,6 +1,19 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 
+// Helper function to dynamically fetch settings from system_settings
+async function getSettingValue(name, defaultValue) {
+    try {
+        const [rows] = await db.upbsPool.query('SELECT setting_value FROM system_settings WHERE setting_name = ?', [name]);
+        if (rows.length > 0) {
+            return parseInt(rows[0].setting_value, 10);
+        }
+    } catch (err) {
+        console.error(`Failed to fetch setting ${name}:`, err);
+    }
+    return defaultValue;
+}
+
 // POST /api/admin/login
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -171,7 +184,7 @@ const toggleLocation = async (req, res) => {
 
 // POST /api/admin/resolve-dispute
 const resolveDispute = async (req, res) => {
-    const { phone_number, verdict, bicycle_code } = req.body;
+    const { phone_number, verdict, bicycle_code, waive_penalty } = req.body;
 
     if (!phone_number || !verdict || !bicycle_code) {
         return res.status(400).json({ success: false, error: 'phone_number, verdict, and bicycle_code are required' });
@@ -197,25 +210,42 @@ const resolveDispute = async (req, res) => {
         }
 
         if (verdict === 'guilty') {
+            const hitAndRunPenalty = await getSettingValue('penalty_hit_and_run', -35);
+            const absolutePenalty = Math.abs(hitAndRunPenalty);
+
+            if (waive_penalty === true || waive_penalty === 'true') {
+                // Reset frozen status and consecutive good rides but do not deduct points
+                await db.upbsPool.query(
+                    "UPDATE members SET points_frozen = 0, consecutive_good_rides = 0 WHERE phone_number = ?",
+                    [phone_number]
+                );
+            } else {
+                // Deduct points dynamically (adding a negative number)
+                await db.upbsPool.query(
+                    "UPDATE members SET points_frozen = 0, consecutive_good_rides = 0, trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?",
+                    [hitAndRunPenalty, phone_number]
+                );
+            }
+
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 50) WHERE phone_number = ?", [phone_number]);
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
-                await db.upbsPool.query("UPDATE members SET points_frozen = 0, trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 15) WHERE phone_number = ?", [phone_number]);
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
 
             // Text the borrower that they are guilty
             try {
-                const deduction = conditionStatus === 'Missing' ? 50 : 15;
                 const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
-                const repairWarning = conditionStatus === 'Missing' ? '' : ' You have 48 hours to repair it before an additional 10-point penalty is applied.';
+                const message = (waive_penalty === true || waive_penalty === 'true') ?
+                    "Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time." :
+                    `You have been proven guilty of unreported damage (Hit-and-Run) on a bike. ${absolutePenalty} points were deducted from your trust points.`;
+
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                     body: JSON.stringify({
                         phoneNumber: phone_number,
-                        message: `You have been proven guilty of ${offense} a bike. ${deduction} points were deducted from your trust points.${repairWarning}`
+                        message: message
                     })
                 });
             } catch (e) {
@@ -224,8 +254,9 @@ const resolveDispute = async (req, res) => {
 
             // Reward and text the reporter
             if (reporterPhone) {
-                // Reward the reporter with +5 points (ceiling 120)
-                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [reporterPhone]);
+                const reward = await getSettingValue('reward_honest_report', 5);
+                // Reward the reporter (ceiling 120)
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?", [reward, reporterPhone]);
 
                 // Log the reward
                 await db.upbsPool.query(
@@ -239,7 +270,7 @@ const resolveDispute = async (req, res) => {
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `The dispute you reported has been resolved. The previous user was penalized. You have earned +5 trust points. Thank you for keeping our bikes safe!`
+                            message: `The dispute you reported has been resolved. The previous user was penalized. You have earned +${reward} trust points. Thank you for keeping our bikes safe!`
                         })
                     });
                 } catch (e) {
@@ -266,8 +297,10 @@ const resolveDispute = async (req, res) => {
             }
 
             if (reporterPhone) {
-                // Penalize the false reporter with a -5 points demerit
-                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5) WHERE phone_number = ?", [reporterPhone]);
+                const penalty = await getSettingValue('penalty_false_report', -5);
+                const absolutePenalty = Math.abs(penalty);
+                // Penalize the false reporter (adding a negative number)
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?", [penalty, reporterPhone]);
 
                 // Log the false report penalty
                 await db.upbsPool.query(
@@ -282,7 +315,7 @@ const resolveDispute = async (req, res) => {
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `Your recent missing or damage report was found to be false. A 5-point penalty has been applied to your trust points.`
+                            message: `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`
                         })
                     });
                 } catch (e) {
@@ -318,8 +351,9 @@ const resolveDispute = async (req, res) => {
 
             // Text the reporter
             if (reporterPhone) {
-                // Reward the reporter with +5 points for correctly identifying a broken bike (ceiling 120)
-                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + 5) WHERE phone_number = ?", [reporterPhone]);
+                const reward = await getSettingValue('reward_honest_report', 5);
+                // Reward the reporter with points for correctly identifying a broken bike (ceiling 120)
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?", [reward, reporterPhone]);
 
                 // Log the reward
                 await db.upbsPool.query(
@@ -333,7 +367,7 @@ const resolveDispute = async (req, res) => {
                         headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
                         body: JSON.stringify({
                             phoneNumber: reporterPhone,
-                            message: `The dispute you reported has been resolved neutrally (external damage). You have earned +5 trust points for accurately reporting the broken bike. Thank you!`
+                            message: `The dispute you reported has been resolved neutrally (external damage). You have earned +${reward} trust points for accurately reporting the broken bike. Thank you!`
                         })
                     });
                 } catch (e) {
@@ -707,6 +741,63 @@ const toggleBike = async (req, res) => {
     }
 };
 
+// GET /api/admin/settings
+const getSettings = async (req, res) => {
+    try {
+        const [rows] = await db.upbsPool.query('SELECT * FROM system_settings');
+        return res.json({ success: true, settings: rows });
+    } catch (err) {
+        console.error('Error in getSettings controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching system settings' });
+    }
+};
+
+// POST /api/admin/settings
+const updateSettings = async (req, res) => {
+    const { settings, setting_name, setting_value } = req.body;
+
+    // We can support either bulk updates via "settings" array or single update via "setting_name" & "setting_value"
+    let updates = [];
+    if (Array.isArray(settings)) {
+        updates = settings;
+    } else if (setting_name !== undefined && setting_value !== undefined) {
+        updates = [{ setting_name, setting_value }];
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({ success: false, error: 'Settings update data is required. Provide either a settings array or setting_name/setting_value pair.' });
+    }
+
+    // Validate setting names and values
+    for (const update of updates) {
+        if (!update.setting_name || update.setting_value === undefined) {
+            return res.status(400).json({ success: false, error: 'Invalid setting update format. Each update must contain setting_name and setting_value.' });
+        }
+    }
+
+    const conn = await db.upbsPool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        for (const update of updates) {
+            // Update the setting
+            await conn.query(
+                'UPDATE system_settings SET setting_value = ? WHERE setting_name = ?',
+                [String(update.setting_value), update.setting_name]
+            );
+        }
+
+        await conn.commit();
+        return res.json({ success: true, message: 'System settings updated successfully' });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Error in updateSettings controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error updating system settings' });
+    } finally {
+        conn.release();
+    }
+};
+
 module.exports = {
     login,
     toggleBike,
@@ -728,5 +819,8 @@ module.exports = {
     searchMembers,
     overrideBicycle,
     getMaintenanceQueue,
-    getHonestyLogs
+    getHonestyLogs,
+    getSettings,
+    updateSettings
 };
+

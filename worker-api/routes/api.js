@@ -32,15 +32,20 @@ router.post('/points', bikeController.points);
 // Help Routes
 router.post('/help', helpController.help);
 router.post('/how', helpController.how);
-// Public Admin Routes
+
+// Public Auth & Admin Routes
+router.post('/auth/login', memberController.login);
 router.post('/admin/login', adminController.login);
 
 // Admin Routes (Secured with authMiddleware)
+router.get('/admin/settings', authMiddleware, adminController.getSettings);
+router.post('/admin/settings', authMiddleware, adminController.updateSettings);
 router.get('/admin/members', authMiddleware, adminController.getMembers);
 router.post('/admin/members', authMiddleware, adminController.addMember);
 router.post('/admin/bicycles', authMiddleware, adminController.addBicycle);
 router.post('/admin/locations', authMiddleware, adminController.addLocation);
 router.post('/admin/resolve-dispute', authMiddleware, adminController.resolveDispute);
+
 router.get('/admin/search-bike', authMiddleware, adminController.searchBike);
 router.get('/admin/search-member', authMiddleware, adminController.searchMember);
 router.post('/admin/override-points', authMiddleware, adminController.overridePoints);
