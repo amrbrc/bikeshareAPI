@@ -251,15 +251,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCloseSettings = document.getElementById('btn-close-settings');
     if (btnCloseSettings) {
         btnCloseSettings.addEventListener('click', () => {
-            if (settingsContainer) settingsContainer.style.display = 'none';
+            const token = sessionStorage.getItem('adminToken');
+            if (token && settingsContainer) {
+                settingsContainer.style.display = 'none';
+            }
         });
     }
 
-    // Close modal when clicking outside the modal card
+    // Close modal when clicking outside the modal card (only if authenticated)
     if (settingsContainer) {
         settingsContainer.addEventListener('click', (e) => {
             if (e.target === settingsContainer) {
-                settingsContainer.style.display = 'none';
+                const token = sessionStorage.getItem('adminToken');
+                if (token) {
+                    settingsContainer.style.display = 'none';
+                }
             }
         });
     }
@@ -394,6 +400,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkSession(forceShowAdmin = false) {
         const token = sessionStorage.getItem('adminToken');
         const role = sessionStorage.getItem('userRole') || 'admin';
+
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        if (role === 'student') {
+            window.location.href = '/student-dashboard.html';
+            return;
+        }
 
         const settingsModalCard = document.getElementById('settings-modal-card');
         const btnCloseSettings = document.getElementById('btn-close-settings');
@@ -579,13 +595,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 setTimeout(() => {
-                    checkSession();
-                    // Reset button for future logouts
-                    if (btnLoginSubmit) {
-                        btnLoginSubmit.disabled = false;
-                        btnLoginSubmit.style.backgroundColor = '';
-                        if (btnText) btnText.textContent = originalBtnText;
-                        if (btnIcon) btnIcon.style.display = 'none';
+                    const role = sessionStorage.getItem('userRole');
+                    if (role === 'student') {
+                        window.location.href = '/student-dashboard.html';
+                    } else {
+                        checkSession();
+                        // Reset button for future logouts
+                        if (btnLoginSubmit) {
+                            btnLoginSubmit.disabled = false;
+                            btnLoginSubmit.style.backgroundColor = '';
+                            if (btnText) btnText.textContent = originalBtnText;
+                            if (btnIcon) btnIcon.style.display = 'none';
+                        }
                     }
                 }, 800);
             } else {
@@ -623,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Fallback to default confirm if modal is missing
                 if (confirm("Are you sure you want to log out?")) {
                     sessionStorage.removeItem('adminToken');
+                    sessionStorage.removeItem('userRole');
                     checkSession();
                 }
             }
@@ -638,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnLogoutConfirm.addEventListener('click', () => {
                 if (logoutModal) logoutModal.style.display = 'none';
                 sessionStorage.removeItem('adminToken');
+                sessionStorage.removeItem('userRole');
                 checkSession();
             });
         }
