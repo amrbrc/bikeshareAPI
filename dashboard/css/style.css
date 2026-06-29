@@ -1408,4 +1408,9 @@ body {
     body:has(#nav-analytics.active) .hero-map-section {
         display: none !important;
     }
+
+    /* Analytics header: smaller font on mobile only */
+    #analytics-container h3.h5 {
+        font-size: 1rem !important;
+    }
 }
