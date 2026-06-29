@@ -555,7 +555,7 @@ const done = async (req, res) => {
         }
 
         const [history] = await upbsConn.query(
-            "SELECT id, borrowed_by, done_text_received FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1 FOR UPDATE",
+            "SELECT id, borrowed_by, done_text_received FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1 FOR UPDATE",
             [bicycleCode]
         );
 
@@ -581,7 +581,7 @@ const done = async (req, res) => {
 
         // Reward the PREVIOUS user if they accurately confirmed the condition as good
         const [historyRecords] = await upbsConn.query(
-            "SELECT borrowed_by, borrower_phone, condition_confirmed, reported_condition FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2",
+            "SELECT borrowed_by, borrower_phone, condition_confirmed, reported_condition FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 2",
             [bicycleCode]
         );
 
@@ -642,7 +642,7 @@ const good = async (req, res) => {
             return res.json({ reply: `Bike ${bicycleCode} is not awaiting a condition check.` });
         }
 
-        const [history] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1 FOR UPDATE", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1 FOR UPDATE", [bicycleCode]);
 
         if (history.length === 0 || history[0].borrowed_by !== currentUserName) {
             await upbsConn.rollback();
@@ -726,7 +726,7 @@ const broken = async (req, res) => {
             return res.json({ reply: `Bike ${bicycleCode} is currently reported as delivered and undergoing repairs.` });
         }
 
-        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone, done_text_received, borrowed_at FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 2", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone, done_text_received, borrowed_at FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 2", [bicycleCode]);
 
         // Determine if this is the immediate user or the next user
         let isImmediateUser = history.length > 0 && history[0].borrowed_by === currentUserName;
@@ -908,7 +908,7 @@ const missing = async (req, res) => {
             [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Missing Report']
         );
 
-        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone FROM bicycle_history WHERE bicycle_code = ? ORDER BY borrowed_at DESC LIMIT 1", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1", [bicycleCode]);
 
         if (history.length > 0) {
             let prevMemberPhone = history[0].borrower_phone;
@@ -976,7 +976,7 @@ const delivered = async (req, res) => {
 
         // Close any active or pending return trip for this user on this bike
         const [activeTrip] = await upbsConn.query(
-            "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND borrowed_by = ? AND (done_text_received = 0 OR (done_text_received = 1 AND condition_confirmed = 0)) ORDER BY borrowed_at DESC LIMIT 1 FOR UPDATE",
+            "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND borrowed_by = ? AND (done_text_received = 0 OR (done_text_received = 1 AND condition_confirmed = 0)) ORDER BY id DESC LIMIT 1 FOR UPDATE",
             [bicycleCode, currentUserName]
         );
         if (activeTrip.length > 0) {
