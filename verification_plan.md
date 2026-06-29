@@ -178,3 +178,48 @@ Ensure the following before starting tests:
         *   Member A's `trust_points` are penalized by `-5`.
         *   Member A's `consecutive_good_rides` count is reset to `0`.
 
+---
+
+### 15. Dynamic Dashboard Point Synchronization
+*   **Goal:** Verify that changing point values in the Admin Dashboard instantly updates the User Dashboard (no hardcoding).
+*   **Steps:** 
+    1. In the Admin Dashboard, go to **Rules & Points Configuration**.
+    2. Change a reward (e.g., Honesty Reward) to `20` and click Save.
+    3. Reload the User Dashboard.
+    4. **Expected outcome:**
+        *   The User Dashboard instantly displays `+20 pts` instead of the old value.
+
+---
+
+### 16. Singular/Plural Grammar Formatting (UI Polish)
+*   **Goal:** Verify that the system handles grammar correctly for `1` vs multiple points/bikes.
+*   **Steps:** 
+    1. In the Admin Dashboard, set a point configuration (e.g. Honesty Reward) to `1`.
+    2. Look at the badge on the Admin Dashboard and User Dashboard.
+    3. Look at the Active Stations list on the map for a station with exactly 1 bike.
+    4. **Expected outcome:**
+        *   The dashboards read `+1 pt` instead of `+1 pts`.
+        *   The map reads `1 bike` instead of `1 bikes`.
+
+---
+
+### 17. Admin Member Management (Add Points & Deactivate)
+*   **Goal:** Verify that the main Dashboard Search Center is strictly view-only, and that member management logic adds points instead of overwriting them.
+*   **Steps:** 
+    1. In the main Dashboard's Search Center, search for a member. Verify there are no action buttons.
+    2. Go to **Settings -> Registered Members**, search the same member, and click **Add Points**.
+    3. Enter `10` as the additional points.
+    4. **Expected outcome:**
+        *   The system accurately *adds* 10 to the total instead of replacing the entire score with 10.
+        *   The UI refreshes and immediately shows the new total.
+
+---
+
+### 18. Dynamic Map Station Zooming
+*   **Goal:** Verify that newly added stations with arbitrary capitalization can be clicked to pan/zoom the map.
+*   **Steps:** 
+    1. Add a new station called `New Station`.
+    2. Wait for it to appear on the Active Stations list on the Dashboard.
+    3. Click on the station name from the Active Stations list.
+    4. **Expected outcome:**
+        *   The map seamlessly zooms to its location and opens the popup bubble, despite string casing differences.
