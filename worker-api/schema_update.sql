@@ -53,16 +53,14 @@ CREATE TABLE IF NOT EXISTS system_settings (
 
 -- Insert default rules and point configurations
 INSERT INTO system_settings (setting_name, setting_value, description) VALUES
-('reward_honest_report', '5', 'Points rewarded to the next user for reporting a broken/missing bike that was disputed.'),
+('honesty_reward', '5', 'Points rewarded when a Good condition report is confirmed by the next rider.'),
+('consistent_rider_reward', '10', 'Points rewarded for completing multiple rides without issues.'),
+('reward_honest_report', '15', 'Points rewarded for reporting a broken/missing bike that was disputed.'),
+('reward_community_volunteer', '30', 'Points rewarded to a user who completes a verified Community Service shift at a hub.'),
 ('penalty_hit_and_run', '-35', 'Points deducted from a user found guilty of unreported damage (Hit-and-Run).'),
 ('penalty_false_report', '-5', 'Points deducted from a user who submits a false damage/missing report.'),
 ('penalty_overtime', '-5', 'Points deducted per hour from a user who borrows a bike past the 6-hour limit.'),
-('suspension_limit', '50', 'Trust score threshold below which a member account is automatically suspended.'),
-('honesty_reward', '1', 'Points rewarded to the previous user when they honestly reported a bike good and the next user confirmed it.'),
-('reward_good_samaritan', '10', 'Points rewarded to a user who finds a missing bike and returns/reports it to a hub.'),
-('consistent_rider_reward', '2', 'Points rewarded automatically to a user for every 5 consecutive rides completed without disputes.')
+('suspension_limit', '50', 'Trust score threshold below which a member account is automatically suspended.')
 ON DUPLICATE KEY UPDATE 
     setting_value = VALUES(setting_value),
     description = VALUES(description);
-
-

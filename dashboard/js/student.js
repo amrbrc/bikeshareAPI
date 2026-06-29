@@ -526,4 +526,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 4000);
     }
+    // --- DYNAMIC SETTINGS LOAD ---
+    async function loadDynamicSettings() {
+        const token = sessionStorage.getItem('adminToken');
+        if (!token) return;
+        
+        try {
+            const res = await fetch('/api/admin/settings', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.data) {
+                const settings = data.data;
+                
+                // Helper to update text safely
+                const updateBadge = (id, settingKey, suffix = 'pts') => {
+                    const el = document.getElementById(id);
+                    if (el && settings[settingKey] !== undefined) {
+                        const val = parseInt(settings[settingKey]);
+                        const sign = val > 0 ? '+' : '';
+                        
+                        let displaySuffix = suffix;
+                        if (suffix === 'pts' || suffix === 'pt') {
+                            displaySuffix = Math.abs(val) === 1 ? 'pt' : 'pts';
+                        }
+                        
+                        el.innerText = `${sign}${val} ${displaySuffix}`;
+                    }
+                };
+                
+                // Rewards
+                updateBadge('badge-honesty-reward', 'honesty_reward', 'pt');
+                updateBadge('badge-consistent-rider', 'consistent_rider_reward', 'pts');
+                updateBadge('badge-reward-honest-report', 'reward_honest_report', 'pts');
+                updateBadge('badge-reward-community-volunteer', 'reward_community_volunteer', 'pts');
+                
+                // Penalties
+                updateBadge('badge-penalty-abandoned-handshake', 'penalty_abandoned_handshake', 'pts');
+                updateBadge('badge-penalty-false-report', 'penalty_false_report', 'pts');
+                updateBadge('badge-penalty-overtime', 'penalty_overtime', '/ hr');
+                updateBadge('badge-penalty-hit-and-run', 'penalty_hit_and_run', 'pts');
+                updateBadge('badge-penalty-missing-bike', 'penalty_missing_bike', 'pts');
+            }
+        } catch (err) {
+            console.error('Failed to load dynamic settings:', err);
+        }
+    }
+    
+    // Call it once on load
+    loadDynamicSettings();
 });

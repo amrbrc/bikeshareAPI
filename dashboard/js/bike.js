@@ -164,12 +164,13 @@ function renderLocations() {
 
     allLocations.forEach((loc, index) => {
         const stationKey = loc.location_name;
+        const mapKey = stationKey.toLowerCase().trim();
         const count = bikeCounts[stationKey] || 0;
         const isDisabled = loc.is_disabled === 1 || loc.is_disabled === true;
 
         // Get color from map.js if available, default to green. Use red if disabled.
-        const dotColor = isDisabled ? '#ef4444' : ((window.STATION_COLORS && window.STATION_COLORS[stationKey])
-            ? window.STATION_COLORS[stationKey]
+        const dotColor = isDisabled ? '#ef4444' : ((window.STATION_COLORS && window.STATION_COLORS[mapKey])
+            ? window.STATION_COLORS[mapKey]
             : '#34d399');
 
         const row = document.createElement('div');
@@ -191,7 +192,7 @@ function renderLocations() {
                 ${stationKey} ${isDisabled ? '<span style="font-size:0.65rem; color:#ef4444; font-weight:600; margin-left:4px;">(Offline)</span>' : ''}
             </span>
             <span style="margin-left:auto; font-size:0.75rem; color:#8892a4; font-weight:600; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:12px;">
-                ${count} bikes
+                ${count} ${count === 1 ? 'bike' : 'bikes'}
             </span>
             <span class="station-arrow" style="margin-left: 8px;">›</span>
         `;
@@ -205,7 +206,7 @@ function renderLocations() {
                 currentFilterStation = stationKey;
                 // Zoom map (calls function in map.js)
                 if (window.zoomToStation) {
-                    window.zoomToStation(stationKey);
+                    window.zoomToStation(mapKey);
                 }
             }
 

@@ -121,11 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Adjust points
-        if (e.target.classList.contains('btn-adjust-points')) {
+        // 1. Add points
+        if (e.target.classList.contains('btn-add-points')) {
             const phone = e.target.getAttribute('data-phone');
-            const newPoints = prompt('Enter new trust points value for this member:');
-            if (newPoints === null || newPoints.trim() === '') return;
+            const currentPoints = parseInt(e.target.getAttribute('data-points'));
+            const additionalPoints = prompt('Enter additional points to add to this member (e.g. 20 for volunteer, or -5 for penalty):');
+            if (additionalPoints === null || additionalPoints.trim() === '') return;
+
+            const newTotalPoints = currentPoints + parseInt(additionalPoints);
 
             e.target.disabled = true;
             try {
@@ -135,11 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ phone_number: phone, trust_points: parseInt(newPoints) })
+                    body: JSON.stringify({ phone_number: phone, trust_points: newTotalPoints })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Trust points updated successfully!');
+                    alert(`Successfully added points! New Trust Score is ${newTotalPoints}.`);
                     // Refresh search
                     btnSearch.click();
                 } else {

@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     penalty_overtime: "Deducted per hour for borrowing a bike past the borrow time limit.",
                     suspension_limit: "Minimum trust points required before account auto-suspension.",
                     honesty_reward: "Rewarded when a 'Good' report is confirmed by the next rider.",
-                    reward_good_samaritan: "Rewarded to a user who returns a missing bike to a hub.",
+                    reward_community_volunteer: "Rewarded to a user who completes a verified Community Service shift at a hub.",
                     consistent_rider_reward: "Rewarded for every 5 consecutive clean rides completed.",
                     borrow_time_limit_hours: "Maximum hours a user can borrow a bike before overtime penalties apply.",
                     abort_trip_grace_period_mins: "Grace period (mins) after borrowing to abort the trip and report damage without penalty.",
@@ -366,6 +366,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const thresholds = [];
 
                 for (const [key, val] of Object.entries(settingsObj)) {
+                    // Ignore deprecated or removed settings
+                    if (key === 'reward_good_samaritan') continue;
+                    
                     const item = { key, val, description: descriptions[key] || "System policy setting." };
                     if (key.startsWith('reward') || key.startsWith('honesty') || key.startsWith('consistent')) {
                         rewards.push(item);
@@ -381,10 +384,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formattedKey = item.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                     const badgeStyle = parseInt(item.val) < 0 
                         ? 'background-color: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15);' 
-                        : (item.key.includes('limit') 
+                        : (item.key.includes('limit') || item.key.includes('timeout') || item.key.includes('grace_period')
                             ? 'background-color: rgba(234, 179, 8, 0.12); color: #ca8a04; border: 1px solid rgba(234, 179, 8, 0.15);' 
                             : 'background-color: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.15);');
                     const badgeStyleHtml = `font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; ${badgeStyle}`;
+                    
+                    let suffix = 'pts';
+                    if (item.key.includes('hours')) {
+                        suffix = Math.abs(parseInt(item.val)) === 1 ? 'hr' : 'hrs';
+                    } else if (item.key.includes('mins')) {
+                        suffix = 'mins';
+                    } else if (item.key.includes('overtime')) {
+                        suffix = 'pts / hr';
+                    } else if (Math.abs(parseInt(item.val)) === 1) {
+                        suffix = 'pt';
+                    }
+                    const displayVal = `${item.val > 0 && suffix.includes('pt') ? '+' : ''}${item.val} ${suffix}`;
                     
                     return `
                         <div class="col-md-6 col-lg-4">
@@ -392,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h6 class="fw-bold mb-0" style="color: var(--text-h); font-size: 0.95rem; max-width: 70%; line-height: 1.3;">${formattedKey}</h6>
-                                        <span style="${badgeStyleHtml}">${item.val}</span>
+                                        <span style="${badgeStyleHtml}">${displayVal}</span>
                                     </div>
                                     <p class="small text-muted mb-0 font-monospace" style="font-size: 0.68rem; opacity: 0.6; margin-bottom: 8px;">${item.key}</p>
                                     <p class="small text-muted mb-3" style="font-size: 0.78rem; line-height: 1.45;">${item.description}</p>
@@ -1200,9 +1215,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             div.innerHTML = `
                 <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
-                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-h);">
-                        ${mem.lastname}, ${mem.firstname} ${frozenBadge}
-                    </span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-h); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px;">
+                            ${mem.lastname}, ${mem.firstname} ${frozenBadge}
+                        </span>
+                        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                            <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.65rem; padding: 4px 8px; white-space: nowrap;">
+                                Add Points
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.65rem; padding: 4px 8px; white-space: nowrap;">
+                                Deactivate
+                            </button>
+                        </div>
+                    </div>
                     <span style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">
                         ${mem.phone_number} | Trust Points: <strong style="color: ${mem.trust_points < 50 ? '#ef4444' : 'inherit'};">${mem.trust_points}</strong>
                     </span>
@@ -1488,3 +1513,143 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Global function for editing points from the members list using custom modal
+window.editMemberPoints = function(phone, currentPoints) {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+        alert('Please sign in as admin first.');
+        return;
+    }
+    
+    const modal = document.getElementById('add-points-modal');
+    const input = document.getElementById('input-add-points');
+    const btnCancel = document.getElementById('btn-points-cancel');
+    const btnConfirm = document.getElementById('btn-points-confirm');
+    const descText = document.getElementById('add-points-text');
+    
+    if (!modal) return;
+    
+    descText.innerText = `Enter points to add to ${phone} (Current: ${currentPoints})`;
+    input.value = '';
+    modal.style.display = 'flex';
+    input.focus();
+    
+    const closeModal = () => {
+        modal.style.display = 'none';
+        btnCancel.onclick = null;
+        btnConfirm.onclick = null;
+    };
+    
+    btnCancel.onclick = closeModal;
+    
+    btnConfirm.onclick = async () => {
+        const additionalPoints = input.value;
+        if (additionalPoints === null || additionalPoints.trim() === "") {
+            closeModal();
+            return;
+        }
+        
+        const newPoints = currentPoints + parseInt(additionalPoints);
+        if (isNaN(newPoints)) {
+            closeModal();
+            return;
+        }
+        
+        btnConfirm.disabled = true;
+        btnConfirm.innerText = "Saving...";
+        
+        try {
+            const res = await fetch('/api/admin/override-points', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ phone_number: phone, trust_points: newPoints })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Re-render members list via a custom event or by clicking the nav again
+                const navReg = document.getElementById('nav-settings');
+                if (navReg) navReg.click();
+                setTimeout(() => {
+                    const tabMembers = document.querySelector('[data-target="tab-members"]');
+                    if (tabMembers) tabMembers.click();
+                }, 100);
+            } else {
+                alert(data.error || 'Failed to update points.');
+            }
+        } catch (err) {
+            alert('Connection error.');
+        } finally {
+            btnConfirm.disabled = false;
+            btnConfirm.innerText = "Confirm";
+            closeModal();
+        }
+    };
+};
+
+window.deactivateMember = function(phone) {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+        alert('Please sign in as admin first.');
+        return;
+    }
+    
+    const modal = document.getElementById('action-confirm-modal');
+    const title = document.getElementById('action-confirm-title');
+    const text = document.getElementById('action-confirm-text');
+    const btnCancel = document.getElementById('btn-action-cancel');
+    const btnConfirm = document.getElementById('btn-action-confirm');
+    
+    if (!modal) return;
+    
+    title.innerText = "Deactivate Member";
+    title.style.color = "#ef4444";
+    text.innerHTML = `Are you sure you want to deactivate member <strong>${phone}</strong>?<br>They will no longer be able to borrow bikes.`;
+    
+    modal.style.display = 'flex';
+    
+    const closeModal = () => {
+        modal.style.display = 'none';
+        btnCancel.onclick = null;
+        btnConfirm.onclick = null;
+        title.style.color = "var(--text-h)";
+    };
+    
+    btnCancel.onclick = closeModal;
+    
+    btnConfirm.onclick = async () => {
+        btnConfirm.disabled = true;
+        btnConfirm.innerText = "Processing...";
+        
+        try {
+            const res = await fetch('/api/admin/delete-member', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ phone_number: phone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const navReg = document.getElementById('nav-settings');
+                if (navReg) navReg.click();
+                setTimeout(() => {
+                    const tabMembers = document.querySelector('[data-target="tab-members"]');
+                    if (tabMembers) tabMembers.click();
+                }, 100);
+            } else {
+                alert(data.error || 'Failed to delete member.');
+            }
+        } catch (err) {
+            alert('Connection error.');
+        } finally {
+            btnConfirm.disabled = false;
+            btnConfirm.innerText = "Confirm";
+            closeModal();
+        }
+    };
+};
