@@ -13,7 +13,7 @@ const help = async (req, res) => {
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
@@ -23,12 +23,8 @@ const help = async (req, res) => {
 
         const { lastname, firstname, phone_number } = memberRecords[0];
 
-        // Query active hubs dynamically from locations table
-        const [locationsRows] = await db.upbsPool.query(
-            "SELECT location_name FROM locations WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)"
-        );
-        const activeHubs = locationsRows.map(row => row.location_name.toUpperCase()).join(', ');
-        const replyMessage = `UPBS Help: To borrow text '[bike] [from] to [to]'. Available stations: ${activeHubs}. To end trip, text 'done [bike]'.`;
+        const msg1 = `UPBS Help (1/2):\nFlow: Borrow-Done-Report\n- [bike] [from] to [to] (e.g. 1 eee to vinzons)\n- done [bike]\n- [bike] good/broken/missing/delivered`;
+        const msg2 = `UPBS Help (2/2):\nOther commands:\n- points\n- locations\n- search [bike]\n- search all\n- usage [bike]\n- how`;
 
         // 2. Log the help request
         const logQuery = `
@@ -44,7 +40,7 @@ const help = async (req, res) => {
             messageId
         ]);
 
-        return res.json({ reply: replyMessage });
+        return res.json({ replies: [msg1, msg2] });
 
     } catch (err) {
         console.error('Error in help controller:', err);
@@ -65,7 +61,7 @@ const how = async (req, res) => {
         const memberQuery = `
             SELECT lastname, firstname, phone_number
             FROM members
-            WHERE phone_number = ?
+            WHERE phone_number = ? AND is_active = 1
         `;
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 

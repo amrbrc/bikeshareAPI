@@ -79,7 +79,7 @@ const addMember = async (req, res) => {
                     message: `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`
                 })
             });
-        } catch (e) {}
+        } catch (e) { }
 
         return res.json({ success: true, message: 'User registered successfully!' });
     } catch (err) {
@@ -233,6 +233,18 @@ const resolveDispute = async (req, res) => {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
 
+            // Set the borrower's history record to reflect the truth
+            const [lastTrip] = await db.upbsPool.query(
+                "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND (borrower_phone = ? OR (borrower_phone IS NULL AND borrowed_by = (SELECT CONCAT(firstname, ' ', lastname) FROM members WHERE phone_number = ?))) ORDER BY borrowed_at DESC LIMIT 1",
+                [bicycle_code, phone_number, phone_number]
+            );
+            if (lastTrip.length > 0) {
+                await db.upbsPool.query(
+                    "UPDATE bicycle_history SET condition_confirmed = 1, reported_condition = 'Broken' WHERE id = ?",
+                    [lastTrip[0].id]
+                );
+            }
+
             // Text the borrower that they are guilty
             try {
                 const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
@@ -299,6 +311,8 @@ const resolveDispute = async (req, res) => {
             if (reporterPhone) {
                 const penalty = await getSettingValue('penalty_false_report', -5);
                 const absolutePenalty = Math.abs(penalty);
+                // Penalize the false reporter (adding a negative number) and reset consecutive good rides
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, reporterPhone]);
                 // Penalize the false reporter (adding a negative number)
                 await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
 
@@ -324,19 +338,19 @@ const resolveDispute = async (req, res) => {
             }
         } else if (verdict === 'neutral') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
-            
+
             if (conditionStatus === 'Missing') {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
-            
+
             // Text the borrower
             try {
-                const neutralMsg = conditionStatus === 'Missing' ? 
+                const neutralMsg = conditionStatus === 'Missing' ?
                     `The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account.` :
                     `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`;
-                
+
                 await fetch(`${gatewayUrl}/api/sms/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
@@ -423,7 +437,11 @@ const overrideBicycle = async (req, res) => {
         return res.status(400).json({ success: false, error: 'At least one field (combination_lock or condition_status) is required' });
     }
 
+    let conn;
     try {
+        conn = await db.upbsPool.getConnection();
+        await conn.beginTransaction();
+
         let updateQuery = "UPDATE bicycle_codes SET ";
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
@@ -431,11 +449,41 @@ const overrideBicycle = async (req, res) => {
         updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)";
         params.push(bicycle_code);
 
-        await db.upbsPool.query(updateQuery, params);
+        await conn.query(updateQuery, params);
+
+        if (condition_status && condition_status !== 'Borrowed' && condition_status !== 'Pending_Status') {
+            const [activeTrips] = await conn.query(
+                "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND (done_text_received = 0 OR condition_confirmed = 0) ORDER BY borrowed_at DESC LIMIT 1 FOR UPDATE",
+                [bicycle_code]
+            );
+            if (activeTrips.length > 0) {
+                let reported = 'Good';
+                if (condition_status === 'Broken' || condition_status === 'In_Repair') {
+                    reported = 'Broken';
+                } else if (condition_status === 'Missing') {
+                    reported = 'Missing';
+                }
+                await conn.query(
+                    "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = ? WHERE id = ?",
+                    [reported, activeTrips[0].id]
+                );
+            }
+        }
+
+        await conn.commit();
         return res.json({ success: true, message: 'Bicycle successfully updated.' });
     } catch (err) {
         console.error(err);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rbErr) { }
+        }
         return res.status(500).json({ success: false, error: 'Database error' });
+    } finally {
+        if (conn) {
+            conn.release();
+        }
     }
 };
 
@@ -451,7 +499,7 @@ const getMaintenanceQueue = async (req, res) => {
                     ORDER BY bh.borrowed_at DESC 
                     LIMIT 1) AS last_user_phone
             FROM bicycle_codes b
-            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed') 
+            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') 
               AND (b.is_active = 1 OR b.is_active IS NULL)
         `;
         const [rows] = await db.upbsPool.query(query);
@@ -468,7 +516,7 @@ const getHonestyLogs = async (req, res) => {
         const query = `
             SELECT FirstName, LastName, MobileNumber, SenderNumber, DateTime, Request, MessageID
             FROM Logs
-            WHERE Request IN ('Broken Report', 'Fixed Report', 'Missing Report', 'False Report Penalty')
+            WHERE Request IN ('Broken Report', 'Delivered for Repair', 'Missing Report', 'False Report Penalty')
             ORDER BY DateTime DESC
             LIMIT 100
         `;
@@ -587,20 +635,54 @@ const overrideBike = async (req, res) => {
         return res.status(400).json({ success: false, error: 'bicycle_code, combination_lock, and condition_status are required' });
     }
 
+    let conn;
     try {
-        const [result] = await db.upbsPool.query(
+        conn = await db.upbsPool.getConnection();
+        await conn.beginTransaction();
+
+        const [result] = await conn.query(
             "UPDATE bicycle_codes SET combination_lock = ?, condition_status = ? WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)",
             [combination_lock, condition_status, bicycle_code]
         );
 
         if (result.affectedRows === 0) {
+            await conn.rollback();
             return res.status(404).json({ success: false, error: 'Bicycle not found or is inactive' });
         }
 
+        if (condition_status !== 'Borrowed' && condition_status !== 'Pending_Status') {
+            const [activeTrips] = await conn.query(
+                "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND (done_text_received = 0 OR condition_confirmed = 0) ORDER BY borrowed_at DESC LIMIT 1 FOR UPDATE",
+                [bicycle_code]
+            );
+            if (activeTrips.length > 0) {
+                let reported = 'Good';
+                if (condition_status === 'Broken' || condition_status === 'In_Repair') {
+                    reported = 'Broken';
+                } else if (condition_status === 'Missing') {
+                    reported = 'Missing';
+                }
+                await conn.query(
+                    "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = ? WHERE id = ?",
+                    [reported, activeTrips[0].id]
+                );
+            }
+        }
+
+        await conn.commit();
         return res.json({ success: true, message: 'Bicycle override settings applied!' });
     } catch (err) {
         console.error('Error in overrideBike controller:', err);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rbErr) { }
+        }
         return res.status(500).json({ success: false, error: 'Database error overriding bicycle settings' });
+    } finally {
+        if (conn) {
+            conn.release();
+        }
     }
 };
 
@@ -611,20 +693,67 @@ const deleteMember = async (req, res) => {
         return res.status(400).json({ success: false, error: 'phone_number is required' });
     }
 
+    let conn;
     try {
-        const [result] = await db.upbsPool.query(
+        conn = await db.upbsPool.getConnection();
+        await conn.beginTransaction();
+
+        // Retrieve member's first and last name to find their active history records
+        const [memberRows] = await conn.query(
+            "SELECT firstname, lastname FROM members WHERE phone_number = ?",
+            [phone_number]
+        );
+
+        if (memberRows.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+
+        const member = memberRows[0];
+        const currentUserName = `${member.firstname} ${member.lastname}`;
+
+        // Find the bike code currently checked out or pending handshake by this user (if any)
+        const [activeTrips] = await conn.query(
+            "SELECT id, bicycle_code FROM bicycle_history WHERE (borrower_phone = ? OR (borrower_phone IS NULL AND borrowed_by = ?)) AND (done_text_received = 0 OR condition_confirmed = 0) ORDER BY borrowed_at DESC LIMIT 1",
+            [phone_number, currentUserName]
+        );
+
+        if (activeTrips.length > 0) {
+            const activeTrip = activeTrips[0];
+
+            // 1. Close history record
+            await conn.query(
+                "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = 'Good' WHERE id = ?",
+                [activeTrip.id]
+            );
+
+            // 2. Set the bike back to Good
+            await conn.query(
+                "UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?",
+                [activeTrip.bicycle_code]
+            );
+        }
+
+        // Deactivate the member
+        await conn.query(
             "UPDATE members SET is_active = 0 WHERE phone_number = ?",
             [phone_number]
         );
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, error: 'Member not found' });
-        }
-
+        await conn.commit();
         return res.json({ success: true, message: 'Member successfully deactivated (soft-deleted)!' });
     } catch (err) {
         console.error('Error in deleteMember controller:', err);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackErr) {
+                console.error('Error rolling back deleteMember transaction:', rollbackErr);
+            }
+        }
         return res.status(500).json({ success: false, error: 'Database error deleting member' });
+    } finally {
+        if (conn) conn.release();
     }
 };
 
@@ -635,20 +764,41 @@ const deleteBike = async (req, res) => {
         return res.status(400).json({ success: false, error: 'bicycle_code is required' });
     }
 
+    let conn;
     try {
-        const [result] = await db.upbsPool.query(
+        conn = await db.upbsPool.getConnection();
+        await conn.beginTransaction();
+
+        // Close any active or pending return trips associated with this bike to prevent trapping users
+        await conn.query(
+            "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = 'Good' WHERE bicycle_code = ? AND (done_text_received = 0 OR condition_confirmed = 0)",
+            [bicycle_code]
+        );
+
+        const [result] = await conn.query(
             "UPDATE bicycle_codes SET is_active = 0 WHERE bicycle_code = ?",
             [bicycle_code]
         );
 
         if (result.affectedRows === 0) {
+            await conn.rollback();
             return res.status(404).json({ success: false, error: 'Bicycle not found' });
         }
 
+        await conn.commit();
         return res.json({ success: true, message: 'Bicycle successfully deactivated (soft-deleted)!' });
     } catch (err) {
         console.error('Error in deleteBike controller:', err);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackErr) {
+                console.error('Error rolling back deleteBike transaction:', rollbackErr);
+            }
+        }
         return res.status(500).json({ success: false, error: 'Database error deleting bicycle' });
+    } finally {
+        if (conn) conn.release();
     }
 };
 
@@ -689,7 +839,7 @@ const getReports = async (req, res) => {
                     ORDER BY bh.borrowed_at DESC 
                     LIMIT 1) AS last_user_phone
             FROM bicycle_codes b
-            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed') AND b.is_active = 1
+            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') AND b.is_active = 1
         `;
         const [maintenanceQueue] = await db.upbsPool.query(queueQuery);
 
@@ -697,7 +847,7 @@ const getReports = async (req, res) => {
         const logsQuery = `
             SELECT LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request, MessageID
             FROM Logs
-            WHERE Request IN ('Broken Report', 'Fixed Report', 'Missing Report')
+            WHERE Request IN ('Broken Report', 'Delivered for Repair', 'Missing Report')
             ORDER BY DateTime DESC
             LIMIT 100
         `;
@@ -745,7 +895,11 @@ const toggleBike = async (req, res) => {
 const getSettings = async (req, res) => {
     try {
         const [rows] = await db.upbsPool.query('SELECT * FROM system_settings');
-        return res.json({ success: true, settings: rows });
+        const settingsObj = {};
+        rows.forEach(row => {
+            settingsObj[row.setting_name] = row.setting_value;
+        });
+        return res.json({ success: true, data: settingsObj });
     } catch (err) {
         console.error('Error in getSettings controller:', err);
         return res.status(500).json({ success: false, error: 'Database error fetching system settings' });
@@ -754,18 +908,20 @@ const getSettings = async (req, res) => {
 
 // POST /api/admin/settings
 const updateSettings = async (req, res) => {
-    const { settings, setting_name, setting_value } = req.body;
+    const { settings, setting_name, setting_value, key, value } = req.body;
 
-    // We can support either bulk updates via "settings" array or single update via "setting_name" & "setting_value"
+    // We can support either bulk updates via "settings" array, single update via "setting_name" & "setting_value", or "key" & "value"
     let updates = [];
     if (Array.isArray(settings)) {
         updates = settings;
     } else if (setting_name !== undefined && setting_value !== undefined) {
         updates = [{ setting_name, setting_value }];
+    } else if (key !== undefined && value !== undefined) {
+        updates = [{ setting_name: key, setting_value: value }];
     }
 
     if (updates.length === 0) {
-        return res.status(400).json({ success: false, error: 'Settings update data is required. Provide either a settings array or setting_name/setting_value pair.' });
+        return res.status(400).json({ success: false, error: 'Settings update data is required. Provide either a settings array, setting_name/setting_value pair, or key/value pair.' });
     }
 
     // Validate setting names and values

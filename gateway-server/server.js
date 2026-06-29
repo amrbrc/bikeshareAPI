@@ -99,7 +99,7 @@ async function pollInbox() {
                 const goodMatch = smsMessage.match(/^(\w+)\s+good$|^good\s+(\w+)$/i);
                 const brokenMatch = smsMessage.match(/^(\w+)\s+broken$|^broken\s+(\w+)$/i);
                 const missingMatch = smsMessage.match(/^(\w+)\s+missing$|^missing\s+(\w+)$/i);
-                const fixedMatch = smsMessage.match(/^(\w+)\s+fixed$|^fixed\s+(\w+)$/i);
+                const deliveredMatch = smsMessage.match(/^(\w+)\s+delivered$|^delivered\s+(\w+)$/i);
                 const pointsMatch = smsMessage.match(/^points$/i);
 
                 if (smsMessage === 'search all') {
@@ -133,9 +133,9 @@ async function pollInbox() {
                 } else if (missingMatch) {
                     endpoint = '/api/missing';
                     payload.bicycleCode = (missingMatch[1] || missingMatch[2]).toLowerCase();
-                } else if (fixedMatch) {
-                    endpoint = '/api/fixed';
-                    payload.bicycleCode = (fixedMatch[1] || fixedMatch[2]).toLowerCase();
+                } else if (deliveredMatch) {
+                    endpoint = '/api/delivered';
+                    payload.bicycleCode = (deliveredMatch[1] || deliveredMatch[2]).toLowerCase();
                 } else if (pointsMatch) {
                     endpoint = '/api/points';
                 } else {
@@ -157,14 +157,14 @@ async function pollInbox() {
                     });
                     const replyMessage = fallbackResponse.data.reply || 'Invalid Command. Send "bikeshare help" for list of available commands.';
                     await sendReply(smsSender, replyMessage);
-                } else if (endpoint === '/api/usage') {
-                    // Usage endpoint returns `{ replies: [...] }`
-                    const replies = workerResponse.data.replies || [];
+                } else if (workerResponse.data.replies && Array.isArray(workerResponse.data.replies)) {
+                    // Endpoint returns multiple replies
+                    const replies = workerResponse.data.replies;
                     for (const reply of replies) {
                         await sendReply(smsSender, reply);
                     }
                 } else {
-                    // Other endpoints return `{ reply: "..." }`
+                    // Endpoint returns a single reply
                     const replyMessage = workerResponse.data.reply || "Request processed successfully.";
                     await sendReply(smsSender, replyMessage);
                 }
@@ -198,8 +198,36 @@ async function pollInbox() {
 console.log("Gateway Server started. Polling for messages...");
 setInterval(pollInbox, 200);
 
-// Helper function to send SMS via Gammu hardware
-function sendReply(phoneNumber, text) {
+// Helper function to send SMS via Gammu hardware (handles auto-splitting for long messages)
+async function sendReply(phoneNumber, text) {
+    if (text.length <= 160) {
+        return sendSingleReply(phoneNumber, text);
+    }
+
+    // Split text into chunks of 150 characters (splitting at spaces if possible to avoid cutting words)
+    const chunks = [];
+    let remaining = text;
+    while (remaining.length > 0) {
+        if (remaining.length <= 150) {
+            chunks.push(remaining);
+            break;
+        }
+        // Find last space within 150 characters
+        let splitIndex = remaining.lastIndexOf(' ', 150);
+        if (splitIndex === -1) {
+            splitIndex = 150; // Fallback to hard split if no spaces exist
+        }
+        chunks.push(remaining.substring(0, splitIndex).trim());
+        remaining = remaining.substring(splitIndex).trim();
+    }
+
+    for (let i = 0; i < chunks.length; i++) {
+        const partText = `(${i + 1}/${chunks.length}) ${chunks[i]}`;
+        await sendSingleReply(phoneNumber, partText);
+    }
+}
+
+function sendSingleReply(phoneNumber, text) {
     return new Promise((resolve, reject) => {
         console.log(`Sending SMS to ${phoneNumber}: "${text}"`);
 

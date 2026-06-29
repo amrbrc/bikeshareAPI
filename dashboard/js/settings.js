@@ -296,34 +296,177 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('points-settings-grid');
         if (!grid) return;
         
+        // Inject custom styles if they don't exist
+        if (!document.getElementById('points-settings-custom-styles')) {
+            const style = document.createElement('style');
+            style.id = 'points-settings-custom-styles';
+            style.textContent = `
+                .points-settings-card {
+                    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+                }
+                .points-settings-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+                    border-color: var(--border-strong) !important;
+                }
+                .settings-val-input {
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+                }
+                .settings-val-input:focus {
+                    border-color: var(--up-maroon) !important;
+                    box-shadow: 0 0 0 3px rgba(123, 17, 19, 0.12) !important;
+                }
+                .btn-save-setting-trigger {
+                    transition: background-color 0.2s ease, transform 0.1s ease !important;
+                }
+                .btn-save-setting-trigger:hover {
+                    background-color: #5a0c0e !important;
+                }
+                .btn-save-setting-trigger:active {
+                    transform: scale(0.96);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         try {
             const res = await fetch('/api/admin/settings', { headers: getAdminHeaders() });
             const data = await res.json();
             if (data.success) {
                 grid.innerHTML = '';
-                for (const [key, val] of Object.entries(data.data)) {
-                    const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    const card = document.createElement('div');
-                    card.className = 'col-md-6 col-lg-4';
-                    card.innerHTML = `
-                        <div class="card p-3 shadow-sm border-0" style="background-color: var(--bg-panel); border-radius: var(--radius-md);">
-                            <div class="d-flex justify-content-between align-items-start">
+                
+                // Be resilient to both formatted object mapping and raw rows array
+                let settingsObj = {};
+                if (data.data) {
+                    settingsObj = data.data;
+                } else if (Array.isArray(data.settings)) {
+                    data.settings.forEach(row => {
+                        settingsObj[row.setting_name] = row.setting_value;
+                    });
+                }
+
+                const descriptions = {
+                    reward_honest_report: "Rewarded for reporting a broken/missing bike that was disputed.",
+                    penalty_hit_and_run: "Deducted from a user found responsible for unreported damage.",
+                    penalty_false_report: "Deducted for submitting a false damage or missing report.",
+                    penalty_overtime: "Deducted per hour for borrowing a bike past the borrow time limit.",
+                    suspension_limit: "Minimum trust points required before account auto-suspension.",
+                    honesty_reward: "Rewarded when a 'Good' report is confirmed by the next rider.",
+                    reward_good_samaritan: "Rewarded to a user who returns a missing bike to a hub.",
+                    consistent_rider_reward: "Rewarded for every 5 consecutive clean rides completed.",
+                    borrow_time_limit_hours: "Maximum hours a user can borrow a bike before overtime penalties apply.",
+                    abort_trip_grace_period_mins: "Grace period (mins) after borrowing to abort the trip and report damage without penalty.",
+                    handshake_timeout_mins: "Time limit (mins) to confirm bike condition before trip is auto-completed.",
+                    penalty_abandoned_handshake: "Deducted when a user abandons the return handshake confirmation."
+                };
+
+                // Split into categories
+                const rewards = [];
+                const penalties = [];
+                const thresholds = [];
+
+                for (const [key, val] of Object.entries(settingsObj)) {
+                    const item = { key, val, description: descriptions[key] || "System policy setting." };
+                    if (key.startsWith('reward') || key.startsWith('honesty') || key.startsWith('consistent')) {
+                        rewards.push(item);
+                    } else if (key.startsWith('penalty')) {
+                        penalties.push(item);
+                    } else {
+                        thresholds.push(item);
+                    }
+                }
+
+                // Helper to create card HTML
+                const createCard = (item) => {
+                    const formattedKey = item.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const badgeStyle = parseInt(item.val) < 0 
+                        ? 'background-color: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15);' 
+                        : (item.key.includes('limit') 
+                            ? 'background-color: rgba(234, 179, 8, 0.12); color: #ca8a04; border: 1px solid rgba(234, 179, 8, 0.15);' 
+                            : 'background-color: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.15);');
+                    const badgeStyleHtml = `font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; ${badgeStyle}`;
+                    
+                    return `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card p-3 shadow-sm border-0 h-100 d-flex flex-column justify-content-between points-settings-card" style="background-color: var(--bg-panel); border-radius: var(--radius-md); border: 1px solid var(--border) !important;">
                                 <div>
-                                    <h6 class="fw-bold mb-1" style="color: var(--text-h); font-size: 0.9rem;">${formattedKey}</h6>
-                                    <p class="small text-muted mb-0 font-monospace">${key}</p>
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0" style="color: var(--text-h); font-size: 0.95rem; max-width: 70%; line-height: 1.3;">${formattedKey}</h6>
+                                        <span style="${badgeStyleHtml}">${item.val}</span>
+                                    </div>
+                                    <p class="small text-muted mb-0 font-monospace" style="font-size: 0.68rem; opacity: 0.6; margin-bottom: 8px;">${item.key}</p>
+                                    <p class="small text-muted mb-3" style="font-size: 0.78rem; line-height: 1.45;">${item.description}</p>
                                 </div>
-                                <span class="badge ${parseInt(val) < 0 ? 'bg-danger' : 'bg-success'}" style="font-size: 0.85rem;">${val}</span>
-                            </div>
-                            <div class="mt-3 d-flex gap-2">
-                                <input type="number" class="form-control form-control-sm settings-val-input" value="${val}" style="max-width: 100px;">
-                                <button class="btn btn-sm btn-primary btn-save-setting" data-key="${key}" style="background-color: var(--up-maroon); border: none;">Save</button>
+                                <div class="mt-auto pt-3" style="border-top: 1px dashed var(--border) !important;">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-muted small fw-semibold" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8;">Edit Value</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" class="settings-val-input" value="${item.val}" style="width: 75px; height: 32px; padding: 4px 8px; font-size: 0.82rem; font-weight: 600; border-radius: 6px; border: 1px solid var(--border); background-color: var(--bg-main); color: var(--text-h); outline: none; box-sizing: border-box; text-align: center;">
+                                            <button class="btn-save-setting-trigger" data-key="${item.key}" type="button" style="height: 32px; padding: 0 12px; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: none; background-color: var(--up-maroon); color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">Save</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
-                    grid.appendChild(card);
+                };
+
+                // Render Rewards Configuration
+                if (rewards.length > 0) {
+                    const title = document.createElement('div');
+                    title.className = 'col-12 mt-4 mb-3';
+                    title.innerHTML = `
+                        <h5 class="fw-bold" style="color: var(--text-h); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; border-left: 4px solid #22c55e; padding-left: 12px; margin-bottom: 0;">
+                            Rewards & Incentives
+                        </h5>
+                    `;
+                    grid.appendChild(title);
+                    
+                    rewards.forEach(item => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = createCard(item);
+                        grid.appendChild(tempDiv.firstElementChild);
+                    });
                 }
 
-                grid.querySelectorAll('.btn-save-setting').forEach(btn => {
+                // Render Penalties Configuration
+                if (penalties.length > 0) {
+                    const title = document.createElement('div');
+                    title.className = 'col-12 mt-5 mb-3';
+                    title.innerHTML = `
+                        <h5 class="fw-bold" style="color: var(--text-h); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; border-left: 4px solid #ef4444; padding-left: 12px; margin-bottom: 0;">
+                            Penalties & Deductions
+                        </h5>
+                    `;
+                    grid.appendChild(title);
+                    
+                    penalties.forEach(item => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = createCard(item);
+                        grid.appendChild(tempDiv.firstElementChild);
+                    });
+                }
+
+                // Render Thresholds Configuration
+                if (thresholds.length > 0) {
+                    const title = document.createElement('div');
+                    title.className = 'col-12 mt-5 mb-3';
+                    title.innerHTML = `
+                        <h5 class="fw-bold" style="color: var(--text-h); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; border-left: 4px solid #eab308; padding-left: 12px; margin-bottom: 0;">
+                            System Thresholds & Limits
+                        </h5>
+                    `;
+                    grid.appendChild(title);
+                    
+                    thresholds.forEach(item => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = createCard(item);
+                        grid.appendChild(tempDiv.firstElementChild);
+                    });
+                }
+
+                // Set up save event listeners
+                grid.querySelectorAll('.btn-save-setting-trigger').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const k = e.target.getAttribute('data-key');
                         const input = e.target.previousElementSibling;
@@ -334,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const saveRes = await fetch('/api/admin/settings', {
                                     method: 'POST',
                                     headers: getAdminHeaders(),
-                                    body: JSON.stringify({ key: k, value: v })
+                                    body: JSON.stringify({ key: k, value: v, setting_name: k, setting_value: v })
                                 });
                                 const saveData = await saveRes.json();
                                 if (saveData.success) {
@@ -352,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 grid.innerHTML = '<div class="col-12"><p class="text-danger small">Failed to load settings.</p></div>';
             }
         } catch (e) {
+            console.error('[settings.js] loadPointsSettings error:', e);
             grid.innerHTML = '<div class="col-12"><p class="text-danger small">Error connecting to server.</p></div>';
         }
     }
@@ -585,7 +729,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 sessionStorage.setItem('adminToken', data.token);
                 // Also save the role if the backend provided it, else default to 'admin'
-                sessionStorage.setItem('userRole', data.role || 'admin');
+                if (isStudentLogin) {
+                    sessionStorage.setItem('userRole', 'student');
+                } else {
+                    sessionStorage.setItem('userRole', data.role || 'admin');
+                }
 
                 // Success feedback UI
                 if (btnLoginSubmit) {
@@ -894,6 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <select class="form-select form-select-sm border-0 shadow-sm bike-status-select">
                             <option value="Good" ${bike.condition_status === 'Good' ? 'selected' : ''}>Good</option>
                             <option value="Broken" ${bike.condition_status === 'Broken' ? 'selected' : ''}>Broken</option>
+                            <option value="In_Repair" ${bike.condition_status === 'In_Repair' ? 'selected' : ''}>In Repair</option>
                             <option value="Disputed" ${bike.condition_status === 'Disputed' ? 'selected' : ''}>Disputed</option>
                             <option value="Missing" ${bike.condition_status === 'Missing' ? 'selected' : ''}>Missing</option>
                         </select>

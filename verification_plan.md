@@ -1,0 +1,180 @@
+# Verification & Test Plan: UP Bikeshare Revisions
+
+This document outlines the step-by-step verification plan to manually test and validate all the security, logical, and structural updates implemented in the UP Bikeshare system.
+
+---
+
+## 📋 General Test Setup
+Ensure the following before starting tests:
+1. The backend is running on `192.168.100.221:3001` (Worker API) and `3000` (Gateway).
+2. You have executed the SQL script in **phpMyAdmin** to insert the new settings (`borrow_time_limit_hours`, `abort_trip_grace_period_mins`, `handshake_timeout_mins`, and `penalty_abandoned_handshake`).
+3. You have registered test members in the database (one student borrower, one student reporter, and one admin).
+4. All code changes have been pushed to the remote server using the `rsync` command.
+
+---
+
+## 🧪 Test Scenarios
+
+### 1. Dynamic Borrow Time Limits & Warnings
+*   **Goal:** Verify that the system dynamically calculates reminders and penalties based on the DB settings instead of hardcoded 6-hour limits.
+*   **Steps:**
+    1. In **phpMyAdmin** / **Admin Settings Dashboard**, set `borrow_time_limit_hours` to `3`.
+    2. Check out a bike: Text `borrow 1 hubA to hubB` to start a trip.
+    3. **Expected outcome:** 
+        *   The background warnings job will dynamically calculate reminders at `1 hour` (`Limit - 2` hours).
+        *   The overtime penalty job will dynamically deduct points after `3 hours` instead of the hardcoded 6 hours.
+
+---
+
+### 2. Active Trip Grace Period (15 Mins)
+*   **Goal:** Prevent a user from riding a bike, breaking it, and aborting the trip to shift blame to the previous rider.
+*   **Steps:**
+    1. Check out Bike 1. Wait **less than 15 minutes** (e.g., 2 mins) and text `broken 1`.
+        *   *Expected outcome:* The active trip is deleted, the previous rider is frozen, and you receive the dispute-success SMS.
+    2. Check out Bike 1 again. Wait **more than 15 minutes** (e.g., 16 mins) and text `broken 1`.
+        *   *Expected outcome:* The active trip is completed normally (not deleted), the bike status is set to `Broken`, the previous user is NOT frozen, and you receive the SMS: *"Notice: Your borrow duration of 16 mins exceeds the 15-min grace period. This trip has been ended as a self-reported damage..."*
+
+---
+
+### 3. Return Handshake Timeout Expiry
+*   **Goal:** Prevent bikes from locking the system indefinitely in `Pending_Status` if a student forgets to reply to the return check.
+*   **Steps:**
+    1. Borrow Bike 1, then text `done 1`.
+    2. Do NOT reply to the SMS asking if the bike is `GOOD` or `BROKEN`.
+    3. Wait 30 minutes (or temporarily adjust `handshake_timeout_mins` to `1` minute in the database for quick testing).
+    4. Run/Wait for the background cron check.
+    5. **Expected outcome:** 
+        *   Bike 1's condition status automatically returns to `Good`.
+        *   The active history trip is confirmed (`condition_confirmed = 1`).
+        *   Your account is deducted `-2` trust points.
+        *   You receive an SMS alert: *"ALERT: You failed to confirm the condition of Bike 1 within 30 minutes. Your trip has been auto-completed..."*
+
+---
+
+### 4. Direct Delivery Auto-Closure of Active Trips
+*   **Goal:** Ensure that if a borrower delivers a broken bike directly to the hub and texts `delivered [bike]`, their active trip is closed cleanly.
+*   **Steps:**
+    1. Borrow Bike 1 (active checkout).
+    2. Without texting `done 1`, text `delivered 1` directly.
+    3. **Expected outcome:** 
+        *   You receive SMS: *"Thank you! Bike 1 has been marked as delivered to the hub for repair..."*
+        *   Check `bicycle_history` table: your active trip is closed (`done_text_received = 1`, `condition_confirmed = 1`).
+        *   Check `bicycle_codes` table: Bike 1 status is set to `In_Repair`.
+
+---
+
+### 5. Double-Reporting Prevention of Under-Repair Bikes
+*   **Goal:** Prevent users from submitting redundant broken/missing reports on bikes that are already flagged for maintenance.
+*   **Steps:**
+    1. Ensure Bike 1 is in `In_Repair` status.
+    2. As a different user, text `broken 1`.
+        *   *Expected outcome:* Request is blocked. Reply received: *"Bike 1 is currently reported as delivered and undergoing repairs."*
+    3. Text `missing 1`.
+        *   *Expected outcome:* Request is blocked. Reply received: *"Bike 1 is currently undergoing repairs."*
+
+---
+
+### 6. Auto-Close Trips on Bike Retirement (Soft-Delete)
+*   **Goal:** Prevent a user from being locked out of the system forever if an admin retires (deletes) the bike they are currently borrowing.
+*   **Steps:**
+    1. Borrow Bike 1.
+    2. Log into the **Admin Settings Dashboard**, go to **Bicycle Fleet**, find Bike 1, and click **Delete** (soft-delete).
+    3. **Expected outcome:**
+        *   Bike 1 `is_active` status in `bicycle_codes` changes to `0`.
+        *   Check `bicycle_history` table: your trip for Bike 1 is automatically closed (`done_text_received = 1`, `condition_confirmed = 1`).
+        *   You are free to borrow another active bike immediately.
+
+---
+
+### 7. Auto-Release Bike on Member Deactivation
+*   **Goal:** Ensure that if an admin deactivates a user who currently has a bike checked out, the bike is released back into service immediately.
+*   **Steps:**
+    1. Borrow Bike 1.
+    2. Log into the **Admin Settings Dashboard**, go to **Registered Members**, and click **Delete** on your test member account.
+    3. **Expected outcome:**
+        *   The member's account `is_active` changes to `0`.
+        *   Bike 1's condition status is automatically set to `Good` (released).
+        *   The active history record is closed.
+
+---
+
+### 8. Deactivation of Unrepaired Damage Demerits
+*   **Goal:** Ensure users are never penalized for unrepaired damages because the organization covers all repairs.
+*   **Steps:**
+    1. Report Bike 1 as broken (`broken 1`).
+    2. Leave it unrepaired in `'Broken'` or `'In_Repair'` status for over 48 hours.
+    3. **Expected outcome:**
+        *   Confirm that the borrower does **not** receive warning reminders after 24 hours.
+        *   Confirm that the borrower's account is **not** penalized `-10` points after 48 hours.
+
+---
+
+### 9. Transactional Safety & Concurrency Locking (Race Conditions)
+*   **Goal:** Verify that rapid concurrent requests (e.g. done spamming) are locked sequentially and do not result in double processing or double honesty rewards.
+*   **Steps:**
+    1. Borrow Bike 1.
+    2. Use a REST client or scripts to send two simultaneous requests to `/api/done` with `smsSender` and `bicycleCode = 1`.
+    3. **Expected outcome:**
+        *   The first request obtains a row-level lock (`FOR UPDATE`) on both `bicycle_codes` and `bicycle_history`, completes the transaction, and sets the status to `Pending_Status`.
+        *   The second request blocks, waits, resumes once the lock is released, detects that `done_text_received` is already `1`, rolls back safely, and returns a warning: *"Trip has already been ended..."*
+        *   The previous user is only awarded the honesty reward exactly once.
+
+---
+
+### 10. Phone-Based Naming Collision Isolation
+*   **Goal:** Verify that if two members have the exact same name, checkouts and background penalties only affect the actual borrower.
+*   **Steps:**
+    1. Register two members:
+        *   Member A: `firstname = 'Juan'`, `lastname = 'Cruz'`, `phone_number = '+639171111111'`.
+        *   Member B: `firstname = 'Juan'`, `lastname = 'Cruz'`, `phone_number = '+639172222222'`.
+    2. Have Member A borrow Bike 1.
+    3. Verify in the database `bicycle_history` table that the new record is marked with `borrower_phone = '+639171111111'`.
+    4. Force a timeout or a 6-hour overtime reminder:
+        *   **Expected outcome:** Only Member A's phone number receives the alert and/or demerit. Member B's account, points, and status are completely unaffected.
+
+---
+
+### 11. Building Search Availability Filter
+*   **Goal:** Ensure that users looking for bikes only see ones that are physically at the station and available to ride.
+*   **Steps:**
+    1. Set Bike 1 to `'Borrowed'` at `vinzons`.
+    2. Set Bike 2 to `'Broken'` at `vinzons`.
+    3. Set Bike 3 to `'Good'` at `vinzons`.
+    4. Text `search vinzons`.
+    5. **Expected outcome:**
+        *   The reply returns: `"Bicycles currently available at vinzons: 3."`
+        *   Bike 1 and Bike 2 are filtered out of the available list.
+
+---
+
+### 12. Deactivated Member Commands Blocking
+*   **Goal:** Verify that soft-deleted members are blocked from querying the system.
+*   **Steps:**
+    1. Set a member's `is_active` status to `0`.
+    2. Send `points`, `bikeshare help`, or `how` requests from their phone number.
+    3. **Expected outcome:**
+        *   The system rejects the query and replies: *"Sorry, you are not registered with UP Bike Share."*
+
+---
+
+### 13. Clean Analytics Reports
+*   **Goal:** Verify that retired bikes, deactivated members, and closed stations do not skew popularity statistics.
+*   **Steps:**
+    1. Create 50 trips involving a retired station or retired bike.
+    2. Set that location or bike's `is_active` to `0`.
+    3. View the Analytics Dashboard.
+    4. **Expected outcome:**
+        *   The deactivated location/bike is excluded from the popular stations and peak hour reports.
+
+---
+
+### 14. False Reporter Streak Reset
+*   **Goal:** Verify that false damage reports reset the reporter's consecutive good rides streak to `0`.
+*   **Steps:**
+    1. Set Member A's `consecutive_good_rides` count to `10`.
+    2. Have Member A report Bike 1 broken, initiating a dispute.
+    3. As an admin, resolve the dispute as `'innocent'` (ruling Member A's report as a false report).
+    4. **Expected outcome:**
+        *   Member A's `trust_points` are penalized by `-5`.
+        *   Member A's `consecutive_good_rides` count is reset to `0`.
+
