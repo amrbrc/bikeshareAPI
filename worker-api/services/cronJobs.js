@@ -134,10 +134,8 @@ const startSixHourPenaltyJob = () => {
 
                 // Deduct points dynamically (adding negative value)
                 await db.upbsPool.query(
-                    'UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?',
-                    [overtimePenalty, row.phone_number]
-                    'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) - 5) WHERE phone_number = ?',
-                    [row.phone_number]
+                    'UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?',
+                    [overtimePenalty, overtimePenalty, row.phone_number]
                 );
 
                 // Log the penalty
