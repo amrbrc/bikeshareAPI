@@ -62,6 +62,8 @@ router.post('/invalid-command', fallbackController.invalidCommand);
 router.post('/non-registered', fallbackController.nonRegistered);
 
 // Public Dashboard Routes
+router.get('/student/dashboard', authMiddleware, memberController.getStudentDashboard);
+router.get('/student/leaderboards', authMiddleware, memberController.getLeaderboards);
 router.get('/bicycles', bikeController.getBicycles);
 router.get('/locations', bikeController.getLocations);
 router.get('/history/:bicycleCode', bikeController.getHistory);
