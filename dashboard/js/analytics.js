@@ -88,9 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
         navDashboard.classList.add('active');
         navAnalytics.classList.remove('active');
         if (navMap) navMap.classList.remove('active');
+        document.body.classList.remove('non-map-view');
 
         if (heroMap) {
-            heroMap.style.display = 'block';
+            heroMap.style.setProperty('display', 'block');
             heroMap.style.height = '450px';
         }
         if (mainWrapper) {
@@ -110,9 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
             navMap.classList.add('active');
             navDashboard.classList.remove('active');
             navAnalytics.classList.remove('active');
+            document.body.classList.remove('non-map-view');
 
             if (heroMap) {
-                heroMap.style.display = 'block';
+                heroMap.style.setProperty('display', 'block');
                 heroMap.style.height = '100%';
             }
             if (mainWrapper) {
@@ -132,11 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
         navAnalytics.classList.add('active');
         navDashboard.classList.remove('active');
         if (navMap) navMap.classList.remove('active');
+        document.body.classList.add('non-map-view');
 
-        if (heroMap) heroMap.style.display = 'none';
+        if (heroMap) heroMap.style.setProperty('display', 'none', 'important');
         if (mainWrapper) {
             mainWrapper.style.overflowY = 'auto';
         }
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
         dashboardGrid.style.display = 'none';
         
         analyticsContainer.style.display = 'grid';

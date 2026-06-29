@@ -232,11 +232,18 @@ async function plotStationMarkers() {
                 allMarkers.push(marker);
             });
 
-            // Adjust the map view to fit all plotted stations
-            if (allMarkers.length > 0) {
-                const group = new L.featureGroup(allMarkers);
-                // Add padding so markers aren't on the exact edge, and limit maxZoom so it doesn't zoom too close if there's only 1 station
+            // Adjust the map view to fit all plotted stations within the campus boundary
+            const campusMarkers = allMarkers.filter(m => {
+                const lat = m.getLatLng().lat;
+                const lng = m.getLatLng().lng;
+                return lat >= 14.63 && lat <= 14.68 && lng >= 121.04 && lng <= 121.09;
+            });
+
+            if (campusMarkers.length > 0) {
+                const group = new L.featureGroup(campusMarkers);
                 leafletMap.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 });
+            } else {
+                leafletMap.setView(MAP_CENTER, MAP_ZOOM);
             }
 
             // Remove existing legend if any

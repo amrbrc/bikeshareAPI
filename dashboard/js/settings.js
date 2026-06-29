@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideAllViews() {
         const studentDashboardContainer = document.getElementById('student-dashboard-container');
         if (studentDashboardContainer) studentDashboardContainer.style.display = 'none';
-        if (heroMap) heroMap.style.display = 'none';
+        if (heroMap) heroMap.style.setProperty('display', 'none', 'important');
         if (dashboardGrid) dashboardGrid.style.display = 'none';
         if (analyticsContainer) analyticsContainer.style.display = 'none';
         if (registrationContainer) registrationContainer.style.display = 'none';
@@ -204,6 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mainWrapper.style.overflowY = 'auto';
             mainWrapper.scrollTop = 0;
         }
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        document.body.classList.add('non-map-view');
 
         if (navDashboard) navDashboard.classList.remove('active');
         if (navMap) navMap.classList.remove('active');
@@ -226,6 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (navSettings) navSettings.classList.remove('active');
                 if (navLogs) navLogs.classList.remove('active');
                 if (navPointsSettings) navPointsSettings.classList.remove('active');
+
+                if (nav === navDashboard || nav === navMap) {
+                    document.body.classList.remove('non-map-view');
+                    if (heroMap) heroMap.style.setProperty('display', 'block');
+                } else {
+                    document.body.classList.add('non-map-view');
+                    if (heroMap) heroMap.style.setProperty('display', 'none', 'important');
+                }
             });
         }
     });

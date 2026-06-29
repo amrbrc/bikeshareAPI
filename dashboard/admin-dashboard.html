@@ -5,9 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UP Bikeshare | Dashboard</title>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#24262d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=14">
+    <link rel="stylesheet" href="/css/style.css?v=110">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -68,14 +74,25 @@
 
         <!-- MOBILE HEADER -->
         <header
-            class="mobile-header d-flex d-lg-none align-items-center justify-content-between p-3 border-bottom shadow-sm"
+            class="mobile-header d-flex d-lg-none align-items-center justify-content-between px-3 py-2 border-bottom shadow-sm"
             style="background: var(--bg-sidebar); z-index: 99; flex-shrink: 0; transition: background 0.3s var(--ease);">
             <div class="d-flex align-items-center gap-3">
-                <button id="mobile-menu-toggle" class="btn btn-link p-0 border-0 text-dark"
-                    style="font-size: 1.5rem; text-decoration: none; line-height: 1; color: var(--text-h) !important;">☰</button>
-                <h1 class="h6 mb-0 fw-bold text-dark" style="color: var(--text-h) !important;">UP Bikeshare</h1>
+                <button id="mobile-menu-toggle" class="btn btn-link p-0 border-0 d-flex align-items-center justify-content-center"
+                    style="width: 38px; height: 38px; border-radius: 8px; font-size: 1.35rem; text-decoration: none; color: var(--text-h) !important; background: var(--border);">☰</button>
+                <div class="brand-icon d-flex justify-content-center align-items-center shadow-sm" style="width: 32px; height: 32px; border-radius: 8px; font-size: 1rem; box-shadow: 0 4px 10px rgba(123, 17, 19, 0.2) !important;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18.5" cy="17.5" r="3.5" />
+                        <circle cx="5.5" cy="17.5" r="3.5" />
+                        <circle cx="15" cy="5" r="1" />
+                        <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+                    </svg>
+                </div>
+                <div class="d-flex flex-column">
+                    <h1 class="h6 mb-0 fw-bold text-dark" style="color: var(--text-h) !important; font-size: 0.9rem; letter-spacing: -0.01em; line-height: 1.2;">UP Bikeshare</h1>
+                    <span class="text-muted" style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">Admin Console</span>
+                </div>
             </div>
-            <div class="small text-muted font-monospace" id="mobile-live-time">--:--:--</div>
         </header>
 
         <!-- HERO MAP -->
@@ -91,7 +108,7 @@
 
                 <!-- LEFT COLUMN -->
                 <div class="col-lg-6 col-left">
-                    <div class="top-stats d-flex gap-3 mb-4">
+                    <div id="panel-admin-stats" class="top-stats d-flex gap-3 mb-4">
                         <div class="stat-box card flex-fill border p-3 shadow-sm">
                             <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Fleet</span>
                             <span class="val h2 fw-bold mb-0" id="stat-total-bikes">--</span>
@@ -107,7 +124,7 @@
                         </div>
                     </div>
 
-                    <div class="panel card border p-4 shadow-sm mb-4">
+                    <div id="panel-active-stations" class="panel card border p-4 shadow-sm mb-4">
                         <div class="panel-header d-flex justify-content-between align-items-center mb-3">
                             <div class="panel-title h6 mb-0 fw-bold">Active Stations</div>
                         </div>
@@ -116,7 +133,7 @@
                         </div>
                     </div>
 
-                    <div class="panel card border p-4 shadow-sm">
+                    <div id="panel-bike-history" class="panel card border p-4 shadow-sm">
                         <div class="panel-title h6 mb-3 fw-bold">Bike History</div>
                         <div class="input-group mb-3 border rounded overflow-hidden">
                             <input type="text" id="history-bike-code" class="form-control border-0"
@@ -131,7 +148,7 @@
 
                 <!-- RIGHT COLUMN -->
                 <div class="col-lg-6 col-right">
-                    <div class="panel card border p-4 shadow-sm mb-4">
+                    <div id="panel-bicycle-fleet" class="panel card border p-4 shadow-sm mb-4">
                         <div class="panel-header d-flex justify-content-between align-items-center mb-3">
                             <div class="panel-title h6 mb-0 fw-bold">Bicycle Fleet</div>
                         </div>
@@ -141,7 +158,7 @@
                     </div>
 
                     <!-- DEVELOPER B PANELS -->
-                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="min-height: 350px;">
+                    <div id="panel-search-center" class="panel card border p-4 shadow-sm d-flex flex-column" style="min-height: 350px;">
                         <div class="panel-title h6 mb-3 fw-bold">Admin Search Center</div>
                         <div class="input-group mb-3 border rounded overflow-hidden">
                             <select id="admin-search-type" class="form-select border-0 text-muted"
@@ -231,7 +248,7 @@
                 </div>
             </div>
         </div>
-    </main>
+
 
     <!-- POINTS SETTINGS CONTAINER -->
     <div id="points-settings-container" class="data-container container-fluid px-4 py-3"
@@ -642,6 +659,7 @@
             </div>
         </div>
     </div>
+    </main>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -653,15 +671,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Our Scripts -->
-    <script src="/js/theme.js?v=7"></script>
-    <script src="/js/map.js?v=6"></script>
-    <script src="/js/bike.js?v=6"></script>
-    <script src="/js/history.js?v=6"></script>
-    <script src="/js/sms.js?v=6"></script>
-    <script src="/js/settings.js?v=6"></script>
+    <script src="/js/theme.js?v=106"></script>
+    <script src="/js/map.js?v=106"></script>
+    <script src="/js/bike.js?v=106"></script>
+    <script src="/js/history.js?v=106"></script>
+    <script src="/js/sms.js?v=106"></script>
+    <script src="/js/settings.js?v=106"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/admin-search.js?v=5"></script>
+    <script src="js/analytics.js?v=106"></script>
+    <script src="js/admin-search.js?v=106"></script>
 
     <!-- CONFIRMATION MODALS -->
     <style>
@@ -719,7 +737,6 @@
             </div>
         </div>
     </div>
-
     <!-- Add Points Modal -->
     <div id="add-points-modal" class="modal-overlay"
         style="display: none; background: rgba(11, 15, 25, 0.6); backdrop-filter: blur(8px); z-index: 9999; justify-content: center; align-items: center;">
@@ -738,6 +755,39 @@
             </div>
         </div>
     </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        console.log('Service Worker registered successfully!', reg);
+                        reg.onupdatefound = () => {
+                            const installingWorker = reg.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        console.log('New service worker update found! Reloading...');
+                                        window.location.reload();
+                                    }
+                                }
+                            };
+                        };
+                    })
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
+
+            // Handle controller changes (new active worker)
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>
