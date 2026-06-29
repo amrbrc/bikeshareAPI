@@ -203,24 +203,23 @@
             style="display: none; box-sizing: border-box; overflow-y: auto;">
 
             <!-- Analytics Header: Month Label + History Button -->
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-3">
-                    <div style="width: 5px; height: 32px; background-color: var(--up-maroon); border-radius: 4px;"></div>
-                    <div>
-                        <h3 class="h5 fw-bolder mb-0" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Analytics</h3>
-                        <p class="small mb-0 fw-semibold" style="color: var(--text-muted);">Showing data for <span id="analytics-month-label" style="color: var(--text-h);">--</span></p>
-                    </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px;">
+                <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px; min-width: 0;">
+                    <h3 class="mb-0 fw-bolder" style="font-size: 1rem; color: var(--up-maroon); letter-spacing: -0.01em; text-transform: uppercase;">Analytics</h3>
+                    <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        Showing data for <span id="analytics-month-label" style="color: var(--text-h);">--</span>
+                    </p>
                 </div>
                 <!-- History Button + Dropdown -->
-                <div class="position-relative" id="analytics-history-wrapper">
+                <div class="position-relative flex-shrink-0" id="analytics-history-wrapper">
                     <button id="btn-analytics-history" class="btn btn-sm fw-semibold d-flex align-items-center gap-2"
-                        style="border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 8px 16px; transition: box-shadow 0.2s, background 0.2s;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        style="border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 8px 14px; white-space: nowrap; transition: box-shadow 0.2s, background 0.2s;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
                             <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
                         </svg>
                         History
-                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" id="history-chevron" style="transition: transform 0.2s;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="currentColor" viewBox="0 0 16 16" id="history-chevron" style="transition: transform 0.2s;">
                             <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
                         </svg>
                     </button>
@@ -231,6 +230,7 @@
                     </div>
                 </div>
             </div>
+
 
             <div class="row g-4" style="align-content: start;">
                 <!-- Top Stats Banner -->
