@@ -142,13 +142,99 @@ const getStudentDashboard = async (req, res) => {
             console.error("Error fetching from smsd.inbox:", e.message);
         }
 
+        // 5. Fetch Wall of Honor data (Honest Returns and helpful Logs)
+        let wallOfHonor = [];
+        try {
+            // Fetch recent honest logs from Logs table
+            const [logRows] = await db.upbsPool.query(
+                `SELECT FirstName, LastName, SenderNumber as phone, DateTime as date, Request as type
+                 FROM Logs
+                 WHERE Request IN ('Broken Report', 'Delivered for Repair', 'Missing Report', 'Conflict Report Reward', 'Neutral Report Reward')
+                 ORDER BY DateTime DESC
+                 LIMIT 15`
+            );
+
+            // Fetch recent honest returns from bicycle_history
+            const [historyRows] = await db.upbsPool.query(
+                `SELECT borrowed_by as name, borrower_phone as phone, borrowed_at as date, 'Honest Return' as type, bicycle_code as bike
+                 FROM bicycle_history
+                 WHERE condition_confirmed = 1 AND (reported_condition = 'Good' OR reported_condition IS NULL)
+                 ORDER BY borrowed_at DESC
+                 LIMIT 15`
+            );
+
+            const honors = [];
+            const maskPhone = (phone) => {
+                if (!phone) return "09XX-***-XXXX";
+                const clean = phone.replace(/\D/g, '');
+                let display = clean;
+                if (clean.startsWith('63')) {
+                    display = '0' + clean.substring(2);
+                }
+                if (display.length === 11) {
+                    return `${display.substring(0, 4)}-***-${display.substring(7)}`;
+                }
+                if (display.length > 4) {
+                    return display.substring(0, 4) + "-***-" + display.substring(display.length - 4);
+                }
+                return "09XX-***-XXXX";
+            };
+
+            logRows.forEach(row => {
+                let action = "";
+                let points = "";
+                let isPositive = true;
+
+                if (row.type === 'Broken Report') {
+                    action = "Reported a broken bike.";
+                    points = "+5 pts!";
+                } else if (row.type === 'Missing Report') {
+                    action = "Reported a missing bike.";
+                    points = "+10 pts!";
+                } else if (row.type === 'Delivered for Repair') {
+                    action = "Delivered a bike to the hub for repair.";
+                    points = "Helpful Deed";
+                } else if (row.type === 'Conflict Report Reward' || row.type === 'Neutral Report Reward') {
+                    action = "Rewarded for an honest report.";
+                    points = "+5 pts!";
+                }
+
+                honors.push({
+                    phone: maskPhone(row.phone),
+                    action: action,
+                    points: points,
+                    date: row.date,
+                    isPositive: isPositive
+                });
+            });
+
+            historyRows.forEach(row => {
+                honors.push({
+                    phone: maskPhone(row.phone),
+                    action: `Returned Bike ${row.bike || ''} in good condition.`,
+                    points: "+1 pt!",
+                    date: row.date,
+                    isPositive: true
+                });
+            });
+
+            // Sort by date descending and take top 10
+            wallOfHonor = honors
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 10);
+
+        } catch (e) {
+            console.error("Error fetching Wall of Honor data:", e.message);
+        }
+
         return res.json({
             success: true,
             data: {
                 trustScore: member.trust_points,
                 activeRide: activeRide,
                 rideLog: rideLogRows,
-                lastSms: lastSms
+                lastSms: lastSms,
+                wallOfHonor: wallOfHonor
             }
         });
 

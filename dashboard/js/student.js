@@ -288,6 +288,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- WALL OF HONOR RENDERER ---
+    function renderWallOfHonor(wallOfHonor) {
+        const ticker = document.getElementById('wall-of-honor-ticker');
+        if (!ticker) return;
+
+        if (!wallOfHonor || wallOfHonor.length === 0) {
+            ticker.innerHTML = `
+                <div class="d-flex align-items-center justify-content-center p-3 rounded-4 shadow-sm mb-3 border-0" style="background-color: var(--bg-panel); min-height: 150px; width: 100%;">
+                    <span class="text-muted fw-bold">No honorable acts recorded yet! Be the first!</span>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        wallOfHonor.forEach(item => {
+            const borderStyle = item.isPositive 
+                ? 'background: linear-gradient(180deg, #10b981, #006a4e);' 
+                : 'background: linear-gradient(180deg, #ef4444, #7b1113);';
+            
+            const circleBg = item.isPositive 
+                ? 'background: linear-gradient(135deg, #a7f3d0, #006a4e);' 
+                : 'background: linear-gradient(135deg, #fecdd3, #7b1113);';
+                
+            const textColor = item.isPositive ? '#006a4e' : '#7b1113';
+            const shadowColor = item.isPositive ? 'rgba(0, 106, 78, 0.3)' : 'rgba(123, 17, 19, 0.3)';
+
+            html += `
+                <div class="d-flex align-items-center p-3 rounded-4 shadow-sm mb-3 border-0 position-relative" style="background-color: var(--bg-panel); overflow: hidden;">
+                    <div class="position-absolute" style="left: 0; top: 0; bottom: 0; width: 4px; ${borderStyle}"></div>
+                    <div class="flex-shrink-0 position-relative ms-2">
+                        <div class="rounded-circle" style="width: 44px; height: 44px; ${circleBg} padding: 2px; box-shadow: 0 4px 10px ${shadowColor};">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center w-100 h-100" style="background-color: var(--bg-panel); color: ${textColor};">
+                                <i class='bx bxs-user-circle fs-3'></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ms-3 flex-grow-1">
+                        <div class="fw-bolder" style="font-size: 0.95rem; color: var(--text-h);">${item.phone}</div>
+                        <div class="small mt-1" style="font-size: 0.85rem; color: var(--text-muted);">${item.action} <strong class="text-success">${item.points}</strong></div>
+                    </div>
+                </div>
+            `;
+        });
+        ticker.innerHTML = html;
+    }
+
     // --- LOAD STUDENT DATA ---
     async function loadStudentData() {
         const token = sessionStorage.getItem('adminToken');
@@ -307,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success && result.data) {
                 window.studentData = result.data;
+                renderWallOfHonor(result.data.wallOfHonor);
             } else {
                 throw new Error(result.error || "Unknown API error");
             }
