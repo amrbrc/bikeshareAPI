@@ -68,8 +68,215 @@ const checkMember = async (req, res) => {
     }
 };
 
-module.exports = {
-    login,
-    checkMember
+const getStudentDashboard = async (req, res) => {
+    // req.admin comes from authMiddleware
+    const phone_number = req.admin ? req.admin.phone_number : null;
+
+    if (!phone_number) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    try {
+        // 1. Get Trust Score and basic info
+        const [memberRows] = await db.upbsPool.query(
+            'SELECT firstname, lastname, trust_points FROM members WHERE phone_number = ? AND is_active = 1',
+            [phone_number]
+        );
+
+        if (memberRows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+
+        const member = memberRows[0];
+        const fullName = `${member.firstname} ${member.lastname}`;
+
+        // 2. Get Active Ride (if any)
+        const [activeRideRows] = await db.upbsPool.query(
+            `SELECT bh.borrowed_at, bh.bicycle_code 
+             FROM bicycle_history bh
+             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
+             WHERE bh.borrowed_by = ? 
+               AND bh.done_text_received = 0 
+               AND bc.condition_status = 'Borrowed'
+             LIMIT 1`,
+            [fullName]
+        );
+
+        const activeRide = activeRideRows.length > 0 ? {
+            bicycle_code: activeRideRows[0].bicycle_code,
+            borrowed_at: activeRideRows[0].borrowed_at
+        } : null;
+
+        // 3. Get Recent Ride Log (last 5)
+        const [rideLogRows] = await db.upbsPool.query(
+            `SELECT borrowed_at as date, bicycle_code as bike, 
+                    CONCAT(previous_location, ' → ', new_location) as route 
+             FROM bicycle_history 
+             WHERE borrowed_by = ? 
+             ORDER BY borrowed_at DESC 
+             LIMIT 5`,
+            [fullName]
+        );
+
+        // 4. Get Last SMS Transaction (from user's inbox only)
+        const phoneSuffix = phone_number.substring(1);
+        let lastSms = null;
+
+        try {
+            const [inboxRows] = await db.upbsPool.query(
+                `SELECT TextDecoded, ReceivingDateTime 
+                 FROM smsd.inbox 
+                 WHERE SenderNumber LIKE ? 
+                 ORDER BY ReceivingDateTime DESC 
+                 LIMIT 1`,
+                [`%${phoneSuffix}`]
+            );
+
+            if (inboxRows.length > 0) {
+                lastSms = {
+                    user_text: inboxRows[0].TextDecoded,
+                    date: inboxRows[0].ReceivingDateTime
+                };
+            }
+        } catch (e) {
+            console.error("Error fetching from smsd.inbox:", e.message);
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                trustScore: member.trust_points,
+                activeRide: activeRide,
+                rideLog: rideLogRows,
+                lastSms: lastSms
+            }
+        });
+
+    } catch (err) {
+        console.error('Error fetching student dashboard data:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching dashboard data' });
+    }
 };
 
+
+const getLeaderboards = async (req, res) => {
+    const phone_number = req.admin ? req.admin.phone_number : null;
+
+    try {
+        // 1. Bi-Weekly Reset Check
+        const [settingsRows] = await db.upbsPool.query(
+            "SELECT setting_value FROM app_settings WHERE setting_key = 'leaderboard_last_reset'"
+        );
+
+        let lastResetDate = new Date();
+        if (settingsRows.length > 0) {
+            lastResetDate = new Date(settingsRows[0].setting_value);
+            const now = new Date();
+            const diffTime = Math.abs(now - lastResetDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 14) {
+                // Perform Reset (Base Carryover)
+                await db.upbsPool.query("UPDATE members SET leaderboard_points = trust_points");
+
+                // Update Reset Date
+                const newReset = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                await db.upbsPool.query("UPDATE app_settings SET setting_value = ? WHERE setting_key = 'leaderboard_last_reset'", [newReset]);
+                console.log("[Leaderboards] Performed bi-weekly reset!");
+            }
+        }
+
+        // 2. Top Trusted Riders
+        const [topTrustedRiders] = await db.upbsPool.query(
+            'SELECT firstname, lastname, phone_number, leaderboard_points as score FROM members WHERE is_active = 1 ORDER BY leaderboard_points DESC, lastname ASC, firstname ASC LIMIT 10'
+        );
+
+        // 3. Top Active Riders (This Week)
+        const [topActiveRiders] = await db.upbsPool.query(`
+            SELECT m.firstname, m.lastname, m.phone_number, COUNT(bh.id) AS score 
+            FROM members m 
+            JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+            WHERE bh.borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND m.is_active = 1 
+            GROUP BY m.phone_number 
+            ORDER BY score DESC, m.lastname ASC, m.firstname ASC 
+            LIMIT 8
+        `);
+
+        // 4. Most Active Hubs (This Month)
+        const [topHubs] = await db.upbsPool.query(`
+            SELECT previous_location AS name, COUNT(id) AS score 
+            FROM bicycle_history 
+            WHERE borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH) 
+            GROUP BY previous_location 
+            ORDER BY score DESC, name ASC 
+            LIMIT 8
+        `);
+
+        // 5. Current User Ranks
+        let userTrustedRank = 0;
+        let userTrustedScore = 0;
+        let userActiveRank = 0;
+        let userActiveScore = 0;
+        let userFullName = "";
+
+        if (phone_number) {
+            const [memberRows] = await db.upbsPool.query('SELECT firstname, lastname, leaderboard_points FROM members WHERE phone_number = ?', [phone_number]);
+            if (memberRows.length > 0) {
+                const member = memberRows[0];
+                userFullName = `${member.firstname} ${member.lastname}`;
+                userTrustedScore = member.leaderboard_points;
+
+                const [trustedRankRows] = await db.upbsPool.query(
+                    'SELECT COUNT(*) + 1 as rank FROM members WHERE leaderboard_points > ? AND is_active = 1',
+                    [userTrustedScore]
+                );
+                userTrustedRank = trustedRankRows[0].rank;
+
+                const [activeScoreRows] = await db.upbsPool.query(
+                    "SELECT COUNT(id) as score FROM bicycle_history WHERE borrowed_by = ? AND borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)",
+                    [userFullName]
+                );
+                userActiveScore = activeScoreRows[0].score;
+
+                const [activeRankRows] = await db.upbsPool.query(`
+                    SELECT COUNT(*) + 1 as rank FROM (
+                        SELECT COUNT(bh.id) as ride_count 
+                        FROM members m 
+                        JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+                        WHERE bh.borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND m.is_active = 1 
+                        GROUP BY m.phone_number 
+                        HAVING ride_count > ?
+                    ) as subquery
+                `, [userActiveScore]);
+                userActiveRank = activeRankRows[0].rank;
+            }
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                topTrustedRiders,
+                topActiveRiders,
+                topHubs,
+                currentUser: {
+                    fullName: userFullName,
+                    trustedRank: userTrustedRank,
+                    trustedScore: userTrustedScore,
+                    activeRank: userActiveRank,
+                    activeScore: userActiveScore
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error('Error fetching leaderboards:', err);
+        return res.status(500).json({ success: false, error: 'Database error fetching leaderboards' });
+    }
+};
+
+module.exports = {
+    login,
+    checkMember,
+    getStudentDashboard,
+    getLeaderboards
+};

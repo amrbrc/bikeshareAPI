@@ -136,6 +136,8 @@ const startSixHourPenaltyJob = () => {
                 await db.upbsPool.query(
                     'UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?',
                     [overtimePenalty, row.phone_number]
+                    'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 5), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) - 5) WHERE phone_number = ?',
+                    [row.phone_number]
                 );
 
                 // Log the penalty
@@ -227,7 +229,7 @@ const startUnrepairedDamageJob = () => {
                     console.log(`[Cron] Applying penalty for Bike ${bike.bicycle_code} to ${member.borrowed_by}`);
 
                     await db.upbsPool.query(
-                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 10) WHERE phone_number = ?',
+                        'UPDATE members SET trust_points = GREATEST(0, CAST(trust_points AS SIGNED) - 10), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) - 10) WHERE phone_number = ?',
                         [member.phone_number]
                     );
 

@@ -56,7 +56,7 @@ const addMember = async (req, res) => {
             const member = existing[0];
             if (member.is_active === 0 || member.is_active === false) {
                 await db.upbsPool.query(
-                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, trust_points = 100, points_frozen = 0 WHERE phone_number = ?',
+                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, trust_points = 100, leaderboard_points = 100, points_frozen = 0 WHERE phone_number = ?',
                     [firstname, lastname, phone_number]
                 );
 
@@ -222,8 +222,8 @@ const resolveDispute = async (req, res) => {
             } else {
                 // Deduct points dynamically (adding a negative number)
                 await db.upbsPool.query(
-                    "UPDATE members SET points_frozen = 0, consecutive_good_rides = 0, trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?",
-                    [hitAndRunPenalty, phone_number]
+                    "UPDATE members SET points_frozen = 0, consecutive_good_rides = 0, trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?",
+                    [hitAndRunPenalty, hitAndRunPenalty, phone_number]
                 );
             }
 
@@ -268,7 +268,7 @@ const resolveDispute = async (req, res) => {
             if (reporterPhone) {
                 const reward = await getSettingValue('reward_honest_report', 5);
                 // Reward the reporter (ceiling 120)
-                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?", [reward, reporterPhone]);
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?", [reward, reward, reporterPhone]);
 
                 // Log the reward
                 await db.upbsPool.query(
@@ -313,6 +313,8 @@ const resolveDispute = async (req, res) => {
                 const absolutePenalty = Math.abs(penalty);
                 // Penalize the false reporter (adding a negative number) and reset consecutive good rides
                 await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, reporterPhone]);
+                // Penalize the false reporter (adding a negative number)
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
 
                 // Log the false report penalty
                 await db.upbsPool.query(
@@ -365,7 +367,7 @@ const resolveDispute = async (req, res) => {
             if (reporterPhone) {
                 const reward = await getSettingValue('reward_honest_report', 5);
                 // Reward the reporter with points for correctly identifying a broken bike (ceiling 120)
-                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?", [reward, reporterPhone]);
+                await db.upbsPool.query("UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?", [reward, reward, reporterPhone]);
 
                 // Log the reward
                 await db.upbsPool.query(
@@ -611,8 +613,8 @@ const overridePoints = async (req, res) => {
     try {
         let clampedPoints = Math.max(0, Math.min(120, Number(trust_points)));
         const [result] = await db.upbsPool.query(
-            "UPDATE members SET trust_points = ? WHERE phone_number = ? AND (is_active = 1 OR is_active IS NULL)",
-            [clampedPoints, phone_number]
+            "UPDATE members SET trust_points = ?, leaderboard_points = ? WHERE phone_number = ? AND (is_active = 1 OR is_active IS NULL)",
+            [clampedPoints, clampedPoints, phone_number]
         );
 
         if (result.affectedRows === 0) {
