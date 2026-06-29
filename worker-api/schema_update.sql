@@ -24,6 +24,7 @@ ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS done_text_received TINYINT(
 ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS condition_confirmed TINYINT(1) DEFAULT 0;
 ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS pending_status_time DATETIME DEFAULT NULL;
 ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS reminder_pending_sent TINYINT(1) DEFAULT 0;
+ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS reported_condition VARCHAR(50) DEFAULT NULL;
 
 -- 4. Upgrades for the locations table
 ALTER TABLE locations ADD COLUMN IF NOT EXISTS is_active TINYINT(1) DEFAULT 1;
@@ -33,6 +34,15 @@ ALTER TABLE locations MODIFY COLUMN is_active TINYINT(1) DEFAULT 1;
 -- Upgrade members table for role-based logins and consecutive clean ride tracking
 ALTER TABLE members ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'student';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS consecutive_good_rides INT DEFAULT 0;
+
+-- Upgrade bicycle_history with borrower_phone
+ALTER TABLE bicycle_history ADD COLUMN IF NOT EXISTS borrower_phone VARCHAR(20) DEFAULT NULL;
+
+-- Backfill legacy records
+UPDATE bicycle_history bh
+JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by
+SET bh.borrower_phone = m.phone_number
+WHERE bh.borrower_phone IS NULL;
 
 -- Create system_settings table to store dynamic rules and de-hardcoded point values
 CREATE TABLE IF NOT EXISTS system_settings (
