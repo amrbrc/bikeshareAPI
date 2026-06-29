@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadPointsSettings() {
         const grid = document.getElementById('points-settings-grid');
         if (!grid) return;
-        
+
         // Inject custom styles if they don't exist
         if (!document.getElementById('points-settings-custom-styles')) {
             const style = document.createElement('style');
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 grid.innerHTML = '';
-                
+
                 // Be resilient to both formatted object mapping and raw rows array
                 let settingsObj = {};
                 if (data.data) {
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (const [key, val] of Object.entries(settingsObj)) {
                     // Ignore deprecated or removed settings
                     if (key === 'reward_good_samaritan') continue;
-                    
+
                     const item = { key, val, description: descriptions[key] || "System policy setting." };
                     if (key.startsWith('reward') || key.startsWith('honesty') || key.startsWith('consistent')) {
                         rewards.push(item);
@@ -393,13 +393,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Helper to create card HTML
                 const createCard = (item) => {
                     const formattedKey = item.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    const badgeStyle = parseInt(item.val) < 0 
-                        ? 'background-color: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15);' 
+                    const badgeStyle = parseInt(item.val) < 0
+                        ? 'background-color: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15);'
                         : (item.key.includes('limit') || item.key.includes('timeout') || item.key.includes('grace_period')
-                            ? 'background-color: rgba(234, 179, 8, 0.12); color: #ca8a04; border: 1px solid rgba(234, 179, 8, 0.15);' 
+                            ? 'background-color: rgba(234, 179, 8, 0.12); color: #ca8a04; border: 1px solid rgba(234, 179, 8, 0.15);'
                             : 'background-color: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.15);');
                     const badgeStyleHtml = `font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; ${badgeStyle}`;
-                    
+
                     let suffix = 'pts';
                     if (item.key.includes('hours')) {
                         suffix = Math.abs(parseInt(item.val)) === 1 ? 'hr' : 'hrs';
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         suffix = 'pt';
                     }
                     const displayVal = `${item.val > 0 && suffix.includes('pt') ? '+' : ''}${item.val} ${suffix}`;
-                    
+
                     return `
                         <div class="col-md-6 col-lg-4">
                             <div class="card p-3 shadow-sm border-0 h-100 d-flex flex-column justify-content-between points-settings-card" style="background-color: var(--bg-panel); border-radius: var(--radius-md); border: 1px solid var(--border) !important;">
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </h5>
                     `;
                     grid.appendChild(title);
-                    
+
                     rewards.forEach(item => {
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = createCard(item);
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </h5>
                     `;
                     grid.appendChild(title);
-                    
+
                     penalties.forEach(item => {
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = createCard(item);
@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </h5>
                     `;
                     grid.appendChild(title);
-                    
+
                     thresholds.forEach(item => {
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = createCard(item);
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const k = e.target.getAttribute('data-key');
                         const input = e.target.previousElementSibling;
                         const v = parseInt(input.value);
-                        
+
                         confirmAction('Update Setting', `Are you sure you want to change ${k} to ${v}?`, async () => {
                             try {
                                 const saveRes = await fetch('/api/admin/settings', {
@@ -511,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 } else {
                                     alert(saveData.error || 'Failed to update setting.');
                                 }
-                            } catch(err) {
+                            } catch (err) {
                                 alert('Error updating setting.');
                             }
                         });
@@ -612,13 +612,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const circle = document.getElementById('trust-score-circle');
                     const text = document.getElementById('trust-score-text');
                     const msg = document.getElementById('trust-score-msg');
-                    if(circle && text && msg) {
+                    if (circle && text && msg) {
                         const fakeScore = 85;
                         const max = 120;
                         const offset = 283 - (283 * (fakeScore / max));
-                        circle.style.strokeDashoffset = offset; 
+                        circle.style.strokeDashoffset = offset;
                         text.textContent = fakeScore;
-                        
+
                         // Dynamic coloring
                         if (fakeScore >= 90) {
                             circle.style.stroke = 'var(--up-green, #006a4e)';
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Fake Timer Interval (starts at 01:15:30)
                 const timerEl = document.getElementById('active-ride-timer');
                 if (timerEl) {
-                    let seconds = 4530; 
+                    let seconds = 4530;
                     if (window.studentTimerInterval) clearInterval(window.studentTimerInterval);
                     window.studentTimerInterval = setInterval(() => {
                         seconds++;
@@ -1526,50 +1526,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Global function for editing points from the members list using custom modal
-window.editMemberPoints = function(phone, currentPoints) {
+window.editMemberPoints = function (phone, currentPoints) {
     const token = sessionStorage.getItem('adminToken');
     if (!token) {
         alert('Please sign in as admin first.');
         return;
     }
-    
+
     const modal = document.getElementById('add-points-modal');
     const input = document.getElementById('input-add-points');
     const btnCancel = document.getElementById('btn-points-cancel');
     const btnConfirm = document.getElementById('btn-points-confirm');
     const descText = document.getElementById('add-points-text');
-    
+
     if (!modal) return;
-    
+
     descText.innerText = `Enter points to add to ${phone} (Current: ${currentPoints})`;
     input.value = '';
     modal.style.display = 'flex';
     input.focus();
-    
+
     const closeModal = () => {
         modal.style.display = 'none';
         btnCancel.onclick = null;
         btnConfirm.onclick = null;
     };
-    
+
     btnCancel.onclick = closeModal;
-    
+
     btnConfirm.onclick = async () => {
         const additionalPoints = input.value;
         if (additionalPoints === null || additionalPoints.trim() === "") {
             closeModal();
             return;
         }
-        
+
         const newPoints = currentPoints + parseInt(additionalPoints);
         if (isNaN(newPoints)) {
             closeModal();
             return;
         }
-        
+
         btnConfirm.disabled = true;
         btnConfirm.innerText = "Saving...";
-        
+
         try {
             const res = await fetch('/api/admin/override-points', {
                 method: 'POST',
@@ -1601,40 +1601,40 @@ window.editMemberPoints = function(phone, currentPoints) {
     };
 };
 
-window.deactivateMember = function(phone) {
+window.deactivateMember = function (phone) {
     const token = sessionStorage.getItem('adminToken');
     if (!token) {
         alert('Please sign in as admin first.');
         return;
     }
-    
+
     const modal = document.getElementById('action-confirm-modal');
     const title = document.getElementById('action-confirm-title');
     const text = document.getElementById('action-confirm-text');
     const btnCancel = document.getElementById('btn-action-cancel');
     const btnConfirm = document.getElementById('btn-action-confirm');
-    
+
     if (!modal) return;
-    
+
     title.innerText = "Deactivate Member";
     title.style.color = "#ef4444";
     text.innerHTML = `Are you sure you want to deactivate member <strong>${phone}</strong>?<br>They will no longer be able to borrow bikes.`;
-    
+
     modal.style.display = 'flex';
-    
+
     const closeModal = () => {
         modal.style.display = 'none';
         btnCancel.onclick = null;
         btnConfirm.onclick = null;
         title.style.color = "var(--text-h)";
     };
-    
+
     btnCancel.onclick = closeModal;
-    
+
     btnConfirm.onclick = async () => {
         btnConfirm.disabled = true;
         btnConfirm.innerText = "Processing...";
-        
+
         try {
             const res = await fetch('/api/admin/delete-member', {
                 method: 'POST',
