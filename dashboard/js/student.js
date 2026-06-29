@@ -423,8 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const now = new Date().getTime();
                     let elapsed = Math.floor((now - startTime) / 1000);
 
-                    // 6 hours time limit = 21600 seconds
-                    const limit = 6 * 3600;
+                    // Dynamic time limit (defaults to 6 hours if not loaded yet)
+                    const limitHours = window.dynamicTimeLimitHours || 6;
+                    const limit = limitHours * 3600;
                     let remaining = limit - elapsed;
 
                     const isNegative = remaining < 0;
@@ -538,6 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success && data.data) {
                 const settings = data.data;
+                
+                if (settings.borrow_time_limit_hours !== undefined) {
+                    window.dynamicTimeLimitHours = parseInt(settings.borrow_time_limit_hours);
+                }
                 
                 // Helper to update text safely
                 const updateBadge = (id, settingKey, suffix = 'pts') => {
