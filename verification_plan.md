@@ -59,10 +59,13 @@ Ensure the following before starting tests:
 ### 3. Return Handshake Timeout Expiry
 *   **Goal:** Prevent bikes from locking the system indefinitely in `Pending_Status` if a student forgets to reply to the return check.
 *   **Steps:**
-    1. Borrow Bike 1, then text `done 1`.
-    2. Do NOT reply to the SMS asking if the bike is `GOOD` or `BROKEN`.
-    3. Wait 30 minutes (or temporarily adjust `handshake_timeout_mins` to `1` minute in the database for quick testing).
-    4. Run/Wait for the background cron check.
+    1. Borrow Bike 1 (`borrow 1 hubA to hubB`), then text `done 1`.
+    2. The system asks if the bike is GOOD or BROKEN. **Do NOT reply.**
+    3. **Cheat Code (Skip the 30 min wait):** Run this in phpMyAdmin to age your pending handshake by 31 minutes:
+       ```sql
+       UPDATE bicycle_history SET pending_status_time = DATE_SUB(NOW(), INTERVAL 31 MINUTE) ORDER BY id DESC LIMIT 1;
+       ```
+    4. Wait for the next 5-minute clock mark for the background cron check to run.
     5. **Expected outcome:** 
         *   Bike 1's condition status automatically returns to `Good`.
         *   The active history trip is confirmed (`condition_confirmed = 1`).
