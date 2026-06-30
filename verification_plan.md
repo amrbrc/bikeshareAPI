@@ -16,13 +16,25 @@ Ensure the following before starting tests:
 ## 🧪 Test Scenarios
 
 ### 1. Dynamic Borrow Time Limits & Warnings
-*   **Goal:** Verify that the system dynamically calculates reminders and penalties based on the DB settings instead of hardcoded 6-hour limits.
+*   **Goal:** Verify that the system dynamically calculates reminders and penalties based on the DB settings.
 *   **Steps:**
     1. In **phpMyAdmin** / **Admin Settings Dashboard**, set `borrow_time_limit_hours` to `3`.
     2. Check out a bike: Text `borrow 1 hubA to hubB` to start a trip.
-    3. **Expected outcome:** 
-        *   The background warnings job will dynamically calculate reminders at `1 hour` (`Limit - 2` hours).
-        *   The overtime penalty job will dynamically deduct points after `3 hours` instead of the hardcoded 6 hours.
+    3. **Cheat Code 1 (Warning):** To test the 1-hour warning without waiting, push the start time 65 minutes into the past:
+       ```sql
+       UPDATE bicycle_history SET borrowed_at = DATE_SUB(NOW(), INTERVAL 65 MINUTE) ORDER BY id DESC LIMIT 1;
+       ```
+       *Wait for the 10-minute clock mark. You should receive the Warning SMS.*
+    4. **Cheat Code 2 (Penalty):** To test the 3-hour overtime penalty, push it 185 minutes into the past:
+       ```sql
+       UPDATE bicycle_history SET borrowed_at = DATE_SUB(NOW(), INTERVAL 185 MINUTE) ORDER BY id DESC LIMIT 1;
+       ```
+       *Wait for the 10-minute clock mark. You should receive the Penalty SMS.*
+    5. **Test Hourly Recurrence (Optional):** If you want to simulate another real-world hour passing to get the second hourly penalty instantly, push the penalty timer into the past:
+       ```sql
+       UPDATE bicycle_history SET last_penalty_time = DATE_SUB(NOW(), INTERVAL 65 MINUTE) ORDER BY id DESC LIMIT 1;
+       ```
+    6. Once verified, refresh your Student Dashboard to see your newly deducted Trust Points! Then, text `done 1` and `good 1` to close the trip safely.
 
 ---
 
