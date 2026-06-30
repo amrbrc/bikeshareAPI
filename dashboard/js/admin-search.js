@@ -155,6 +155,35 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 3. Activate Member
+        if (e.target.classList.contains('btn-activate-member')) {
+            const phone = e.target.getAttribute('data-phone');
+            if (!confirm('Are you sure you want to reactivate this member?')) return;
+
+            e.target.disabled = true;
+            try {
+                const res = await fetch('/api/admin/activate-member', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ phone_number: phone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Member successfully reactivated!');
+                    btnSearch.click();
+                } else {
+                    alert(data.error || 'Failed to reactivate member.');
+                }
+            } catch (err) {
+                alert('Connection error.');
+            } finally {
+                e.target.disabled = false;
+            }
+        }
+
         // 2. Delete Member (soft-delete)
         if (e.target.classList.contains('btn-delete-member')) {
             const phone = e.target.getAttribute('data-phone');

@@ -1340,9 +1340,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
                             Add Points
                         </button>
-                        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
-                            Deactivate
-                        </button>
+                        ${(mem.is_active === 0 || mem.is_active === false || mem.is_active === '0') ? `
+                            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="activateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                                Activate
+                            </button>
+                        ` : `
+                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                                Deactivate
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
@@ -1706,6 +1712,74 @@ window.editMemberPoints = function (phone, currentPoints) {
         }
     };
 };
+
+
+window.activateMember = function (phone) {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+        alert('Please sign in as admin first.');
+        return;
+    }
+
+    const modal = document.getElementById('action-confirm-modal');
+    const title = document.getElementById('action-confirm-title');
+    const text = document.getElementById('action-confirm-text');
+    const btnCancel = document.getElementById('btn-action-cancel');
+    const btnConfirm = document.getElementById('btn-action-confirm');
+
+    if (!modal) {
+        if (confirm('Are you sure you want to reactivate this member?')) {
+            proceedWithActivation(phone, token);
+        }
+        return;
+    }
+
+    title.innerText = "Activate Member";
+    title.style.color = "#22c55e"; // Green color for activation
+    text.innerHTML = `Are you sure you want to reactivate member <strong>${phone}</strong>?<br>They will be able to borrow bikes again.`;
+
+    modal.style.display = 'flex';
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        btnCancel.removeEventListener('click', closeModal);
+        btnConfirm.removeEventListener('click', confirmHandler);
+    };
+
+    const confirmHandler = async () => {
+        btnConfirm.disabled = true;
+        btnConfirm.innerText = "Activating...";
+        await proceedWithActivation(phone, token);
+        btnConfirm.disabled = false;
+        btnConfirm.innerText = "Confirm";
+        closeModal();
+    };
+
+    btnCancel.addEventListener('click', closeModal);
+    btnConfirm.addEventListener('click', confirmHandler);
+};
+
+async function proceedWithActivation(phone, token) {
+    try {
+        const res = await fetch('/api/admin/activate-member', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ phone_number: phone })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Member successfully reactivated!');
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to reactivate member.');
+        }
+    } catch (err) {
+        alert('Connection error.');
+    }
+}
 
 window.deactivateMember = function (phone) {
     const token = sessionStorage.getItem('adminToken');

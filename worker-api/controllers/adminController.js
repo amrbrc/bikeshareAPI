@@ -32,7 +32,7 @@ const login = async (req, res) => {
 // GET /api/admin/members
 const getMembers = async (req, res) => {
     try {
-        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE (is_active = 1 OR is_active IS NULL) ORDER BY lastname ASC, firstname ASC');
+        const [rows] = await db.upbsPool.query('SELECT firstname, lastname, phone_number, trust_points, points_frozen, is_active FROM members ORDER BY is_active DESC, lastname ASC, firstname ASC');
         return res.json({ success: true, data: rows });
     } catch (err) {
         console.error('Error in getMembers controller:', err);
@@ -588,9 +588,7 @@ const searchMember = async (req, res) => {
 
     try {
         const sql = `
-            SELECT firstname, lastname, phone_number, trust_points, points_frozen 
-            FROM members 
-            WHERE (phone_number LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL)
+            SELECT firstname, lastname, phone_number, trust_points, points_frozen, is_active \n            FROM members \n            WHERE (phone_number LIKE ? OR lastname LIKE ?) ORDER BY is_active DESC
             LIMIT 20
         `;
         const wildcard = `%${query}%`;
@@ -754,6 +752,31 @@ const deleteMember = async (req, res) => {
         return res.status(500).json({ success: false, error: 'Database error deleting member' });
     } finally {
         if (conn) conn.release();
+    }
+};
+
+
+// POST /api/admin/activate-member
+const activateMember = async (req, res) => {
+    const { phone_number } = req.body;
+    if (!phone_number) {
+        return res.status(400).json({ success: false, error: 'phone_number is required' });
+    }
+
+    try {
+        const [result] = await db.upbsPool.query(
+            "UPDATE members SET is_active = 1 WHERE phone_number = ?",
+            [phone_number]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+
+        return res.json({ success: true, message: 'Member successfully reactivated!' });
+    } catch (err) {
+        console.error('Error in activateMember controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error reactivating member' });
     }
 };
 
@@ -968,6 +991,7 @@ module.exports = {
     overridePoints,
     overrideBike,
     deleteMember,
+    activateMember,
     deleteBike,
     deleteLocation,
     getReports,
