@@ -776,7 +776,7 @@ const deleteBike = async (req, res) => {
         );
 
         const [result] = await conn.query(
-            "UPDATE bicycle_codes SET is_active = 0 WHERE bicycle_code = ?",
+            "UPDATE bicycle_codes SET is_active = 0, condition_status = 'Good' WHERE bicycle_code = ?",
             [bicycle_code]
         );
 
