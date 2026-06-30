@@ -265,33 +265,26 @@
                 </div>
 
                 <!-- Peak Hours Line Chart -->
-                <div class="col-lg-6" id="analytics-chart-hours-col" style="min-height: 300px;">
-                    <div class="panel card border p-4 shadow-sm h-100 d-flex flex-column">
+                <div class="col-lg-6" id="analytics-chart-hours-col">
+                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
                         <div class="panel-title h6 mb-3 fw-bold">Peak Usage Hours</div>
-                        <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
+                        <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
                             <canvas id="chart-peak-hours" style="width: 100%; height: 100%;"></canvas>
                         </div>
                     </div>
                 </div>
 
                 <!-- Popular Stations Doughnut Chart -->
-                <div class="col-lg-6" id="analytics-chart-stations-col" style="min-height: 300px;">
-                    <div class="panel card border p-4 shadow-sm h-100 d-flex flex-column">
+                <div class="col-lg-6" id="analytics-chart-stations-col">
+                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
                         <div class="panel-title h6 mb-3 fw-bold">Most Popular Stations</div>
-                        <div
-                            style="flex: 1; position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 240px;">
-                            <div
-                                style="aspect-ratio: 1; height: 90%; max-height: 100%; position: relative; display: flex; justify-content: center; align-items: center;">
-                                <canvas id="chart-popular-stations" style="max-width: 100%; max-height: 100%;"></canvas>
+                        <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                            <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
+                                <canvas id="chart-popular-stations" style="width: 100%; height: 100%;"></canvas>
                                 <!-- Center Label -->
-                                <div
-                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                                    <span
-                                        style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total
-                                        Rides</span>
-                                    <span
-                                        style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;"
-                                        id="doughnut-center-val">--</span>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
+                                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-center-val">--</span>
                                 </div>
                             </div>
                         </div>
