@@ -772,7 +772,7 @@ const broken = async (req, res) => {
             await upbsConn.commit();
 
             const replyMsg = gracePeriodExpired
-                ? `Notice: Your borrow duration of ${Math.round(borrowMins)} mins exceeds the ${gracePeriodMins}-min grace period. This trip has been ended as a self-reported damage. You have 48 hours to repair Bike ${bicycleCode}.`
+                ? `Notice: Your borrow duration of ${Math.round(borrowMins)} mins exceeds the ${gracePeriodMins}-min grace period. This trip has been ended as a self-reported damage. Please return Bike ${bicycleCode} to the designated UPBS Hub immediately for repair.`
                 : `Thank you for reporting. Please lock and leave Bike ${bicycleCode} at the designated UPBS Hub (or current location) for the maintenance team to collect.`;
 
             return res.json({ reply: replyMsg });
