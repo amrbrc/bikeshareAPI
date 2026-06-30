@@ -312,9 +312,7 @@ const resolveDispute = async (req, res) => {
                 const penalty = await getSettingValue('penalty_false_report', -5);
                 const absolutePenalty = Math.abs(penalty);
                 // Penalize the false reporter (adding a negative number) and reset consecutive good rides
-                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, reporterPhone]);
-                // Penalize the false reporter (adding a negative number)
-                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
+                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
 
                 // Log the false report penalty
                 await db.upbsPool.query(
