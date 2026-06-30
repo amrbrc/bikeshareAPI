@@ -71,18 +71,24 @@ Ensure the following before starting tests:
 
 ---
 
-### 4. Direct Delivery Auto-Closure of Active Trips
-*   **Goal:** Ensure that if a borrower delivers a broken bike directly to a hub and texts `delivered [bike] [location]`, their active trip is closed cleanly and the bike's location is updated.
+### 4. Direct Delivery Auto-Closure & Location Updates
+*   **Goal:** Ensure that users can deliver bikes to a station, update the map location, and that the system properly handles both stranded bikes and active trips.
 *   **Steps:**
-    1. Borrow Bike 1 (active checkout).
-    2. Without texting `done 1`, text `delivered 1` directly.
-    3. **Expected outcome:** 
-        *   You receive SMS: *"Please specify the station where you delivered Bike 1. Example: delivered 1 engg"*
-    4. Text `delivered 1 engg`.
-    5. **Expected outcome:** 
-        *   You receive SMS: *"Thank you! Bike 1 has been marked as delivered to ENGG for repair."*
-        *   Check `bicycle_history` table: your active trip is closed (`done_text_received = 1`, `condition_confirmed = 1`).
-        *   Check `bicycle_codes` table: Bike 1 status is set to `In_Repair` and `new_location` is set to `engg`.
+    *   **Option A (Picking up the Broken Bike from Test 2):**
+        1. Bike 1 is currently stuck in `Broken` status from the end of Test 2.
+        2. Text `delivered 1`.
+            *   *Expected outcome:* The system rejects it: *"Please specify the station... Example: delivered 1 engg"*
+        3. Text `delivered 1 engg`.
+            *   *Expected outcome:* You receive SMS: *"Thank you! Bike 1 has been marked as delivered to ENGG for repair."*
+            *   Check `bicycle_codes` table: Bike 1 status is set to `In_Repair` and `new_location` is set to `engg`.
+    
+    *   **Option B (Direct Delivery of an Active Trip):**
+        1. Borrow Bike 2: Text `borrow 2 hubA to hubB` (active checkout).
+        2. Instead of texting `broken`, you push it to a hub yourself. Text `delivered 2 chk`.
+        3. **Expected outcome:** 
+            *   You receive SMS: *"Thank you! Bike 2 has been marked as delivered to CHK for repair."*
+            *   Check `bicycle_history` table: your active trip is closed automatically, and you are NOT penalized.
+            *   Check `bicycle_codes` table: Bike 2 status is set to `In_Repair` and `new_location` is set to `chk`.
 
 ---
 
