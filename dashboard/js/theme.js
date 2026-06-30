@@ -75,3 +75,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
 });
+
+// Custom Toast/Alert system override
+(function() {
+    let container = null;
+    
+    function ensureContainer() {
+        if (!container) {
+            container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+        }
+    }
+
+    window.showToast = function(message, type = 'info', duration = 4000) {
+        ensureContainer();
+        const toast = document.createElement('div');
+        toast.className = `custom-toast toast-${type}`;
+        
+        let borderLeftColor = '#3b82f6';
+        if (type === 'success') borderLeftColor = '#10b981';
+        else if (type === 'error') borderLeftColor = '#ef4444';
+        else if (type === 'warning') borderLeftColor = '#f59e0b';
+
+        // Check if message contains success/failed indicators to auto-type
+        const lowerMsg = message.toLowerCase();
+        if (type === 'info') {
+            if (lowerMsg.includes('success') || lowerMsg.includes('thank you') || lowerMsg.includes('registered') || lowerMsg.includes('reactivated') || lowerMsg.includes('activated') || lowerMsg.includes('applied')) {
+                toast.classList.remove('toast-info');
+                toast.classList.add('toast-success');
+                borderLeftColor = '#10b981';
+            } else if (lowerMsg.includes('fail') || lowerMsg.includes('error') || lowerMsg.includes('invalid') || lowerMsg.includes('denied') || lowerMsg.includes('connection error')) {
+                toast.classList.remove('toast-info');
+                toast.classList.add('toast-error');
+                borderLeftColor = '#ef4444';
+            }
+        }
+
+        toast.style.borderLeft = `4px solid ${borderLeftColor}`;
+
+        toast.innerHTML = `
+            <div class="toast-content">${message.replace(/\n/g, '<br>')}</div>
+            <button class="toast-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem; line-height:1;">&times;</button>
+        `;
+
+        const closeBtn = toast.querySelector('.toast-close');
+        const dismiss = () => {
+            toast.style.animation = 'toast-fade-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        };
+
+        closeBtn.onclick = dismiss;
+
+        const timer = setTimeout(dismiss, duration);
+        toast.dataset.timer = timer;
+
+        container.appendChild(toast);
+    };
+
+    // Override window.alert
+    window.alert = function(msg) {
+        window.showToast(msg, 'info');
+    };
+})();

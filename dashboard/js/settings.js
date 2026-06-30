@@ -1134,6 +1134,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const code = bike.bicycle_code;
             const isDisabled = bike.is_disabled === 1;
 
+            const locations = window.allLocations || [];
+            let locationOptionsHtml = '';
+            locations.forEach(loc => {
+                const isSelected = bike.new_location === loc.location_name ? 'selected' : '';
+                locationOptionsHtml += `<option value="${loc.location_name}" ${isSelected}>${loc.location_name.toUpperCase()}</option>`;
+            });
+
             const div = document.createElement('div');
             div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item';
             div.style.background = 'var(--bg-main)';
@@ -1154,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="row g-2 align-items-end mt-1">
-                    <div class="col-6 col-sm-5">
+                    <div class="col-6 col-sm-4">
                         <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">New Lock Code</label>
                         <input type="text" class="form-control form-control-sm border-0 shadow-sm bike-lock-input" placeholder="0000">
                     </div>
@@ -1168,7 +1175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             <option value="Missing" ${bike.condition_status === 'Missing' ? 'selected' : ''}>Missing</option>
                         </select>
                     </div>
-                    <div class="col-12 col-sm-3 mt-2 mt-sm-0">
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small text-muted text-uppercase mb-1" style="font-size: 0.65rem;">Location</label>
+                        <select class="form-select form-select-sm border-0 shadow-sm bike-location-select">
+                            ${locationOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="col-12 mt-2">
                         <button class="btn btn-sm btn-primary w-100 fw-bold border-0 btn-save-bike" style="background-color: var(--up-maroon); height: 31px;">Save</button>
                     </div>
                 </div>
@@ -1217,10 +1230,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnSave = div.querySelector('.btn-save-bike');
             const lockInput = div.querySelector('.bike-lock-input');
             const statusSelect = div.querySelector('.bike-status-select');
+            const locationSelect = div.querySelector('.bike-location-select');
             btnSave.addEventListener('click', async () => {
                 const payload = {};
                 if (lockInput.value.trim() !== '') payload.combination_lock = lockInput.value.trim();
                 if (statusSelect.value !== bike.condition_status) payload.condition_status = statusSelect.value;
+                if (locationSelect.value !== bike.new_location) payload.new_location = locationSelect.value;
 
                 if (Object.keys(payload).length === 0) return alert('No changes to save.');
 
@@ -1237,6 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.success) {
                             lockInput.value = '';
                             bike.condition_status = statusSelect.value; // update local state
+                            bike.new_location = locationSelect.value; // update local state
                             if (window.initDashboard) await window.initDashboard();
                         } else {
                             alert(data.error || 'Failed to update bike.');
@@ -1336,19 +1352,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <!-- Row 3: Action Buttons -->
-                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px;">
-                        <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px; align-items: center;">
+                        <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap; height: 28px;">
                             Add Points
                         </button>
                         ${(mem.is_active === 0 || mem.is_active === false || mem.is_active === '0') ? `
-                            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="activateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="activateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap; height: 28px;">
                                 Activate
                             </button>
                         ` : `
-                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap; height: 28px;">
                                 Deactivate
                             </button>
                         `}
+                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="hardDeleteMember('${mem.phone_number}')" title="Delete Member" style="width: 28px; height: 28px; padding: 0;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             `;
@@ -1772,7 +1794,12 @@ async function proceedWithActivation(phone, token) {
         const data = await res.json();
         if (data.success) {
             alert('Member successfully reactivated!');
-            window.location.reload();
+            const navReg = document.getElementById('nav-settings');
+            if (navReg) navReg.click();
+            setTimeout(() => {
+                const tabMembers = document.querySelector('[data-target="tab-members"]');
+                if (tabMembers) tabMembers.click();
+            }, 100);
         } else {
             alert(data.error || 'Failed to reactivate member.');
         }
@@ -1837,6 +1864,72 @@ window.deactivateMember = function (phone) {
             }
         } catch (err) {
             alert('Connection error.');
+        } finally {
+            btnConfirm.disabled = false;
+            btnConfirm.innerText = "Confirm";
+            closeModal();
+        }
+    };
+};
+
+window.hardDeleteMember = function (phone) {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+        alert('Please sign in as admin first.');
+        return;
+    }
+
+    const modal = document.getElementById('action-confirm-modal');
+    const title = document.getElementById('action-confirm-title');
+    const text = document.getElementById('action-confirm-text');
+    const btnCancel = document.getElementById('btn-action-cancel');
+    const btnConfirm = document.getElementById('btn-action-confirm');
+
+    if (!modal) return;
+
+    title.innerText = "Delete Member";
+    title.style.color = "#ef4444";
+    text.innerHTML = `Are you sure you want to <strong>permanently delete</strong> member <strong>${phone}</strong> from the database?<br><span class="text-danger fw-bold">Warning: This action is irreversible.</span>`;
+
+    modal.style.display = 'flex';
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        btnCancel.onclick = null;
+        btnConfirm.onclick = null;
+        title.style.color = "var(--text-h)";
+    };
+
+    btnCancel.onclick = closeModal;
+
+    btnConfirm.onclick = async () => {
+        btnConfirm.disabled = true;
+        btnConfirm.innerText = "Deleting...";
+
+        try {
+            const res = await fetch('/api/admin/hard-delete-member', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ phone_number: phone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Member permanently deleted!');
+                const navReg = document.getElementById('nav-settings');
+                if (navReg) navReg.click();
+                setTimeout(() => {
+                    const tabMembers = document.querySelector('[data-target="tab-members"]');
+                    if (tabMembers) tabMembers.click();
+                }, 100);
+            } else {
+                alert(data.error || 'Failed to delete member.');
+            }
+        } catch (err) {
+            console.error('[settings.js] Error deleting member:', err);
+            alert('Connection error.\n\nPlease restart your Node.js backend server so it can load the new database logic and endpoints we just pushed!');
         } finally {
             btnConfirm.disabled = false;
             btnConfirm.innerText = "Confirm";

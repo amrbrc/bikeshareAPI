@@ -52,6 +52,7 @@ router.post('/admin/override-points', authMiddleware, adminController.overridePo
 router.post('/admin/override-bike', authMiddleware, adminController.overrideBike);
 router.post('/admin/delete-member', authMiddleware, adminController.deleteMember);
 router.post('/admin/activate-member', authMiddleware, adminController.activateMember);
+router.post('/admin/hard-delete-member', authMiddleware, adminController.hardDeleteMember);
 router.post('/admin/delete-bike', authMiddleware, adminController.deleteBike);
 router.post('/admin/bicycles/toggle', authMiddleware, adminController.toggleBike);
 router.post('/admin/delete-location', authMiddleware, adminController.deleteLocation);

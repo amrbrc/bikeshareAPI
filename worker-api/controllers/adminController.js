@@ -431,10 +431,10 @@ const searchMembers = async (req, res) => {
 };
 
 const overrideBicycle = async (req, res) => {
-    const { bicycle_code, combination_lock, condition_status } = req.body;
+    const { bicycle_code, combination_lock, condition_status, new_location } = req.body;
 
-    if (!combination_lock && !condition_status) {
-        return res.status(400).json({ success: false, error: 'At least one field (combination_lock or condition_status) is required' });
+    if (!combination_lock && !condition_status && !new_location) {
+        return res.status(400).json({ success: false, error: 'At least one field (combination_lock, condition_status, or new_location) is required' });
     }
 
     let conn;
@@ -446,6 +446,7 @@ const overrideBicycle = async (req, res) => {
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
         if (condition_status) { updateQuery += "condition_status = ?, "; params.push(condition_status); }
+        if (new_location) { updateQuery += "new_location = ?, previous_location = ?, "; params.push(new_location, new_location); }
         updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)";
         params.push(bicycle_code);
 
@@ -780,6 +781,79 @@ const activateMember = async (req, res) => {
     }
 };
 
+// POST /api/admin/hard-delete-member
+const hardDeleteMember = async (req, res) => {
+    const { phone_number } = req.body;
+    if (!phone_number) {
+        return res.status(400).json({ success: false, error: 'phone_number is required' });
+    }
+
+    let conn;
+    try {
+        conn = await db.upbsPool.getConnection();
+        await conn.beginTransaction();
+
+        // Retrieve member's first and last name to find their active history records
+        const [memberRows] = await conn.query(
+            "SELECT firstname, lastname FROM members WHERE phone_number = ?",
+            [phone_number]
+        );
+
+        if (memberRows.length > 0) {
+            const member = memberRows[0];
+            const currentUserName = `${member.firstname} ${member.lastname}`;
+
+            // Find the bike code currently checked out or pending handshake by this user (if any)
+            const [activeTrips] = await conn.query(
+                "SELECT id, bicycle_code FROM bicycle_history WHERE (borrower_phone = ? OR (borrower_phone IS NULL AND borrowed_by = ?)) AND (done_text_received = 0 OR condition_confirmed = 0) ORDER BY borrowed_at DESC LIMIT 1",
+                [phone_number, currentUserName]
+            );
+
+            if (activeTrips.length > 0) {
+                const activeTrip = activeTrips[0];
+
+                // 1. Close history record
+                await conn.query(
+                    "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = 'Good' WHERE id = ?",
+                    [activeTrip.id]
+                );
+
+                // 2. Set the bike back to Good
+                await conn.query(
+                    "UPDATE bicycle_codes SET condition_status = 'Good' WHERE bicycle_code = ?",
+                    [activeTrip.bicycle_code]
+                );
+            }
+        }
+
+        // Hard delete the member
+        const [result] = await conn.query(
+            "DELETE FROM members WHERE phone_number = ?",
+            [phone_number]
+        );
+
+        if (result.affectedRows === 0) {
+            await conn.rollback();
+            return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+
+        await conn.commit();
+        return res.json({ success: true, message: 'Member successfully deleted from the database!' });
+    } catch (err) {
+        console.error('Error in hardDeleteMember controller:', err);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackErr) {
+                console.error('Error rolling back hardDeleteMember transaction:', rollbackErr);
+            }
+        }
+        return res.status(500).json({ success: false, error: 'Database error deleting member' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 // POST /api/admin/delete-bike
 const deleteBike = async (req, res) => {
     const { bicycle_code } = req.body;
@@ -992,6 +1066,7 @@ module.exports = {
     overrideBike,
     deleteMember,
     activateMember,
+    hardDeleteMember,
     deleteBike,
     deleteLocation,
     getReports,
