@@ -726,7 +726,7 @@ const broken = async (req, res) => {
             return res.json({ reply: `Bike ${bicycleCode} is currently reported as delivered and undergoing repairs.` });
         }
 
-        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone, done_text_received, borrowed_at FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 2", [bicycleCode]);
+        const [history] = await upbsConn.query("SELECT id, borrowed_by, borrower_phone, done_text_received, borrowed_at, previous_location FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 2", [bicycleCode]);
 
         // Determine if this is the immediate user or the next user
         let isImmediateUser = history.length > 0 && history[0].borrowed_by === currentUserName;
@@ -784,8 +784,14 @@ const broken = async (req, res) => {
             }
 
             if (isAbortedTrip) {
+                const startingLocation = history[0].previous_location;
                 // Delete the aborted trip from history so the blame correctly falls on the previous user
                 await upbsConn.query("DELETE FROM bicycle_history WHERE id = ?", [history[0].id]);
+                // Reset the bicycle's location in bicycle_codes back to its starting station
+                await upbsConn.query(
+                    "UPDATE bicycle_codes SET previous_location = ?, new_location = ? WHERE bicycle_code = ?",
+                    [startingLocation, startingLocation, bicycleCode]
+                );
                 // Shift history array so history[0] points to the previous user for the freeze logic below
                 if (history.length > 1) {
                     history[0] = history[1];

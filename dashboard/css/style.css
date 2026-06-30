@@ -847,12 +847,19 @@ body {
     align-content: start;
 }
 
-#bike-override-list,
-#members-list {
+#bike-override-list {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)) !important;
     gap: 1rem !important;
     align-content: start;
+}
+
+#members-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)) !important;
+    gap: 1.25rem !important;
+    align-content: start;
+    align-items: start !important;
 }
 
 /* ═══════════════════════════════════════════

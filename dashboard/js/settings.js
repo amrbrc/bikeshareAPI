@@ -1208,14 +1208,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         members.forEach(mem => {
             const isFrozen = mem.points_frozen == 1 || mem.points_frozen === true || mem.points_frozen === 'true';
-            const frozenBadge = isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; font-weight: 600;">FROZEN</span>' : '';
 
             const div = document.createElement('div');
             div.className = 'member-item';
             div.dataset.phone = mem.phone_number || '';
             div.dataset.name = `${mem.firstname} ${mem.lastname}`.toLowerCase();
             div.style.background = 'var(--bg-main)';
-            div.style.padding = '10px 14px';
+            div.style.padding = '12px 18px';
             div.style.borderRadius = 'var(--radius-sm)';
             div.style.border = '1px solid var(--border)';
             div.style.display = 'flex';
@@ -1225,23 +1224,31 @@ document.addEventListener('DOMContentLoaded', () => {
             div.style.gap = '10px';
 
             div.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-                        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-h); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px;">
-                            ${mem.lastname}, ${mem.firstname} ${frozenBadge}
-                        </span>
-                        <div style="display: flex; gap: 4px; flex-shrink: 0;">
-                            <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.65rem; padding: 4px 8px; white-space: nowrap;">
-                                Add Points
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.65rem; padding: 4px 8px; white-space: nowrap;">
-                                Deactivate
-                            </button>
+                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                    <!-- Row 1: Name and Badge -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex-grow: 1;">
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-h); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${mem.lastname}, ${mem.firstname}
+                            </span>
+                            ${isFrozen ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; flex-shrink: 0; line-height: 1;">FROZEN</span>' : ''}
                         </div>
                     </div>
-                    <span style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">
+
+                    <!-- Row 2: Contact Info & Points -->
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">
                         ${mem.phone_number} | Trust Points: <strong style="color: ${mem.trust_points < 50 ? '#ef4444' : 'inherit'};">${mem.trust_points}</strong>
-                    </span>
+                    </div>
+
+                    <!-- Row 3: Action Buttons -->
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px;">
+                        <button class="btn btn-sm btn-outline-success fw-bold" onclick="editMemberPoints('${mem.phone_number}', ${mem.trust_points})" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                            Add Points
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="deactivateMember('${mem.phone_number}')" style="font-size: 0.68rem; padding: 4px 8px; white-space: nowrap;">
+                            Deactivate
+                        </button>
+                    </div>
                 </div>
             `;
 
