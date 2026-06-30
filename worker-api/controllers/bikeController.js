@@ -663,8 +663,8 @@ const good = async (req, res) => {
             if (consecutive > 0 && consecutive % 5 === 0) {
                 const reward = await getSettingValue('consistent_rider_reward', 2, upbsConn);
                 await upbsConn.query(
-                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?",
-                    [reward, smsSender]
+                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
+                    [reward, reward, smsSender]
                 );
                 congratsMsg = ` Congratulations! You have completed ${consecutive} consecutive clean rides and earned +${reward} trust points!`;
             }
