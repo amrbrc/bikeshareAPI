@@ -41,10 +41,18 @@ Ensure the following before starting tests:
 ### 2. Active Trip Grace Period (15 Mins)
 *   **Goal:** Prevent a user from riding a bike, breaking it, and aborting the trip to shift blame to the previous rider.
 *   **Steps:**
-    1. Check out Bike 1. Wait **less than 15 minutes** (e.g., 2 mins) and text `broken 1`.
+    1. First, make sure you don't have any active trips (Text `done 5` and `good 5` if you haven't closed Bike 5).
+    2. Check out Bike 1: Text `borrow 1 hubA to hubB`.
+    3. Wait **less than 15 minutes** (e.g., just 1 minute) and text `broken 1`.
         *   *Expected outcome:* The active trip is deleted, the previous rider is frozen, and you receive the dispute-success SMS.
-    2. Check out Bike 1 again. Wait **more than 15 minutes** (e.g., 16 mins) and text `broken 1`.
-        *   *Expected outcome:* The active trip is completed normally (not deleted), the bike status is set to `Broken`, the previous user is NOT frozen, and you receive the SMS: *"Notice: Your borrow duration of 16 mins exceeds the 15-min grace period. This trip has been ended as a self-reported damage..."*
+    4. Since the trip was deleted, Bike 1 is locked. Let's fix it manually in phpMyAdmin: set Bike 1's `condition_status` back to `Good` in the `bicycle_codes` table so we can test it again.
+    5. Check out Bike 1 again: Text `borrow 1 hubA to hubB`.
+    6. **Cheat Code (Skip the 15 min wait):** Run this in phpMyAdmin to age your trip by 16 minutes:
+       ```sql
+       UPDATE bicycle_history SET borrowed_at = DATE_SUB(NOW(), INTERVAL 16 MINUTE) ORDER BY id DESC LIMIT 1;
+       ```
+    7. Now text `broken 1`.
+        *   *Expected outcome:* The active trip is completed normally (not deleted), the bike status is set to `Broken`, the previous user is NOT frozen, and you receive the SMS: *"Notice: Your borrow duration of 16 mins exceeds the 15-min grace period..."*
 
 ---
 
