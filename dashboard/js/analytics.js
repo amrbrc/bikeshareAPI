@@ -446,7 +446,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     scales: {
                         x: {
                             grid: { color: theme.grid, drawBorder: false },
-                            ticks: { color: theme.text, font: { family: 'Inter', size: 10 } }
+                            ticks: { 
+                                color: theme.text, 
+                                font: { family: 'Inter', size: 10 },
+                                maxTicksLimit: window.innerWidth < 768 ? 6 : 12
+                            }
                         },
                         y: {
                             beginAtZero: true,
@@ -497,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cutout: '75%',
                     plugins: {
                         legend: {
+                            display: window.innerWidth > 768,
                             position: 'bottom',
                             labels: {
                                 color: theme.text,
@@ -592,7 +597,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     scales: {
                         x: {
                             grid: { color: theme.grid, drawBorder: false },
-                            ticks: { color: theme.text, font: { family: 'Inter', size: 10 } }
+                            ticks: { 
+                                color: theme.text, 
+                                font: { family: 'Inter', size: 10 },
+                                maxTicksLimit: window.innerWidth < 768 ? 6 : 12
+                            }
                         },
                         y: {
                             beginAtZero: true,
@@ -643,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cutout: '75%',
                     plugins: {
                         legend: {
+                            display: window.innerWidth > 768,
                             position: 'bottom',
                             labels: {
                                 color: theme.text,
