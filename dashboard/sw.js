@@ -1,4 +1,4 @@
-const CACHE_NAME = 'upbs-cache-v15';
+const CACHE_NAME = 'upbs-cache-v18';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

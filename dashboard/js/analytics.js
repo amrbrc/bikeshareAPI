@@ -1,6 +1,6 @@
 // public/js/analytics.js
 // Handles view switching and Chart.js rendering for system analytics.
-// Supports monthly filtering with a History dropdown.
+// Supports both Overall (All-Time) and Monthly filtering with a History dropdown.
 
 document.addEventListener('DOMContentLoaded', () => {
     const navDashboard = document.getElementById('nav-dashboard');
@@ -12,12 +12,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const analyticsContainer = document.getElementById('analytics-container');
     const mainWrapper = document.querySelector('.main-wrapper');
 
-    // Stats elements
-    const totalRidesEl = document.getElementById('analytics-total-rides');
-    const peakHourEl = document.getElementById('analytics-peak-hour');
-    const topHubEl = document.getElementById('analytics-top-hub');
-    const doughnutCenterValEl = document.getElementById('doughnut-center-val');
+    // Stats elements (Overall)
+    const overallTotalRidesEl = document.getElementById('analytics-overall-total-rides');
+    const overallPeakHourEl = document.getElementById('analytics-overall-peak-hour');
+    const overallTopHubEl = document.getElementById('analytics-overall-top-hub');
+    const overallDoughnutCenterValEl = document.getElementById('doughnut-overall-center-val');
+
+    // Stats elements (Monthly)
+    const monthlyTotalRidesEl = document.getElementById('analytics-total-rides');
+    const monthlyPeakHourEl = document.getElementById('analytics-peak-hour');
+    const monthlyTopHubEl = document.getElementById('analytics-top-hub');
+    const monthlyDoughnutCenterValEl = document.getElementById('doughnut-center-val');
     const monthLabelEl = document.getElementById('analytics-month-label');
+
+    // Chart Titles
+    const monthlyPeakHoursTitleEl = document.getElementById('monthly-peak-hours-title');
+    const monthlyPopularStationsTitleEl = document.getElementById('monthly-popular-stations-title');
 
     // History UI elements
     const btnHistory = document.getElementById('btn-analytics-history');
@@ -25,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('analytics-history-list');
     const historyChevron = document.getElementById('history-chevron');
 
-    // No-data + chart col elements
+    // No-data + chart col elements (Monthly)
     const noDataEl = document.getElementById('analytics-no-data');
     const chartHoursCol = document.getElementById('analytics-chart-hours-col');
     const chartStationsCol = document.getElementById('analytics-chart-stations-col');
@@ -35,8 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    let peakHoursChart = null;
-    let popularStationsChart = null;
+    // Chart instances
+    let overallPeakHoursChart = null;
+    let overallPopularStationsChart = null;
+    let monthlyPeakHoursChart = null;
+    let monthlyPopularStationsChart = null;
+
     let currentMonth = null;  // 'YYYY-MM' of the currently displayed month
     let historyOpen = false;
 
@@ -248,36 +262,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!month) month = getCurrentMonthKey();
         currentMonth = month;
 
-        // Update month label immediately
-        if (monthLabelEl) monthLabelEl.textContent = formatMonthLabel(month);
+        const monthNameFormatted = formatMonthLabel(month);
+
+        // Update month labels immediately
+        if (monthLabelEl) monthLabelEl.textContent = monthNameFormatted;
+        if (monthlyPeakHoursTitleEl) monthlyPeakHoursTitleEl.textContent = `Peak Usage Hours (${monthNameFormatted})`;
+        if (monthlyPopularStationsTitleEl) monthlyPopularStationsTitleEl.textContent = `Most Popular Stations (${monthNameFormatted})`;
 
         try {
             const response = await fetch(`/api/analytics?month=${month}`);
             const data = await response.json();
 
             if (data.success) {
-                // Populate history dropdown from available months
+                // 1. Render Overall (All-Time) Section
+                updateOverallStatsBanner(data.overallPeakHours, data.overallPopularStations);
+                renderOverallCharts(data.overallPeakHours, data.overallPopularStations);
+
+                // 2. Render Monthly Section
                 buildHistoryDropdown(data.availableMonths || []);
 
-                const hasData = (data.peakHours && data.peakHours.length > 0) ||
-                                (data.popularStations && data.popularStations.length > 0);
+                const hasMonthlyData = (data.peakHours && data.peakHours.length > 0) ||
+                                       (data.popularStations && data.popularStations.length > 0);
 
-                if (hasData) {
+                if (hasMonthlyData) {
                     if (noDataEl) noDataEl.style.display = 'none';
                     if (chartHoursCol) chartHoursCol.style.display = '';
                     if (chartStationsCol) chartStationsCol.style.display = '';
-                    updateStatsBanner(data.peakHours, data.popularStations);
-                    renderCharts(data.peakHours, data.popularStations);
+                    updateMonthlyStatsBanner(data.peakHours, data.popularStations);
+                    renderMonthlyCharts(data.peakHours, data.popularStations);
                 } else {
                     // No data for this month
                     if (noDataEl) noDataEl.style.display = '';
                     if (chartHoursCol) chartHoursCol.style.display = 'none';
                     if (chartStationsCol) chartStationsCol.style.display = 'none';
                     // Reset stats
-                    if (totalRidesEl) totalRidesEl.textContent = '0';
-                    if (peakHourEl) peakHourEl.textContent = '--';
-                    if (topHubEl) topHubEl.textContent = '--';
-                    if (doughnutCenterValEl) doughnutCenterValEl.textContent = '0';
+                    if (monthlyTotalRidesEl) monthlyTotalRidesEl.textContent = '0';
+                    if (monthlyPeakHourEl) monthlyPeakHourEl.textContent = '--';
+                    if (monthlyTopHubEl) monthlyTopHubEl.textContent = '--';
+                    if (monthlyDoughnutCenterValEl) monthlyDoughnutCenterValEl.textContent = '0';
                 }
             } else {
                 console.error('[analytics.js] Backend error:', data.error);
@@ -287,18 +309,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ── Stats Banner ────────────────────────────────────────────────────────
+    // ── Stats Banner Computation & Display ──────────────────────────────────
     function formatHour(hour) {
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour % 12 === 0 ? 12 : hour % 12;
         return `${displayHour}:00 ${ampm}`;
     }
 
-    function updateStatsBanner(peakHoursData, popularStationsData) {
+    function updateOverallStatsBanner(peakHoursData, popularStationsData) {
         let total = 0;
         popularStationsData.forEach(s => total += s.count);
-        if (totalRidesEl) totalRidesEl.textContent = total;
-        if (doughnutCenterValEl) doughnutCenterValEl.textContent = total;
+        if (overallTotalRidesEl) overallTotalRidesEl.textContent = total;
+        if (overallDoughnutCenterValEl) overallDoughnutCenterValEl.textContent = total;
 
         let maxCount = -1;
         let peakHour = null;
@@ -308,27 +330,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 peakHour = item.hour;
             }
         });
-        if (peakHourEl) {
-            peakHourEl.textContent = peakHour !== null ? formatHour(peakHour) : '--';
+        if (overallPeakHourEl) {
+            overallPeakHourEl.textContent = peakHour !== null ? formatHour(peakHour) : '--';
         }
 
         if (popularStationsData.length > 0) {
             const top = popularStationsData[0];
             const key = top.station.toLowerCase().trim();
             const label = stationLabels[key] || top.station.toUpperCase();
-            if (topHubEl) {
-                topHubEl.textContent = `${label} (${top.count})`;
+            if (overallTopHubEl) {
+                overallTopHubEl.textContent = `${label} (${top.count})`;
             }
         } else {
-            if (topHubEl) topHubEl.textContent = '--';
+            if (overallTopHubEl) overallTopHubEl.textContent = '--';
         }
     }
 
-    // ── Chart Rendering ─────────────────────────────────────────────────────
-    function renderCharts(peakHoursData, popularStationsData) {
+    function updateMonthlyStatsBanner(peakHoursData, popularStationsData) {
+        let total = 0;
+        popularStationsData.forEach(s => total += s.count);
+        if (monthlyTotalRidesEl) monthlyTotalRidesEl.textContent = total;
+        if (monthlyDoughnutCenterValEl) monthlyDoughnutCenterValEl.textContent = total;
+
+        let maxCount = -1;
+        let peakHour = null;
+        peakHoursData.forEach(item => {
+            if (item.count > maxCount) {
+                maxCount = item.count;
+                peakHour = item.hour;
+            }
+        });
+        if (monthlyPeakHourEl) {
+            monthlyPeakHourEl.textContent = peakHour !== null ? formatHour(peakHour) : '--';
+        }
+
+        if (popularStationsData.length > 0) {
+            const top = popularStationsData[0];
+            const key = top.station.toLowerCase().trim();
+            const label = stationLabels[key] || top.station.toUpperCase();
+            if (monthlyTopHubEl) {
+                monthlyTopHubEl.textContent = `${label} (${top.count})`;
+            }
+        } else {
+            if (monthlyTopHubEl) monthlyTopHubEl.textContent = '--';
+        }
+    }
+
+    // ── Chart Rendering (Overall) ───────────────────────────────────────────
+    function renderOverallCharts(peakHoursData, popularStationsData) {
         const theme = getThemeColors();
 
-        // --- 1. Line Chart: Peak Usage Hours ---
+        // 1. Overall Line Chart
         const hourlyCounts = Array(24).fill(0);
         peakHoursData.forEach(item => {
             if (item.hour >= 0 && item.hour < 24) {
@@ -342,10 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${displayHour} ${ampm}`;
         });
 
-        const ctxHours = document.getElementById('chart-peak-hours');
+        const ctxHours = document.getElementById('chart-overall-peak-hours');
         if (ctxHours) {
-            if (peakHoursChart) {
-                peakHoursChart.destroy();
+            if (overallPeakHoursChart) {
+                overallPeakHoursChart.destroy();
             }
 
             const ctx = ctxHours.getContext('2d');
@@ -353,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fillGradient.addColorStop(0, theme.lineFillStart);
             fillGradient.addColorStop(1, theme.lineFillEnd);
 
-            peakHoursChart = new Chart(ctxHours, {
+            overallPeakHoursChart = new Chart(ctxHours, {
                 type: 'line',
                 data: {
                     labels: hourLabels,
@@ -406,7 +458,153 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- 2. Doughnut Chart: Most Popular Stations ---
+        // 2. Overall Doughnut Chart
+        const stationNames = [];
+        const stationCounts = [];
+        const backgroundColors = [];
+
+        popularStationsData.forEach(item => {
+            const key = item.station.toLowerCase().trim();
+            const label = stationLabels[key] || item.station.toUpperCase();
+            const color = stationColors[key] || '#10b981';
+
+            stationNames.push(label);
+            stationCounts.push(item.count);
+            backgroundColors.push(color);
+        });
+
+        const ctxStations = document.getElementById('chart-overall-popular-stations');
+        if (ctxStations) {
+            if (overallPopularStationsChart) {
+                overallPopularStationsChart.destroy();
+            }
+
+            overallPopularStationsChart = new Chart(ctxStations, {
+                type: 'doughnut',
+                data: {
+                    labels: stationNames,
+                    datasets: [{
+                        data: stationCounts,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 2,
+                        borderColor: theme.borderColor,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: theme.text,
+                                font: { family: 'Inter', size: 10, weight: '500' },
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                padding: 12
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: theme.tooltipBg,
+                            titleColor: theme.tooltipText,
+                            bodyColor: theme.tooltipText,
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 10,
+                            font: { family: 'Inter' }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // ── Chart Rendering (Monthly) ───────────────────────────────────────────
+    function renderMonthlyCharts(peakHoursData, popularStationsData) {
+        const theme = getThemeColors();
+
+        // 1. Monthly Line Chart
+        const hourlyCounts = Array(24).fill(0);
+        peakHoursData.forEach(item => {
+            if (item.hour >= 0 && item.hour < 24) {
+                hourlyCounts[item.hour] = item.count;
+            }
+        });
+
+        const hourLabels = Array.from({ length: 24 }, (_, i) => {
+            const ampm = i >= 12 ? 'PM' : 'AM';
+            const displayHour = i % 12 === 0 ? 12 : i % 12;
+            return `${displayHour} ${ampm}`;
+        });
+
+        const ctxHours = document.getElementById('chart-peak-hours');
+        if (ctxHours) {
+            if (monthlyPeakHoursChart) {
+                monthlyPeakHoursChart.destroy();
+            }
+
+            const ctx = ctxHours.getContext('2d');
+            const fillGradient = ctx.createLinearGradient(0, 0, 0, ctxHours.offsetHeight || 300);
+            fillGradient.addColorStop(0, theme.lineFillStart);
+            fillGradient.addColorStop(1, theme.lineFillEnd);
+
+            monthlyPeakHoursChart = new Chart(ctxHours, {
+                type: 'line',
+                data: {
+                    labels: hourLabels,
+                    datasets: [{
+                        label: 'Rides',
+                        data: hourlyCounts,
+                        borderColor: theme.lineBorder,
+                        backgroundColor: fillGradient,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: theme.lineBorder,
+                        pointBorderColor: theme.borderColor,
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: theme.lineBorder,
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: theme.tooltipBg,
+                            titleColor: theme.tooltipText,
+                            bodyColor: theme.tooltipText,
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 10,
+                            font: { family: 'Inter' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: theme.grid, drawBorder: false },
+                            ticks: { color: theme.text, font: { family: 'Inter', size: 10 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: theme.grid, drawBorder: false },
+                            ticks: { color: theme.text, precision: 0, font: { family: 'Inter', size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Monthly Doughnut Chart
         const stationNames = [];
         const stationCounts = [];
         const backgroundColors = [];
@@ -423,11 +621,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const ctxStations = document.getElementById('chart-popular-stations');
         if (ctxStations) {
-            if (popularStationsChart) {
-                popularStationsChart.destroy();
+            if (monthlyPopularStationsChart) {
+                monthlyPopularStationsChart.destroy();
             }
 
-            popularStationsChart = new Chart(ctxStations, {
+            monthlyPopularStationsChart = new Chart(ctxStations, {
                 type: 'doughnut',
                 data: {
                     labels: stationNames,
@@ -474,7 +672,46 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('themeChanged', () => {
         const theme = getThemeColors();
 
-        if (peakHoursChart) {
+        // 1. Overall Line Chart Update
+        if (overallPeakHoursChart) {
+            const ctxHours = document.getElementById('chart-overall-peak-hours');
+            if (ctxHours) {
+                const ctx = ctxHours.getContext('2d');
+                const fillGradient = ctx.createLinearGradient(0, 0, 0, ctxHours.offsetHeight || 300);
+                fillGradient.addColorStop(0, theme.lineFillStart);
+                fillGradient.addColorStop(1, theme.lineFillEnd);
+
+                overallPeakHoursChart.data.datasets[0].backgroundColor = fillGradient;
+            }
+
+            overallPeakHoursChart.data.datasets[0].borderColor = theme.lineBorder;
+            overallPeakHoursChart.data.datasets[0].pointBackgroundColor = theme.lineBorder;
+            overallPeakHoursChart.data.datasets[0].pointBorderColor = theme.borderColor;
+
+            overallPeakHoursChart.options.scales.x.grid.color = theme.grid;
+            overallPeakHoursChart.options.scales.x.ticks.color = theme.text;
+            overallPeakHoursChart.options.scales.y.grid.color = theme.grid;
+            overallPeakHoursChart.options.scales.y.ticks.color = theme.text;
+
+            overallPeakHoursChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+            overallPeakHoursChart.options.plugins.tooltip.titleColor = theme.tooltipText;
+            overallPeakHoursChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
+            overallPeakHoursChart.update();
+        }
+
+        // 2. Overall Doughnut Chart Update
+        if (overallPopularStationsChart) {
+            overallPopularStationsChart.options.plugins.legend.labels.color = theme.text;
+            overallPopularStationsChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+            overallPopularStationsChart.options.plugins.tooltip.titleColor = theme.tooltipText;
+            overallPopularStationsChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
+
+            overallPopularStationsChart.data.datasets[0].borderColor = theme.borderColor;
+            overallPopularStationsChart.update();
+        }
+
+        // 3. Monthly Line Chart Update
+        if (monthlyPeakHoursChart) {
             const ctxHours = document.getElementById('chart-peak-hours');
             if (ctxHours) {
                 const ctx = ctxHours.getContext('2d');
@@ -482,32 +719,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 fillGradient.addColorStop(0, theme.lineFillStart);
                 fillGradient.addColorStop(1, theme.lineFillEnd);
 
-                peakHoursChart.data.datasets[0].backgroundColor = fillGradient;
+                monthlyPeakHoursChart.data.datasets[0].backgroundColor = fillGradient;
             }
 
-            peakHoursChart.data.datasets[0].borderColor = theme.lineBorder;
-            peakHoursChart.data.datasets[0].pointBackgroundColor = theme.lineBorder;
-            peakHoursChart.data.datasets[0].pointBorderColor = theme.borderColor;
+            monthlyPeakHoursChart.data.datasets[0].borderColor = theme.lineBorder;
+            monthlyPeakHoursChart.data.datasets[0].pointBackgroundColor = theme.lineBorder;
+            monthlyPeakHoursChart.data.datasets[0].pointBorderColor = theme.borderColor;
 
-            peakHoursChart.options.scales.x.grid.color = theme.grid;
-            peakHoursChart.options.scales.x.ticks.color = theme.text;
-            peakHoursChart.options.scales.y.grid.color = theme.grid;
-            peakHoursChart.options.scales.y.ticks.color = theme.text;
+            monthlyPeakHoursChart.options.scales.x.grid.color = theme.grid;
+            monthlyPeakHoursChart.options.scales.x.ticks.color = theme.text;
+            monthlyPeakHoursChart.options.scales.y.grid.color = theme.grid;
+            monthlyPeakHoursChart.options.scales.y.ticks.color = theme.text;
 
-            peakHoursChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
-            peakHoursChart.options.plugins.tooltip.titleColor = theme.tooltipText;
-            peakHoursChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
-            peakHoursChart.update();
+            monthlyPeakHoursChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+            monthlyPeakHoursChart.options.plugins.tooltip.titleColor = theme.tooltipText;
+            monthlyPeakHoursChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
+            monthlyPeakHoursChart.update();
         }
 
-        if (popularStationsChart) {
-            popularStationsChart.options.plugins.legend.labels.color = theme.text;
-            popularStationsChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
-            popularStationsChart.options.plugins.tooltip.titleColor = theme.tooltipText;
-            popularStationsChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
+        // 4. Monthly Doughnut Chart Update
+        if (monthlyPopularStationsChart) {
+            monthlyPopularStationsChart.options.plugins.legend.labels.color = theme.text;
+            monthlyPopularStationsChart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+            monthlyPopularStationsChart.options.plugins.tooltip.titleColor = theme.tooltipText;
+            monthlyPopularStationsChart.options.plugins.tooltip.bodyColor = theme.tooltipText;
 
-            popularStationsChart.data.datasets[0].borderColor = theme.borderColor;
-            popularStationsChart.update();
+            monthlyPopularStationsChart.data.datasets[0].borderColor = theme.borderColor;
+            monthlyPopularStationsChart.update();
         }
     });
 });

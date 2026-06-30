@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=110">
+    <link rel="stylesheet" href="/css/style.css?v=113">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -202,89 +202,151 @@
         <div id="analytics-container" class="data-container container-fluid px-4 py-3"
             style="display: none; box-sizing: border-box; overflow-y: auto;">
 
-            <!-- Analytics Header: Month Label + History Button -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px;">
-                <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px; min-width: 0;">
-                    <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Analytics</h3>
-                    <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        Showing data for <span id="analytics-month-label" style="color: var(--text-h);">--</span>
-                    </p>
+            <!-- SECTION 1: OVERALL SYSTEM ANALYTICS -->
+            <div class="mb-4">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px;">
+                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Overall System Analytics</h3>
+                        <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted);">Lifetime aggregated metrics</p>
+                    </div>
                 </div>
-                <!-- History Button + Dropdown -->
-                <div class="position-relative flex-shrink-0" id="analytics-history-wrapper">
-                    <button id="btn-analytics-history" class="btn btn-sm fw-semibold d-flex align-items-center gap-2"
-                        style="border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 8px 14px; white-space: nowrap; transition: box-shadow 0.2s, background 0.2s;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                        </svg>
-                        History
-                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="currentColor" viewBox="0 0 16 16" id="history-chevron" style="transition: transform 0.2s;">
-                            <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-                        </svg>
-                    </button>
-                    <!-- Dropdown -->
-                    <div id="analytics-history-dropdown"
-                        style="display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; max-height: 260px; overflow-y: auto; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; padding: 6px 0;">
-                        <div id="analytics-history-list" style="display: flex; flex-direction: column;"></div>
+
+                <div class="row g-4 mb-4" style="align-content: start;">
+                    <!-- Overall Stats Banner -->
+                    <div class="col-12">
+                        <div class="d-flex gap-3 flex-wrap">
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Rides (All-Time)</span>
+                                <span class="val h2 fw-bold mb-0" id="analytics-overall-total-rides">--</span>
+                            </div>
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Peak Usage Hour (All-Time)</span>
+                                <span class="val h2 fw-bold mb-0" id="analytics-overall-peak-hour">--</span>
+                            </div>
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Top Hub (All-Time)</span>
+                                <span class="val h4 fw-bold mb-0 py-1" id="analytics-overall-top-hub"
+                                    style="white-space: nowrap; text-transform: uppercase;">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Peak Hours Line Chart -->
+                    <div class="col-lg-6" id="analytics-overall-chart-hours-col">
+                        <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
+                            <div class="panel-title h6 mb-3 fw-bold">Peak Usage Hours (All-Time)</div>
+                            <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
+                                <canvas id="chart-overall-peak-hours" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Popular Stations Doughnut Chart -->
+                    <div class="col-lg-6" id="analytics-overall-chart-stations-col">
+                        <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
+                            <div class="panel-title h6 mb-3 fw-bold">Most Popular Stations (All-Time)</div>
+                            <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                                <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
+                                    <canvas id="chart-overall-popular-stations" style="width: 100%; height: 100%;"></canvas>
+                                    <!-- Center Label -->
+                                    <div style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                        <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
+                                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-overall-center-val">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <hr class="my-4" style="border-color: var(--border); opacity: 0.15;">
 
-            <div class="row g-4" style="align-content: start;">
-                <!-- Top Stats Banner -->
-                <div class="col-12">
-                    <div class="d-flex gap-3 flex-wrap">
-                        <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
-                            <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Rides</span>
-                            <span class="val h2 fw-bold mb-0" id="analytics-total-rides">--</span>
-                        </div>
-                        <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
-                            <span class="lbl text-muted text-uppercase fw-semibold mb-2">Peak Usage Hour</span>
-                            <span class="val h2 fw-bold mb-0" id="analytics-peak-hour">--</span>
-                        </div>
-                        <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
-                            <span class="lbl text-muted text-uppercase fw-semibold mb-2">Top Hub</span>
-                            <span class="val h4 fw-bold mb-0 py-1" id="analytics-top-hub"
-                                style="white-space: nowrap; text-transform: uppercase;">--</span>
+            <!-- SECTION 2: MONTHLY SYSTEM ANALYTICS -->
+            <div>
+                <!-- Analytics Header: Month Label + History Button -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px;">
+                    <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px; min-width: 0;">
+                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Monthly Analytics</h3>
+                        <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            Showing data for <span id="analytics-month-label" style="color: var(--text-h); font-weight: 700;">--</span>
+                        </p>
+                    </div>
+                    <!-- History Button + Dropdown -->
+                    <div class="position-relative flex-shrink-0" id="analytics-history-wrapper">
+                        <button id="btn-analytics-history" class="btn btn-sm fw-semibold d-flex align-items-center gap-2"
+                            style="border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 8px 14px; white-space: nowrap; transition: box-shadow 0.2s, background 0.2s;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                            </svg>
+                            History
+                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="currentColor" viewBox="0 0 16 16" id="history-chevron" style="transition: transform 0.2s;">
+                                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+                            </svg>
+                        </button>
+                        <!-- Dropdown -->
+                        <div id="analytics-history-dropdown"
+                            style="display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; max-height: 260px; overflow-y: auto; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; padding: 6px 0;">
+                            <div id="analytics-history-list" style="display: flex; flex-direction: column;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- No Data Message -->
-                <div class="col-12" id="analytics-no-data" style="display: none;">
-                    <div class="text-center py-5" style="color: var(--text-muted);">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.3; margin-bottom: 12px; display: block; margin-inline: auto;">
-                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-                        </svg>
-                        <p class="fw-semibold mb-0">No ride data for this month.</p>
-                        <p class="small">Try selecting a different month from the History dropdown.</p>
-                    </div>
-                </div>
-
-                <!-- Peak Hours Line Chart -->
-                <div class="col-lg-6" id="analytics-chart-hours-col">
-                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
-                        <div class="panel-title h6 mb-3 fw-bold">Peak Usage Hours</div>
-                        <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
-                            <canvas id="chart-peak-hours" style="width: 100%; height: 100%;"></canvas>
+                <div class="row g-4" style="align-content: start;">
+                    <!-- Top Stats Banner -->
+                    <div class="col-12">
+                        <div class="d-flex gap-3 flex-wrap">
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Rides</span>
+                                <span class="val h2 fw-bold mb-0" id="analytics-total-rides">--</span>
+                            </div>
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Peak Usage Hour</span>
+                                <span class="val h2 fw-bold mb-0" id="analytics-peak-hour">--</span>
+                            </div>
+                            <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Top Hub</span>
+                                <span class="val h4 fw-bold mb-0 py-1" id="analytics-top-hub"
+                                    style="white-space: nowrap; text-transform: uppercase;">--</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Popular Stations Doughnut Chart -->
-                <div class="col-lg-6" id="analytics-chart-stations-col">
-                    <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
-                        <div class="panel-title h6 mb-3 fw-bold">Most Popular Stations</div>
-                        <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
-                            <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
-                                <canvas id="chart-popular-stations" style="width: 100%; height: 100%;"></canvas>
-                                <!-- Center Label -->
-                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
-                                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-center-val">--</span>
+                    <!-- No Data Message -->
+                    <div class="col-12" id="analytics-no-data" style="display: none;">
+                        <div class="text-center py-5" style="color: var(--text-muted);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.3; margin-bottom: 12px; display: block; margin-inline: auto;">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                            </svg>
+                            <p class="fw-semibold mb-0">No ride data for this month.</p>
+                            <p class="small">Try selecting a different month from the History dropdown.</p>
+                        </div>
+                    </div>
+
+                    <!-- Peak Hours Line Chart -->
+                    <div class="col-lg-6" id="analytics-chart-hours-col">
+                        <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
+                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-peak-hours-title">Peak Usage Hours</div>
+                            <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
+                                <canvas id="chart-peak-hours" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Popular Stations Doughnut Chart -->
+                    <div class="col-lg-6" id="analytics-chart-stations-col">
+                        <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
+                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-popular-stations-title">Most Popular Stations</div>
+                            <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                                <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
+                                    <canvas id="chart-popular-stations" style="width: 100%; height: 100%;"></canvas>
+                                    <!-- Center Label -->
+                                    <div style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                        <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
+                                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-center-val">--</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -734,15 +796,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Our Scripts -->
-    <script src="/js/theme.js?v=106"></script>
-    <script src="/js/map.js?v=106"></script>
-    <script src="/js/bike.js?v=106"></script>
-    <script src="/js/history.js?v=106"></script>
-    <script src="/js/sms.js?v=106"></script>
-    <script src="/js/settings.js?v=106"></script>
+    <script src="/js/theme.js?v=113"></script>
+    <script src="/js/map.js?v=113"></script>
+    <script src="/js/bike.js?v=113"></script>
+    <script src="/js/history.js?v=113"></script>
+    <script src="/js/sms.js?v=113"></script>
+    <script src="/js/settings.js?v=113"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/analytics.js?v=106"></script>
-    <script src="js/admin-search.js?v=106"></script>
+    <script src="js/analytics.js?v=113"></script>
+    <script src="js/admin-search.js?v=113"></script>
 
     <!-- CONFIRMATION MODALS -->
     <style>

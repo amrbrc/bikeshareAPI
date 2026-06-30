@@ -16,7 +16,32 @@ const getAnalytics = async (req, res) => {
             targetMonth = `${year}-${String(month).padStart(2, '0')}`;
         }
 
-        // Query peak usage hours filtered to the target month
+        // --- Overall (All-Time) Queries ---
+        // 1. Peak usage hours (overall)
+        const overallPeakHoursQuery = `
+            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+            FROM bicycle_history bh
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            GROUP BY HOUR(bh.borrowed_at)
+            ORDER BY hour ASC
+        `;
+        const [overallPeakHours] = await db.upbsPool.query(overallPeakHoursQuery);
+
+        // 2. Popular stations (overall)
+        const overallPopularStationsQuery = `
+            SELECT bh.new_location AS station, COUNT(*) AS count
+            FROM bicycle_history bh
+            JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            GROUP BY bh.new_location
+            ORDER BY count DESC
+        `;
+        const [overallPopularStations] = await db.upbsPool.query(overallPopularStationsQuery);
+
+        // --- Monthly Queries (Filtered to target month) ---
+        // 3. Peak usage hours (monthly)
         const peakHoursQuery = `
             SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
             FROM bicycle_history bh
@@ -28,7 +53,7 @@ const getAnalytics = async (req, res) => {
         `;
         const [peakHours] = await db.upbsPool.query(peakHoursQuery, [year, month]);
 
-        // Query popular stations filtered to the target month
+        // 4. Popular stations (monthly)
         const popularStationsQuery = `
             SELECT bh.new_location AS station, COUNT(*) AS count
             FROM bicycle_history bh
@@ -41,7 +66,7 @@ const getAnalytics = async (req, res) => {
         `;
         const [popularStations] = await db.upbsPool.query(popularStationsQuery, [year, month]);
 
-        // Query all distinct months that have ride data (for the history dropdown)
+        // 5. Available months (for dropdown)
         const availableMonthsQuery = `
             SELECT DISTINCT DATE_FORMAT(bh.borrowed_at, '%Y-%m') AS month
             FROM bicycle_history bh
@@ -55,6 +80,8 @@ const getAnalytics = async (req, res) => {
         return res.json({
             success: true,
             month: targetMonth,
+            overallPeakHours,
+            overallPopularStations,
             peakHours,
             popularStations,
             availableMonths
