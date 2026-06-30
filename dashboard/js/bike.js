@@ -17,6 +17,10 @@ async function initDashboard() {
     renderBikes();
     renderLocations();
 
+    if (window.plotStationMarkers) {
+        await window.plotStationMarkers();
+    }
+
     // Set last updated time
     const lastUpdatedEl = document.getElementById('stat-last-updated');
     if (lastUpdatedEl) {
@@ -100,6 +104,8 @@ function renderBikes() {
         // HTML status indicators and styles based on bicycle condition
         const isDisputed = bike.condition_status === 'Disputed';
         const isBroken = bike.condition_status === 'Broken';
+        const isInRepair = bike.condition_status === 'In_Repair';
+        const isMissing = bike.condition_status === 'Missing';
         const isBorrowed = bike.condition_status === 'Borrowed';
         const isPending = bike.condition_status === 'Pending_Status';
         const isDisabled = Number(bike.is_disabled) === 1 || bike.is_disabled === true || String(bike.is_disabled).toLowerCase() === 'true';
@@ -116,6 +122,12 @@ function renderBikes() {
         } else if (isBroken) {
             borderStyle = 'border: 2px solid #b91c1c; background-color: rgba(185, 28, 28, 0.05);';
             statusBadge = '<div style="font-size:0.6rem; color:white; background:#b91c1c; padding:2px 4px; border-radius:4px; margin-top:4px; font-weight:600;">BROKEN</div>';
+        } else if (isInRepair) {
+            borderStyle = 'border: 2px solid #8b5cf6; background-color: rgba(139, 92, 246, 0.05);';
+            statusBadge = '<div style="font-size:0.6rem; color:white; background:#8b5cf6; padding:2px 4px; border-radius:4px; margin-top:4px; font-weight:600;">IN REPAIR</div>';
+        } else if (isMissing) {
+            borderStyle = 'border: 2px solid #f97316; background-color: rgba(249, 115, 22, 0.05);';
+            statusBadge = '<div style="font-size:0.6rem; color:white; background:#f97316; padding:2px 4px; border-radius:4px; margin-top:4px; font-weight:600;">MISSING</div>';
         } else if (isBorrowed) {
             borderStyle = 'border: 2px solid #3b82f6; background-color: rgba(59, 130, 246, 0.05);';
             statusBadge = '<div style="font-size:0.6rem; color:white; background:#3b82f6; padding:2px 4px; border-radius:4px; margin-top:4px; font-weight:600;">BORROWED</div>';

@@ -148,6 +148,14 @@ function initMap() {
 async function plotStationMarkers() {
     if (!leafletMap) return;
 
+    // Clear existing markers from map first
+    Object.keys(stationMarkers).forEach(key => {
+        if (stationMarkers[key]) {
+            leafletMap.removeLayer(stationMarkers[key]);
+        }
+        delete stationMarkers[key];
+    });
+
     try {
         const res = await fetch('/api/locations');
         const data = await res.json();
@@ -232,15 +240,9 @@ async function plotStationMarkers() {
                 allMarkers.push(marker);
             });
 
-            // Adjust the map view to fit all plotted stations within the campus boundary
-            const campusMarkers = allMarkers.filter(m => {
-                const lat = m.getLatLng().lat;
-                const lng = m.getLatLng().lng;
-                return lat >= 14.63 && lat <= 14.68 && lng >= 121.04 && lng <= 121.09;
-            });
-
-            if (campusMarkers.length > 0) {
-                const group = new L.featureGroup(campusMarkers);
+            // Adjust the map view to fit all plotted stations
+            if (allMarkers.length > 0) {
+                const group = new L.featureGroup(allMarkers);
                 leafletMap.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 });
             } else {
                 leafletMap.setView(MAP_CENTER, MAP_ZOOM);
@@ -270,6 +272,7 @@ async function plotStationMarkers() {
         console.error("Failed to fetch locations for map markers:", err);
     }
 }
+window.plotStationMarkers = plotStationMarkers;
 
 // ─────────────────────────────────────────────
 // EXPORTED: updateMapWithLiveData

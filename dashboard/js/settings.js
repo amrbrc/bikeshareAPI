@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAddStation = document.getElementById('btn-add-station');
     const addStationMsg = document.getElementById('add-station-msg');
 
+    let addStationMap = null;
+    let addStationMarker = null;
+
     const stationToggleList = document.getElementById('station-toggle-list');
 
     // Register Member elements
@@ -241,6 +244,90 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function initAddStationMap() {
+        const mapEl = document.getElementById('add-station-map');
+        if (!mapEl || addStationMap) return;
+
+        const defaultCenter = [14.6548, 121.0668];
+
+        addStationMap = L.map('add-station-map', {
+            center: defaultCenter,
+            zoom: 15,
+            zoomControl: true,
+            attributionControl: false
+        });
+
+        const initialTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const tileUrl = initialTheme === 'light'
+            ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+
+        let addStationTileLayer = L.tileLayer(tileUrl, {
+            subdomains: 'abcd',
+            maxZoom: 20,
+        }).addTo(addStationMap);
+
+        window.addEventListener('themeChanged', (e) => {
+            if (addStationTileLayer) {
+                addStationMap.removeLayer(addStationTileLayer);
+            }
+            const newTileUrl = e.detail.theme === 'light'
+                ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+                : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+            addStationTileLayer = L.tileLayer(newTileUrl, {
+                subdomains: 'abcd',
+                maxZoom: 20,
+            }).addTo(addStationMap);
+        });
+
+        addStationMarker = L.marker(defaultCenter, {
+            draggable: true
+        }).addTo(addStationMap);
+
+        const latInput = document.getElementById('new-station-lat');
+        const lngInput = document.getElementById('new-station-lng');
+
+        if (latInput && !latInput.value) {
+            latInput.value = defaultCenter[0].toFixed(6);
+        }
+        if (lngInput && !lngInput.value) {
+            lngInput.value = defaultCenter[1].toFixed(6);
+        }
+
+        addStationMarker.on('dragend', () => {
+            const position = addStationMarker.getLatLng();
+            if (latInput) latInput.value = position.lat.toFixed(6);
+            if (lngInput) lngInput.value = position.lng.toFixed(6);
+        });
+
+        addStationMap.on('click', (e) => {
+            addStationMarker.setLatLng(e.latlng);
+            if (latInput) latInput.value = e.latlng.lat.toFixed(6);
+            if (lngInput) lngInput.value = e.latlng.lng.toFixed(6);
+        });
+
+        const updateMarkerFromInputs = () => {
+            const lat = parseFloat(latInput ? latInput.value : NaN);
+            const lng = parseFloat(lngInput ? lngInput.value : NaN);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const newLatLng = new L.LatLng(lat, lng);
+                addStationMarker.setLatLng(newLatLng);
+                addStationMap.panTo(newLatLng);
+            }
+        };
+
+        if (latInput) {
+            latInput.addEventListener('input', updateMarkerFromInputs);
+        }
+        if (lngInput) {
+            lngInput.addEventListener('input', updateMarkerFromInputs);
+        }
+
+        setTimeout(() => {
+            addStationMap.invalidateSize();
+        }, 200);
+    }
+
     if (navRegistration) {
         navRegistration.addEventListener('click', (e) => {
             e.preventDefault();
@@ -248,6 +335,14 @@ document.addEventListener('DOMContentLoaded', () => {
             navRegistration.classList.add('active');
             if (registrationContainer) registrationContainer.style.display = 'block';
             if (mainWrapper) mainWrapper.style.overflowY = 'auto';
+
+            if (!addStationMap) {
+                initAddStationMap();
+            } else {
+                setTimeout(() => {
+                    addStationMap.invalidateSize();
+                }, 100);
+            }
         });
     }
 
@@ -1421,8 +1516,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (data.success) {
                     newStationName.value = '';
-                    if (latInput) latInput.value = '';
-                    if (lngInput) lngInput.value = '';
+                    if (latInput) latInput.value = '14.654800';
+                    if (lngInput) lngInput.value = '121.066800';
+                    if (addStationMarker) {
+                        addStationMarker.setLatLng([14.6548, 121.0668]);
+                        addStationMap.panTo([14.6548, 121.0668]);
+                    }
                     addStationMsg.textContent = data.message || 'Station successfully added!';
                     addStationMsg.style.background = 'rgba(0, 106, 78, 0.1)';
                     addStationMsg.style.color = 'var(--up-green)';
