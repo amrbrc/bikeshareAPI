@@ -243,3 +243,15 @@ Ensure the following before starting tests:
     3. Click on the station name from the Active Stations list.
     4. **Expected outcome:**
         *   The map seamlessly zooms to its location and opens the popup bubble, despite string casing differences.
+
+---
+
+### 19. Boot Grace Period Safety Mechanism
+*   **Goal:** Verify that when the server reboots after a power outage, penalty jobs wait 5 minutes before executing, allowing any queued 'done' SMS messages to process first.
+*   **Steps:** 
+    1. Restart the `bikeshare-worker` terminal or PM2 process.
+    2. Watch the console logs immediately upon startup.
+    3. **Expected outcome:**
+        *   The system logs: `[Cron] Boot grace period started for 5 minutes. Penalty jobs are temporarily locked.`
+        *   If the cron job triggers during the first 5 minutes, it logs: `[Cron] Overtime penalty check skipped (Boot Grace Period active).`
+        *   After exactly 5 minutes, it logs: `[Cron] Boot grace period ended. Penalty jobs are now fully active.`

@@ -42,6 +42,23 @@ async function getSettingValue(name, defaultValue) {
     return defaultValue;
 }
 
+// ---------------------------------------------------------
+// BOOT GRACE PERIOD
+// Prevents cron penalties from firing immediately upon server
+// startup, allowing backlogged Gateway SMS messages (like 'done')
+// to process first.
+// ---------------------------------------------------------
+const BOOT_GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+let isGracePeriod = true;
+
+setTimeout(() => {
+    isGracePeriod = false;
+    console.log('[Cron] Boot grace period ended. Penalty jobs are now fully active.');
+}, BOOT_GRACE_PERIOD_MS);
+
+console.log(`[Cron] Boot grace period started for 5 minutes. Penalty jobs are temporarily locked.`);
+
+
 // Job 1 (Every 10 mins): Dynamic active borrow reminders
 const startBorrowRemindersJob = () => {
     cron.schedule('*/10 * * * *', async () => {
@@ -108,6 +125,11 @@ const startBorrowRemindersJob = () => {
 // Job 1.5 (Every 10 mins): Dynamic Timeout Penalty
 const startSixHourPenaltyJob = () => {
     cron.schedule('*/10 * * * *', async () => {
+        if (isGracePeriod) {
+            console.log('[Cron] Overtime penalty check skipped (Boot Grace Period active).');
+            return;
+        }
+
         try {
             const borrowLimitHours = await getSettingValue('borrow_time_limit_hours', 6);
             console.log(`[Cron] Running ${borrowLimitHours}-Hour borrow limit check...`);
@@ -295,6 +317,11 @@ const start24hReminderJob = () => {
 // Job 5: Dynamic Handshake Timeout Expiry
 const startHandshakeTimeoutJob = () => {
     cron.schedule('*/5 * * * *', async () => {
+        if (isGracePeriod) {
+            console.log('[Cron] Return Handshake Timeout check skipped (Boot Grace Period active).');
+            return;
+        }
+
         console.log('[Cron] Running Return Handshake Timeout check...');
         try {
             const timeoutMins = await getSettingValue('handshake_timeout_mins', 30);
