@@ -957,8 +957,13 @@ const missing = async (req, res) => {
 };
 
 const delivered = async (req, res) => {
-    const { smsSender, bicycleCode } = req.body;
+    const { smsSender, bicycleCode, deliveryLocation } = req.body;
     let upbsConn;
+    
+    if (!deliveryLocation) {
+        return res.json({ reply: `Please specify the station where you delivered Bike ${bicycleCode}. Example: delivered ${bicycleCode} engg` });
+    }
+    
     try {
         upbsConn = await db.upbsPool.getConnection();
         await upbsConn.beginTransaction();
@@ -969,6 +974,13 @@ const delivered = async (req, res) => {
             return res.json({ reply: "Sorry, you must be a registered UP Bike Share member to use this service." });
         }
         const currentUserName = `${member[0].firstname} ${member[0].lastname}`;
+
+        // Validate the delivery location
+        const [locCheck] = await upbsConn.query("SELECT * FROM locations WHERE location_name = ? AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)", [deliveryLocation]);
+        if (locCheck.length === 0) {
+            await upbsConn.rollback();
+            return res.json({ reply: `Location '${deliveryLocation}' is not valid or currently offline.` });
+        }
 
         const [bike] = await upbsConn.query("SELECT condition_status FROM bicycle_codes WHERE bicycle_code = ? AND is_active = 1 FOR UPDATE", [bicycleCode]);
         if (bike.length === 0) {
@@ -992,19 +1004,19 @@ const delivered = async (req, res) => {
             );
         }
 
-        // Update the status to 'In_Repair'
+        // Update the status to 'In_Repair' and update the location
         await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'In_Repair', dispute_reported_by = NULL WHERE bicycle_code = ?",
-            [bicycleCode]
+            "UPDATE bicycle_codes SET condition_status = 'In_Repair', new_location = ?, dispute_reported_by = NULL WHERE bicycle_code = ?",
+            [deliveryLocation, bicycleCode]
         );
 
         await upbsConn.query(
             "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-            [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, 'Delivered for Repair']
+            [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, `Delivered to ${deliveryLocation.toUpperCase()}`]
         );
 
         await upbsConn.commit();
-        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as delivered to the hub for repair. The maintenance team has been notified.` });
+        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as delivered to ${deliveryLocation.toUpperCase()} for repair.` });
     } catch (err) {
         console.error(err);
         if (upbsConn) {

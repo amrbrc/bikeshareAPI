@@ -72,14 +72,17 @@ Ensure the following before starting tests:
 ---
 
 ### 4. Direct Delivery Auto-Closure of Active Trips
-*   **Goal:** Ensure that if a borrower delivers a broken bike directly to the hub and texts `delivered [bike]`, their active trip is closed cleanly.
+*   **Goal:** Ensure that if a borrower delivers a broken bike directly to a hub and texts `delivered [bike] [location]`, their active trip is closed cleanly and the bike's location is updated.
 *   **Steps:**
     1. Borrow Bike 1 (active checkout).
     2. Without texting `done 1`, text `delivered 1` directly.
     3. **Expected outcome:** 
-        *   You receive SMS: *"Thank you! Bike 1 has been marked as delivered to the hub for repair..."*
+        *   You receive SMS: *"Please specify the station where you delivered Bike 1. Example: delivered 1 engg"*
+    4. Text `delivered 1 engg`.
+    5. **Expected outcome:** 
+        *   You receive SMS: *"Thank you! Bike 1 has been marked as delivered to ENGG for repair."*
         *   Check `bicycle_history` table: your active trip is closed (`done_text_received = 1`, `condition_confirmed = 1`).
-        *   Check `bicycle_codes` table: Bike 1 status is set to `In_Repair`.
+        *   Check `bicycle_codes` table: Bike 1 status is set to `In_Repair` and `new_location` is set to `engg`.
 
 ---
 
