@@ -65,6 +65,8 @@ function renderLeaderboards(data) {
 
         let html = '';
 
+        const formatLabel = (score, lbl) => lbl === 'rides' ? (score === 1 ? 'ride' : 'rides') : lbl === 'pts' ? (score === 1 ? 'pt' : 'pts') : lbl;
+
         // Rank 2
         if (items.length > 1) {
             const r2 = items[1];
@@ -80,7 +82,7 @@ function renderLeaderboards(data) {
                             <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 55px; height: 55px; background: rgba(148, 163, 184, 0.15); color: ${themeColor}; font-size: 1.5rem;"><i class='${iconClass}'></i></div>
                         </div>
                         <h6 class="fw-bold text-dark mb-0 text-truncate mx-auto" style="font-size: 0.95rem; max-width: 90%;">${name}</h6>
-                        <h5 class="fw-bolder mb-0 mt-2" style="color: ${themeColor}; font-size: 1.2rem;">${r2.score} ${label}</h5>
+                        <h5 class="fw-bolder mb-0 mt-2" style="color: ${themeColor}; font-size: 1.2rem;">${r2.score} ${formatLabel(r2.score, label)}</h5>
                     </div>
                 </div>
             `;
@@ -100,7 +102,7 @@ function renderLeaderboards(data) {
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 70px; height: 70px; background: rgba(234, 179, 8, 0.15); color: #ca8a04; font-size: 2rem;"><i class='${iconClass}'></i></div>
                     </div>
                     <h6 class="fw-bold text-dark mb-0 text-truncate mx-auto" style="font-size: 1.05rem; max-width: 90%;">${r1Name}</h6>
-                    <h4 class="fw-bolder text-warning mb-0 mt-2" style="font-size: 1.5rem;">${r1.score} ${label}</h4>
+                    <h4 class="fw-bolder text-warning mb-0 mt-2" style="font-size: 1.5rem;">${r1.score} ${formatLabel(r1.score, label)}</h4>
                 </div>
             </div>
         `;
@@ -120,7 +122,7 @@ function renderLeaderboards(data) {
                             <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 55px; height: 55px; background: rgba(148, 163, 184, 0.15); color: ${themeColor}; font-size: 1.5rem;"><i class='${iconClass}'></i></div>
                         </div>
                         <h6 class="fw-bold text-dark mb-0 text-truncate mx-auto" style="font-size: 0.95rem; max-width: 90%;">${name}</h6>
-                        <h5 class="fw-bolder mb-0 mt-2" style="color: ${themeColor}; font-size: 1.2rem;">${r3.score} ${label}</h5>
+                        <h5 class="fw-bolder mb-0 mt-2" style="color: ${themeColor}; font-size: 1.2rem;">${r3.score} ${formatLabel(r3.score, label)}</h5>
                     </div>
                 </div>
             `;
@@ -138,6 +140,7 @@ function renderLeaderboards(data) {
             return '';
         }
         let html = '';
+        const formatLabel = (score, lbl) => lbl === 'rides' ? (score === 1 ? 'ride' : 'rides') : lbl === 'pts' ? (score === 1 ? 'pt' : 'pts') : lbl;
         for (let i = 3; i < items.length; i++) {
             const r = items[i];
             const rank = r.displayRank;
@@ -156,7 +159,7 @@ function renderLeaderboards(data) {
                             </div>
                         </div>
                     </div>
-                    <span class="fw-bold" style="font-size: 1.1rem; color: ${themeColor};">${r.score} ${label}</span>
+                    <span class="fw-bold" style="font-size: 1.1rem; color: ${themeColor};">${r.score} ${formatLabel(r.score, label)}</span>
                 </li>
             `;
         }
@@ -206,7 +209,7 @@ function renderLeaderboards(data) {
                         <span class="small text-muted d-block" style="font-size: 0.8rem;">Current Rank</span>
                     </div>
                 </div>
-                <span class="fw-bolder" style="font-size: 1.2rem; color: #3b82f6;">${currentUser.activeScore} rides</span>
+                <span class="fw-bolder" style="font-size: 1.2rem; color: #3b82f6;">${currentUser.activeScore} ${currentUser.activeScore === 1 ? 'ride' : 'rides'}</span>
             </div>
         `;
     }
@@ -548,6 +551,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (settings.borrow_time_limit_hours !== undefined) {
                     window.dynamicTimeLimitHours = parseInt(settings.borrow_time_limit_hours);
+                    const descEl = document.getElementById('desc-penalty-overtime');
+                    if (descEl) {
+                        descEl.innerText = `Deducted every hour you exceed the ${window.dynamicTimeLimitHours}-hour limit. Return on time!`;
+                    }
                 }
 
                 // Helper to update text safely

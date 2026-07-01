@@ -18,7 +18,7 @@ const help = async (req, res) => {
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
-            return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
+            return res.json({ reply: 'Sorry, you must be a registered UP Bike Share member to use this service.' });
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
@@ -66,7 +66,7 @@ const how = async (req, res) => {
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
-            return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
+            return res.json({ reply: 'Sorry, you must be a registered UP Bike Share member to use this service.' });
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];

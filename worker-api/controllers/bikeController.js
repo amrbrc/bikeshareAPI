@@ -31,7 +31,7 @@ const search = async (req, res) => {
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
-            return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
+            return res.json({ reply: 'Sorry, you must be a registered UP Bike Share member to use this service.' });
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
@@ -196,7 +196,7 @@ const locations = async (req, res) => {
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
-            return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
+            return res.json({ reply: 'Sorry, you must be a registered UP Bike Share member to use this service.' });
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
@@ -253,7 +253,7 @@ const usage = async (req, res) => {
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
 
         if (memberRecords.length === 0) {
-            return res.json({ replies: ['Sorry, you are not registered with UP Bike Share.'] });
+            return res.json({ replies: ['Sorry, you must be a registered UP Bike Share member to use this service.'] });
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
@@ -359,7 +359,7 @@ const borrow = async (req, res) => {
 
         if (memberRecords.length === 0) {
             await upbsConn.rollback();
-            return res.json({ reply: 'Sorry. You are not registered with UP Bike Share.' });
+            return res.json({ reply: 'Sorry, you must be a registered UP Bike Share member to use this service.' });
         }
 
         const user = memberRecords[0];
@@ -1040,7 +1040,7 @@ const points = async (req, res) => {
         const [memberData] = await db.upbsPool.query('SELECT trust_points FROM members WHERE phone_number = ? AND is_active = 1', [smsSender]);
 
         if (memberData.length === 0) {
-            return res.json({ reply: "Sorry, you are not registered with UP Bike Share." });
+            return res.json({ reply: "Sorry, you must be a registered UP Bike Share member to use this service." });
         }
 
         const trustPoints = memberData[0].trust_points;
