@@ -122,24 +122,27 @@ const getStudentDashboard = async (req, res) => {
         const phoneSuffix = phone_number.substring(1);
         let lastSms = null;
 
-        try {
-            const [inboxRows] = await db.upbsPool.query(
-                `SELECT TextDecoded, ReceivingDateTime 
-                 FROM smsd.inbox 
-                 WHERE SenderNumber LIKE ? 
-                 ORDER BY ReceivingDateTime DESC 
-                 LIMIT 1`,
-                [`%${phoneSuffix}`]
-            );
+        const isCloudDB = process.env.DB_HOST && process.env.DB_HOST.includes('aivencloud.com');
+        if (!isCloudDB) {
+            try {
+                const [inboxRows] = await db.upbsPool.query(
+                    `SELECT TextDecoded, ReceivingDateTime 
+                     FROM smsd.inbox 
+                     WHERE SenderNumber LIKE ? 
+                     ORDER BY ReceivingDateTime DESC 
+                     LIMIT 1`,
+                    [`%${phoneSuffix}`]
+                );
 
-            if (inboxRows.length > 0) {
-                lastSms = {
-                    user_text: inboxRows[0].TextDecoded,
-                    date: inboxRows[0].ReceivingDateTime
-                };
+                if (inboxRows.length > 0) {
+                    lastSms = {
+                        user_text: inboxRows[0].TextDecoded,
+                        date: inboxRows[0].ReceivingDateTime
+                    };
+                }
+            } catch (e) {
+                console.error("Error fetching from smsd.inbox:", e.message);
             }
-        } catch (e) {
-            console.error("Error fetching from smsd.inbox:", e.message);
         }
 
         // 5. Fetch Wall of Honor data (Honest Returns and helpful Logs)
