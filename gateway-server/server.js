@@ -1,5 +1,6 @@
 // gateway-server/server.js
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Import required dependencies
 const db = require('./db');
@@ -39,6 +40,12 @@ app.listen(GATEWAY_PORT, () => {
 });
 
 const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
+const workerAPI = axios.create({
+    baseURL: WORKER_URL,
+    headers: {
+        'x-gateway-secret': process.env.GATEWAY_SECRET || 'upbs-gateway-secret-token-2026'
+    }
+});
 
 // Main polling function to check for new SMS messages
 let isPolling = false;
@@ -66,7 +73,7 @@ async function pollInbox() {
 
             try {
                 // 1. Verify user registration status with the Worker API before proceeding
-                const checkResponse = await axios.post(`${WORKER_URL}/api/members/check`, {
+                const checkResponse = await workerAPI.post('/api/members/check', {
                     phone_number: smsSender
                 });
 
@@ -75,7 +82,7 @@ async function pollInbox() {
                 if (!isRegistered) {
                     console.log(`Sender ${smsSender} is not registered. Routing to non-registered fallback.`);
                     // Send to non-registered fallback
-                    const workerResponse = await axios.post(`${WORKER_URL}/api/non-registered`, {
+                    const workerResponse = await workerAPI.post('/api/non-registered', {
                         smsSender,
                         messageId
                     });
@@ -146,13 +153,13 @@ async function pollInbox() {
                 console.log(`Routing command to Worker API: ${endpoint} with payload:`, payload);
 
                 // 3. Send payload to Worker API
-                const workerResponse = await axios.post(`${WORKER_URL}${endpoint}`, payload);
+                const workerResponse = await workerAPI.post(endpoint, payload);
 
                 // 4. Extract reply/replies and send
                 if (endpoint === '/api/borrow' && workerResponse.data.invalidBicycle) {
                     // Fallback to invalid command
                     console.log(`Borrow failed (invalid bicycle). Routing to invalid-command fallback.`);
-                    const fallbackResponse = await axios.post(`${WORKER_URL}/api/invalid-command`, {
+                    const fallbackResponse = await workerAPI.post('/api/invalid-command', {
                         smsSender,
                         messageId
                     });

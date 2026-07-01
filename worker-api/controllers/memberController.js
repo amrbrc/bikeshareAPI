@@ -283,7 +283,7 @@ const getLeaderboards = async (req, res) => {
             FROM members m 
             JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
             WHERE bh.borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND m.is_active = 1 
-            GROUP BY m.phone_number 
+            GROUP BY m.phone_number, m.firstname, m.lastname 
             ORDER BY score DESC, m.lastname ASC, m.firstname ASC 
             LIMIT 8
         `);

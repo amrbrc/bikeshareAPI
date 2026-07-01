@@ -1,13 +1,21 @@
 const mysql = require('mysql2/promise');
 
-const upbsPool = mysql.createPool({
+const poolConfig = {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'upbs2024',
     password: process.env.DB_PASSWORD || 'upbs2024',
-    database: 'upbs',
+    database: process.env.DB_NAME || 'upbs',
     connectionLimit: 10
-});
+};
+
+// Automatically enable SSL if connecting to an Aiven database or if DB_SSL is set
+if (process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' || (process.env.DB_HOST && process.env.DB_HOST.includes('aivencloud.com'))) {
+    poolConfig.ssl = { rejectUnauthorized: false };
+    console.log("[DB] SSL connection enabled for database pool.");
+}
+
+const upbsPool = mysql.createPool(poolConfig);
 
 
 async function runMigrations() {

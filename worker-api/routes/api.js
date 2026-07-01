@@ -13,25 +13,36 @@ const authMiddleware = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
 const analyticsController = require('../controllers/analyticsController');
 
+// Gateway Secret Verification Middleware
+const verifyGateway = (req, res, next) => {
+    const token = req.headers['x-gateway-secret'];
+    console.log(`[Security Debug] Incoming token: "${token}", Expected: "${process.env.GATEWAY_SECRET}"`);
+    if (!token || token !== process.env.GATEWAY_SECRET) {
+        console.log(`[Security] Blocked unauthorized gateway attempt from IP: ${req.ip}`);
+        return res.status(403).json({ error: 'Unauthorized Gateway' });
+    }
+    next();
+};
+
 // Member Check Route
-router.post('/members/check', memberController.checkMember);
+router.post('/members/check', verifyGateway, memberController.checkMember);
 
 // Bike Routes (SMS Endpoints)
-router.post('/search', bikeController.search);
-router.post('/search-all', bikeController.searchAll);
-router.post('/locations', bikeController.locations);
-router.post('/usage', bikeController.usage);
-router.post('/borrow', bikeController.borrow);
-router.post('/done', bikeController.done);
-router.post('/good', bikeController.good);
-router.post('/broken', bikeController.broken);
-router.post('/missing', bikeController.missing);
-router.post('/delivered', bikeController.delivered);
-router.post('/points', bikeController.points);
+router.post('/search', verifyGateway, bikeController.search);
+router.post('/search-all', verifyGateway, bikeController.searchAll);
+router.post('/locations', verifyGateway, bikeController.locations);
+router.post('/usage', verifyGateway, bikeController.usage);
+router.post('/borrow', verifyGateway, bikeController.borrow);
+router.post('/done', verifyGateway, bikeController.done);
+router.post('/good', verifyGateway, bikeController.good);
+router.post('/broken', verifyGateway, bikeController.broken);
+router.post('/missing', verifyGateway, bikeController.missing);
+router.post('/delivered', verifyGateway, bikeController.delivered);
+router.post('/points', verifyGateway, bikeController.points);
 
 // Help Routes
-router.post('/help', helpController.help);
-router.post('/how', helpController.how);
+router.post('/help', verifyGateway, helpController.help);
+router.post('/how', verifyGateway, helpController.how);
 
 // Public Auth & Admin Routes
 router.post('/auth/login', memberController.login);
@@ -60,8 +71,8 @@ router.post('/admin/locations/toggle', authMiddleware, adminController.toggleLoc
 router.get('/admin/reports', authMiddleware, adminController.getReports);
 
 // Fallback Routes
-router.post('/invalid-command', fallbackController.invalidCommand);
-router.post('/non-registered', fallbackController.nonRegistered);
+router.post('/invalid-command', verifyGateway, fallbackController.invalidCommand);
+router.post('/non-registered', verifyGateway, fallbackController.nonRegistered);
 
 // Public Dashboard Routes
 router.get('/student/dashboard', authMiddleware, memberController.getStudentDashboard);
