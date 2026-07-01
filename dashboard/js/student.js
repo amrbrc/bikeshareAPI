@@ -227,9 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnStudentLogout = document.getElementById('btn-student-logout');
     if (btnStudentLogout) {
         btnStudentLogout.addEventListener('click', () => {
-            sessionStorage.removeItem('adminToken');
-            sessionStorage.removeItem('userRole');
-            window.location.href = '/';
+            if (confirm('Are you sure you want to log out?')) {
+                sessionStorage.removeItem('adminToken');
+                sessionStorage.removeItem('userRole');
+                window.location.href = '/';
+            }
         });
     }
 
