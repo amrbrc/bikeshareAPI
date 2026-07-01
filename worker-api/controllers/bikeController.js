@@ -605,7 +605,7 @@ const done = async (req, res) => {
         }
 
         await upbsConn.commit();
-        return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply 'GOOD ${bicycleCode}' or 'BROKEN ${bicycleCode}'. Please take a photo of the bike at the rack as proof.` });
+        return res.json({ reply: `Trip for Bike ${bicycleCode} ended. Is the bike in Good or Broken condition? Reply 'GOOD ${bicycleCode}' or 'BROKEN ${bicycleCode}'. Take a photo of the bike and save it on your device as local proof in case of disputes (do not send).` });
     } catch (err) {
         console.error(err);
         if (upbsConn) {
