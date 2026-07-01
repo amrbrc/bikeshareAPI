@@ -586,4 +586,150 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Call it once on load
     loadDynamicSettings();
+
+    // --- QUICK START GUIDE ---
+    (function initQuickStartGuide() {
+        const TOTAL_STEPS = 5;
+        let currentStep = 1;
+        let guideOpened = false;
+
+        const overlay   = document.getElementById('quickstart-overlay');
+        const btnNext   = document.getElementById('qs-btn-next');
+        const btnBack   = document.getElementById('qs-btn-back');
+        const btnClose  = document.getElementById('qs-close-btn');
+        const progress  = document.getElementById('qs-progress-fill');
+        const dots      = document.querySelectorAll('.qs-dot');
+        const triggerBtn = document.getElementById('btn-quick-start');
+
+        if (!overlay) return;
+
+        // ---- Open / Close ----
+        function openGuide() {
+            overlay.style.display = '';
+            document.body.style.overflow = 'hidden';
+            goToStep(1);
+            guideOpened = true;
+        }
+
+        function closeGuide() {
+            overlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // ---- Step navigation ----
+        function goToStep(step) {
+            const allSteps = document.querySelectorAll('.qs-step');
+
+            // Animate out current, animate in new
+            allSteps.forEach(el => {
+                const s = parseInt(el.dataset.step);
+                if (s === currentStep && s !== step) {
+                    el.classList.remove('active');
+                    el.classList.add(step > currentStep ? 'exit-left' : 'exit-right');
+                    // clean class after transition
+                    setTimeout(() => el.classList.remove('exit-left', 'exit-right'), 350);
+                }
+            });
+
+            currentStep = step;
+
+            allSteps.forEach(el => {
+                const s = parseInt(el.dataset.step);
+                if (s === step) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Progress bar
+            if (progress) {
+                progress.style.width = ((step / TOTAL_STEPS) * 100) + '%';
+            }
+
+            // Dots
+            dots.forEach(dot => {
+                const d = parseInt(dot.dataset.dot);
+                dot.classList.toggle('active', d === step);
+            });
+
+            // Back button
+            if (btnBack) {
+                btnBack.style.visibility = step === 1 ? 'hidden' : 'visible';
+            }
+
+            // Next button label
+            if (btnNext) {
+                if (step === TOTAL_STEPS) {
+                    btnNext.textContent = '🎉 Got it!';
+                    btnNext.classList.add('qs-finish');
+                } else {
+                    btnNext.textContent = 'Next →';
+                    btnNext.classList.remove('qs-finish');
+                }
+            }
+        }
+
+        // ---- Button events ----
+        if (btnNext) {
+            btnNext.addEventListener('click', () => {
+                if (currentStep < TOTAL_STEPS) {
+                    goToStep(currentStep + 1);
+                } else {
+                    closeGuide();
+                }
+            });
+        }
+
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                if (currentStep > 1) goToStep(currentStep - 1);
+            });
+        }
+
+        if (btnClose) {
+            btnClose.addEventListener('click', closeGuide);
+        }
+
+        // Close on overlay backdrop click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeGuide();
+        });
+
+        // Keyboard: Escape closes, Arrow keys navigate
+        document.addEventListener('keydown', (e) => {
+            if (!overlay || overlay.style.display === 'none') return;
+            if (e.key === 'Escape') closeGuide();
+            if (e.key === 'ArrowRight' && currentStep < TOTAL_STEPS) goToStep(currentStep + 1);
+            if (e.key === 'ArrowLeft'  && currentStep > 1)            goToStep(currentStep - 1);
+        });
+
+        // Sidebar trigger button
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', openGuide);
+        }
+
+        // ---- First-time detection (Option 2: rideLog empty) ----
+        // Wait for studentData to load, then check if ride log is empty
+        function checkFirstTimeUser() {
+            const data = window.studentData;
+            if (!data) {
+                // Data not loaded yet, retry
+                setTimeout(checkFirstTimeUser, 600);
+                return;
+            }
+            if (data.error) return; // Skip if data load failed
+
+            const hasNoRides = !data.rideLog || data.rideLog.length === 0;
+            if (hasNoRides && !guideOpened) {
+                // Small delay so the dashboard finishes rendering first
+                setTimeout(openGuide, 900);
+            }
+        }
+
+        // Start polling after a brief moment to let loadStudentData() fire
+        setTimeout(checkFirstTimeUser, 1200);
+
+    })();
+
 });
