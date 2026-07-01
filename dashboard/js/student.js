@@ -225,13 +225,25 @@ function renderLeaderboards(data) {
 document.addEventListener('DOMContentLoaded', () => {
     // --- AUTHENTICATION ---
     const btnStudentLogout = document.getElementById('btn-student-logout');
+    const logoutModal = document.getElementById('logout-confirm-modal');
+    const btnLogoutCancel = document.getElementById('btn-logout-cancel');
+    const btnLogoutConfirm = document.getElementById('btn-logout-confirm');
+
     if (btnStudentLogout) {
         btnStudentLogout.addEventListener('click', () => {
-            if (confirm('Are you sure you want to log out?')) {
-                sessionStorage.removeItem('adminToken');
-                sessionStorage.removeItem('userRole');
-                window.location.href = '/';
-            }
+            if (logoutModal) logoutModal.style.display = 'flex';
+        });
+    }
+    if (btnLogoutCancel) {
+        btnLogoutCancel.addEventListener('click', () => {
+            if (logoutModal) logoutModal.style.display = 'none';
+        });
+    }
+    if (btnLogoutConfirm) {
+        btnLogoutConfirm.addEventListener('click', () => {
+            sessionStorage.removeItem('adminToken');
+            sessionStorage.removeItem('userRole');
+            window.location.href = '/';
         });
     }
 
