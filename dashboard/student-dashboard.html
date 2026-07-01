@@ -26,7 +26,7 @@
 
 <body>
     <!-- SIDEBAR -->
-    <aside class="sidebar d-flex flex-column justify-content-between p-4">
+    <aside class="sidebar d-flex flex-column p-4">
         <div class="brand d-flex align-items-center gap-3 mb-5">
             <div class="brand-icon d-flex justify-content-center align-items-center shadow">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -50,31 +50,40 @@
             <li class="nav-item" id="nav-leaderboards">Leaderboards</li>
         </ul>
 
-        <!-- Quick Start Guide Trigger -->
-        <button id="btn-quick-start" class="quickstart-trigger-btn" title="Quick Start Guide">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Quick Start Guide
-        </button>
-
-        <div class="sidebar-bottom mt-auto pt-4 border-top">
-            <div class="d-flex gap-2 mb-3">
-                <button id="theme-toggle" class="theme-toggle btn flex-fill" title="Toggle Theme">🌙</button>
-                <div class="theme-toggle flex-fill d-flex align-items-center justify-content-center" id="live-time"
-                    style="flex: 2; font-size: 0.85rem; font-weight: 600;">--:--:--</div>
-            </div>
-            <button id="btn-student-logout"
-                class="btn btn-outline-danger w-100 fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
-                style="border-radius: var(--radius-sm);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
+        <!-- Bottom group: Quick Start + divider + moon/time/logout -->
+        <div class="mt-auto">
+            <!-- Quick Start sits right above the border line -->
+            <button id="btn-quick-start" class="quickstart-trigger-btn mb-3" title="Quick Start Guide">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <span>Log Out</span>
+                Quick Start Guide
             </button>
+            <div class="sidebar-bottom pt-4 border-top">
+                <div class="d-flex gap-2 mb-3">
+                    <button id="theme-toggle" class="theme-toggle btn flex-fill" title="Toggle Theme">🌙</button>
+                    <div class="theme-toggle flex-fill d-flex align-items-center justify-content-center" id="live-time"
+                        style="flex: 2; font-size: 0.85rem; font-weight: 600;">--:--:--</div>
+                </div>
+                <button id="btn-student-logout"
+                    class="btn btn-outline-danger w-100 fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
+                    style="border-radius: var(--radius-sm);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Log Out</span>
+                </button>
+            </div>
         </div>
     </aside>
+
+
 
     <!-- MAIN CONTENT -->
     <main class="main-wrapper flex-grow-1 d-flex flex-column">
@@ -255,7 +264,8 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="3" class="text-center py-4 text-muted" style="background-color: transparent;">Loading recent rides...</td>
+                                        <td colspan="3" class="text-center py-4 text-muted"
+                                            style="background-color: transparent;">Loading recent rides...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -821,7 +831,8 @@
     <!-- ═══════════════════════════════════════════
          QUICK START GUIDE MODAL
     ═══════════════════════════════════════════ -->
-    <div id="quickstart-overlay" class="quickstart-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="qs-title">
+    <div id="quickstart-overlay" class="quickstart-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="qs-title">
         <div class="quickstart-modal">
 
             <!-- Progress Bar -->
@@ -835,69 +846,207 @@
                 <!-- Step 1: Welcome -->
                 <div class="qs-step active" data-step="1">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #7b1113, #b91c1c);">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/>
-                            <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18.5" cy="17.5" r="3.5" />
+                            <circle cx="5.5" cy="17.5" r="3.5" />
+                            <circle cx="15" cy="5" r="1" />
+                            <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
                         </svg>
                     </div>
-                    <div class="qs-step-label">Step 1 of 5</div>
+                    <div class="qs-step-label">Step 1 of 10</div>
                     <h2 class="qs-title" id="qs-title">Welcome to UP Bikeshare! 🎉</h2>
-                    <p class="qs-desc">Here's how UP Bikeshare works — a community bike-sharing system for UP students. Everything is operated via <strong>SMS</strong>, so you don't need internet when you're on the go.</p>
+                    <p class="qs-desc">Here's how UP Bikeshare works — a community bike-sharing system for UP students.
+                        Everything is operated via <strong>SMS</strong>, so you don't need internet when you're on the
+                        go.</p>
                     <div class="qs-highlight-box">
                         <i class='bx bx-info-circle'></i>
-                        <span>This quick guide will walk you through borrowing, returning, and keeping your Trust Score healthy.</span>
+                        <span>This quick guide walks you through every step: from finding a bike to returning it and
+                            keeping your Trust Score healthy.</span>
                     </div>
                 </div>
 
-                <!-- Step 2: Borrow a Bike -->
+                <!-- Step 2: Check Available Bikes -->
                 <div class="qs-step" data-step="2">
-                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #1d4ed8, #3b82f6);">
-                        <i class='bx bx-cycling' style="font-size: 2rem; color: white;"></i>
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
+                        <i class='bx bx-search-alt' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 2 of 5</div>
-                    <h2 class="qs-title">Borrow a Bike via SMS</h2>
-                    <p class="qs-desc">To start a ride, send an SMS to the UP Bikeshare number with this format:</p>
+                    <div class="qs-step-label">Step 2 of 10</div>
+                    <h2 class="qs-title">Check Available Bikes</h2>
+                    <p class="qs-desc">Before heading out, check which bikes are available at a station near you:</p>
                     <div class="qs-code-block">
                         <span class="qs-code-label">FORMAT</span>
-                        <code>borrow [bike] [from] to [to]</code>
+                        <code>search [location]</code>
                     </div>
                     <div class="qs-example-block">
                         <span class="qs-code-label" style="color: var(--up-green);">EXAMPLE</span>
-                        <code style="color: var(--up-green);">borrow 01 AS to CMC</code>
+                        <code style="color: var(--up-green);">search eee</code>
                     </div>
-                    <p class="qs-desc" style="margin-top: 0.75rem; font-size: 0.82rem;">Replace <strong>[bike]</strong> with the bike number, <strong>[from]</strong> with your pickup station, and <strong>[to]</strong> with your destination.</p>
+                    <p class="qs-desc" style="font-size: 0.82rem;">Replace <strong>[location]</strong> with the station
+                        name (e.g. palma_hall, chk, engg). The system will reply with available bikes at that hub.</p>
                 </div>
 
-                <!-- Step 3: Return on Time -->
+                <!-- Step 3: Borrow a Bike -->
                 <div class="qs-step" data-step="3">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #1d4ed8, #3b82f6);">
+                        <i class='bx bx-cycling' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 3 of 10</div>
+                    <h2 class="qs-title">Borrow a Bike via SMS</h2>
+                    <p class="qs-desc">Found a bike? Text the system to start your ride:</p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">FORMAT</span>
+                        <code>[bike] [from] to [to]</code>
+                    </div>
+                    <div class="qs-example-block">
+                        <span class="qs-code-label" style="color: var(--up-green);">EXAMPLE</span>
+                        <code style="color: var(--up-green);"> 1 eee to chk</code>
+                    </div>
+                    <p class="qs-desc" style="font-size: 0.82rem;">Replace <strong>[bike]</strong> with the bike number,
+                        <strong>[from]</strong> with pickup station, and <strong>[to]</strong> with your destination.
+                    </p>
+                </div>
+
+                <!-- Step 4: Return on Time -->
+                <div class="qs-step" data-step="4">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
                         <i class='bx bx-timer' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 3 of 5</div>
+                    <div class="qs-step-label">Step 4 of 10</div>
                     <h2 class="qs-title">Return it On Time</h2>
-                    <p class="qs-desc">When you're done riding, send a <strong>done</strong> SMS. You have a <strong>6-hour limit</strong> per ride.</p>
+                    <p class="qs-desc">When you're done riding, text <strong>done</strong> to end the borrow. You have a
+                        <strong>6-hour limit</strong>.
+                    </p>
                     <div class="qs-code-block">
                         <span class="qs-code-label">FORMAT</span>
                         <code>done [bike]</code>
                     </div>
                     <div class="qs-example-block">
                         <span class="qs-code-label" style="color: var(--up-green);">EXAMPLE</span>
-                        <code style="color: var(--up-green);">done 01</code>
+                        <code style="color: var(--up-green);">done 1</code>
                     </div>
                     <div class="qs-highlight-box qs-warning-box">
                         <i class='bx bx-error-alt'></i>
-                        <span>Going over 6 hours deducts <strong>−5 pts per hour</strong> of overtime. Return on time!</span>
+                        <span>Going over 6 hours deducts <strong>−5 pts per hour</strong> of overtime. Return on
+                            time!</span>
                     </div>
                 </div>
 
-                <!-- Step 4: Trust Score -->
-                <div class="qs-step" data-step="4">
+                <!-- Step 5: Review the Bike -->
+                <div class="qs-step" data-step="5">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #006a4e, #10b981);">
+                        <i class='bx bx-check-shield' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 5 of 10</div>
+                    <h2 class="qs-title">Review the Bike Condition</h2>
+                    <p class="qs-desc">After returning, the <em>next rider</em> will inspect the bike and reply to
+                        confirm its condition. When you pick up a bike, you may also be asked to reply:</p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">GOOD CONDITION</span>
+                        <code>good [bike]</code>
+                    </div>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">DAMAGED CONDITION</span>
+                        <code>broken [bike]</code>
+                    </div>
+                    <div class="qs-highlight-box">
+                        <i class='bx bx-info-circle'></i>
+                        <span>Confirming honestly earns you <strong>+1 trust point</strong>. Ignoring the prompt deducts
+                            <strong>−2 pts</strong>.</span>
+                    </div>
+                </div>
+
+                <!-- Step 6: Get Back to Fixing Stations -->
+                <div class="qs-step" data-step="6">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
+                        <i class='bx bx-wrench' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 6 of 10</div>
+                    <h2 class="qs-title">Deliver a Broken Bike to a Hub</h2>
+                    <p class="qs-desc">If a bike is broken or needs repair, you can bring it to a hub and notify the
+                        system:</p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">FORMAT</span>
+                        <code>delivered [bike] [location]</code>
+                    </div>
+                    <div class="qs-example-block">
+                        <span class="qs-code-label" style="color: var(--up-green);">EXAMPLE</span>
+                        <code style="color: var(--up-green);">delivered 1 chk</code>
+                    </div>
+                    <div class="qs-highlight-box">
+                        <i class='bx bx-info-circle'></i>
+                        <span>This logs the bike as returned to a repair hub and helps the admin track damaged bikes
+                            quickly.</span>
+                    </div>
+                </div>
+
+                <!-- Step 7: Report a Bike -->
+                <div class="qs-step" data-step="7">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                        <i class='bx bx-error-circle' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 7 of 10</div>
+                    <h2 class="qs-title">Report a Bike</h2>
+                    <p class="qs-desc">Spotted a damaged or missing bike? Report it immediately so admins can act fast:
+                    </p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">BROKEN BIKE</span>
+                        <code>broken [bike]</code>
+                    </div>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">MISSING BIKE</span>
+                        <code>missing [bike]</code>
+                    </div>
+                    <div class="qs-highlight-box">
+                        <i class='bx bxs-shield-alt-2'></i>
+                        <span>Verified honest reports earn you <strong>+5 pts</strong>. False reports deduct <strong>−5
+                                pts</strong>.</span>
+                    </div>
+                </div>
+
+                <!-- Step 8: Other Functions -->
+                <div class="qs-step" data-step="8">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #0f766e, #14b8a6);">
+                        <i class='bx bx-command' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 8 of 10</div>
+                    <h2 class="qs-title">Other Useful Commands</h2>
+                    <p class="qs-desc">Here are more SMS commands you can use anytime:</p>
+                    <div class="qs-nav-list">
+                        <div class="qs-nav-item">
+                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
+                                    class='bx bx-map'></i></span>
+                            <div><code style="font-size:0.82rem;">locations</code> — List all active stations</div>
+                        </div>
+                        <div class="qs-nav-item">
+                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
+                                    class='bx bx-search'></i></span>
+                            <div><code style="font-size:0.82rem;">search all</code> — See all bikes &amp; availability
+                            </div>
+                        </div>
+                        <div class="qs-nav-item">
+                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
+                                    class='bx bx-help-circle'></i></span>
+                            <div><code style="font-size:0.82rem;">how</code> — Get quick instructions via SMS</div>
+                        </div>
+                        <div class="qs-nav-item">
+                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
+                                    class='bx bx-chat'></i></span>
+                            <div><code style="font-size:0.82rem;">bikeshare help</code> — Full command list via SMS
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 9: Trust Score -->
+                <div class="qs-step" data-step="9">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #006a4e, #10b981);">
                         <i class='bx bxs-shield-alt-2' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 4 of 5</div>
+                    <div class="qs-step-label">Step 9 of 10</div>
                     <h2 class="qs-title">Your Trust Score</h2>
-                    <p class="qs-desc">Every student starts with a Trust Score. Be a responsible rider to earn points — or lose them for violations.</p>
+                    <p class="qs-desc">Every student has a Trust Score. Ride responsibly to earn points — violations
+                        cost you.</p>
                     <div class="qs-score-grid">
                         <div class="qs-score-item qs-score-plus">
                             <span class="qs-score-val">+1</span>
@@ -922,29 +1071,34 @@
                     </div>
                 </div>
 
-                <!-- Step 5: Navigate the Dashboard -->
-                <div class="qs-step" data-step="5">
+                <!-- Step 10: Navigate the Dashboard -->
+                <div class="qs-step" data-step="10">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
                         <i class='bx bx-layout' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 5 of 5</div>
+                    <div class="qs-step-label">Step 10 of 10</div>
                     <h2 class="qs-title">Your Dashboard at a Glance</h2>
                     <p class="qs-desc">Use the sidebar to explore all sections:</p>
                     <div class="qs-nav-list">
                         <div class="qs-nav-item">
-                            <span class="qs-nav-icon" style="background: rgba(123,17,19,0.1); color: var(--up-maroon);"><i class='bx bxs-map'></i></span>
+                            <span class="qs-nav-icon"
+                                style="background: rgba(123,17,19,0.1); color: var(--up-maroon);"><i
+                                    class='bx bxs-map'></i></span>
                             <div><strong>Dashboard</strong> — Live map, fleet status &amp; active stations</div>
                         </div>
                         <div class="qs-nav-item">
-                            <span class="qs-nav-icon" style="background: rgba(0,106,78,0.1); color: var(--up-green);"><i class='bx bx-user-circle'></i></span>
+                            <span class="qs-nav-icon" style="background: rgba(0,106,78,0.1); color: var(--up-green);"><i
+                                    class='bx bx-user-circle'></i></span>
                             <div><strong>Summary</strong> — Your trust score, active ride timer &amp; ride log</div>
                         </div>
                         <div class="qs-nav-item">
-                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i class='bx bxs-group'></i></span>
+                            <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
+                                    class='bx bxs-group'></i></span>
                             <div><strong>Community</strong> — Wall of honor, merits &amp; SMS commands</div>
                         </div>
                         <div class="qs-nav-item">
-                            <span class="qs-nav-icon" style="background: rgba(124,58,237,0.1); color: #7c3aed;"><i class='bx bx-trophy'></i></span>
+                            <span class="qs-nav-icon" style="background: rgba(124,58,237,0.1); color: #7c3aed;"><i
+                                    class='bx bx-trophy'></i></span>
                             <div><strong>Leaderboards</strong> — See top trusted &amp; most active riders</div>
                         </div>
                     </div>
@@ -961,13 +1115,22 @@
                     <span class="qs-dot" data-dot="3"></span>
                     <span class="qs-dot" data-dot="4"></span>
                     <span class="qs-dot" data-dot="5"></span>
+                    <span class="qs-dot" data-dot="6"></span>
+                    <span class="qs-dot" data-dot="7"></span>
+                    <span class="qs-dot" data-dot="8"></span>
+                    <span class="qs-dot" data-dot="9"></span>
+                    <span class="qs-dot" data-dot="10"></span>
                 </div>
                 <button class="qs-btn qs-btn-primary" id="qs-btn-next">Next →</button>
             </div>
 
             <!-- Close button -->
             <button class="qs-close-btn" id="qs-close-btn" aria-label="Close guide">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
             </button>
 
         </div>
