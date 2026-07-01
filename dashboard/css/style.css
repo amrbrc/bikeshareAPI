@@ -1940,3 +1940,79 @@ body {
 [data-theme="dark"] .qs-example-block {
     background: rgba(255,255,255,0.04);
 }
+
+/* ═══════════════════════════════════════════
+   QUICK START GUIDE — MOBILE RESPONSIVENESS
+═══════════════════════════════════════════ */
+@media (max-width: 576px) {
+    .quickstart-overlay {
+        padding: 0.5rem;
+    }
+    .quickstart-modal {
+        max-height: 85vh;
+        border-radius: 16px;
+    }
+    .qs-step {
+        padding: 1.25rem 1.25rem 0.5rem;
+        gap: 0.6rem;
+    }
+    .qs-icon-wrap {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        font-size: 1.3rem !important;
+        margin-bottom: 0.1rem;
+    }
+    .qs-icon-wrap i {
+        font-size: 1.35rem !important;
+    }
+    .qs-title {
+        font-size: 1.1rem;
+    }
+    .qs-desc {
+        font-size: 0.82rem;
+        line-height: 1.5;
+    }
+    .qs-highlight-box,
+    .qs-code-block,
+    .qs-example-block {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+    .qs-code-block code,
+    .qs-example-block code {
+        font-size: 0.85rem;
+    }
+    .qs-score-grid {
+        gap: 8px;
+    }
+    .qs-score-item {
+        padding: 10px 8px;
+    }
+    .qs-score-val {
+        font-size: 1.15rem;
+    }
+    .qs-nav-item {
+        padding: 8px 10px;
+        gap: 10px;
+        font-size: 0.8rem;
+    }
+    .qs-nav-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.95rem;
+    }
+    .qs-footer {
+        padding: 0.85rem 1.25rem 1rem;
+    }
+    .qs-btn {
+        padding: 7px 14px;
+        font-size: 0.8rem;
+    }
+    .qs-close-btn {
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 28px;
+        height: 28px;
+    }
+}
