@@ -365,8 +365,8 @@ const startHandshakeTimeoutJob = () => {
 
                     // Penalize the user for abandoning the handshake (adding a negative value)
                     await conn.query(
-                        "UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?",
-                        [penalty, row.phone_number]
+                        "UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?",
+                        [penalty, penalty, row.phone_number]
                     );
 
                     // Log the penalty in Logs

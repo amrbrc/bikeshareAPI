@@ -12,11 +12,18 @@ const upbsPool = mysql.createPool({
 
 async function runMigrations() {
     try {
-        await upbsPool.query("ALTER TABLE members ADD COLUMN leaderboard_points INT DEFAULT 0");
+        await upbsPool.query("ALTER TABLE members ADD COLUMN leaderboard_points INT DEFAULT 100");
         console.log("[DB] Added leaderboard_points column to members.");
-        await upbsPool.query("UPDATE members SET leaderboard_points = trust_points WHERE leaderboard_points = 0");
     } catch(e) {
         if(e.code !== 'ER_DUP_FIELDNAME') console.error("[DB] Migration error:", e.message);
+    }
+    try {
+        await upbsPool.query("ALTER TABLE members ALTER leaderboard_points SET DEFAULT 100");
+        // Fix bugged members who registered while default was 0 and earned small points
+        await upbsPool.query("UPDATE members SET leaderboard_points = trust_points WHERE leaderboard_points < 20 AND trust_points >= 100 AND is_active = 1");
+        await upbsPool.query("UPDATE members SET leaderboard_points = trust_points WHERE leaderboard_points = 0");
+    } catch (e) {
+        console.error("[DB] Migration fix error:", e.message);
     }
     try {
         await upbsPool.query(`
