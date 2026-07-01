@@ -592,13 +592,13 @@ const done = async (req, res) => {
                 const honestyReward = await getSettingValue('honesty_reward', 1, upbsConn);
                 if (prevUser.borrower_phone) {
                     await upbsConn.query(
-                        "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE phone_number = ?",
-                        [honestyReward, prevUser.borrower_phone]
+                        "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
+                        [honestyReward, honestyReward, prevUser.borrower_phone]
                     );
                 } else {
                     await upbsConn.query(
-                        "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?) WHERE CONCAT(firstname, ' ', lastname) = ?",
-                        [honestyReward, prevUser.borrowed_by]
+                        "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE CONCAT(firstname, ' ', lastname) = ?",
+                        [honestyReward, honestyReward, prevUser.borrowed_by]
                     );
                 }
             }
