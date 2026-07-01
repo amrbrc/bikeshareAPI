@@ -313,7 +313,7 @@ const getLeaderboards = async (req, res) => {
                 userTrustedScore = member.leaderboard_points;
 
                 const [trustedRankRows] = await db.upbsPool.query(
-                    'SELECT COUNT(*) + 1 as rank FROM members WHERE leaderboard_points > ? AND is_active = 1',
+                    'SELECT COUNT(*) + 1 as `rank` FROM members WHERE leaderboard_points > ? AND is_active = 1',
                     [userTrustedScore]
                 );
                 userTrustedRank = trustedRankRows[0].rank;
@@ -325,7 +325,7 @@ const getLeaderboards = async (req, res) => {
                 userActiveScore = activeScoreRows[0].score;
 
                 const [activeRankRows] = await db.upbsPool.query(`
-                    SELECT COUNT(*) + 1 as rank FROM (
+                    SELECT COUNT(*) + 1 as \`rank\` FROM (
                         SELECT COUNT(bh.id) as ride_count 
                         FROM members m 
                         JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
