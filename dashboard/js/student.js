@@ -304,16 +304,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let html = '';
         wallOfHonor.forEach(item => {
-            const borderStyle = item.isPositive 
-                ? 'background: linear-gradient(180deg, #10b981, #006a4e);' 
+            const borderStyle = item.isPositive
+                ? 'background: linear-gradient(180deg, #10b981, #006a4e);'
                 : 'background: linear-gradient(180deg, #ef4444, #7b1113);';
-            
-            const circleBg = item.isPositive 
-                ? 'background: linear-gradient(135deg, #a7f3d0, #006a4e);' 
+
+            const circleBg = item.isPositive
+                ? 'background: linear-gradient(135deg, #a7f3d0, #006a4e);'
                 : 'background: linear-gradient(135deg, #fecdd3, #7b1113);';
-                
+
             const textColor = item.isPositive ? '#006a4e' : '#7b1113';
             const shadowColor = item.isPositive ? 'rgba(0, 106, 78, 0.3)' : 'rgba(123, 17, 19, 0.3)';
+
+            const d = new Date(item.date);
+            const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
             html += `
                 <div class="d-flex align-items-center p-3 rounded-4 shadow-sm mb-3 border-0 position-relative" style="background-color: var(--bg-panel); overflow: hidden;">
@@ -326,7 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="ms-3 flex-grow-1">
-                        <div class="fw-bolder" style="font-size: 0.95rem; color: var(--text-h);">${item.phone}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="fw-bolder" style="font-size: 0.95rem; color: var(--text-h);">${item.phone}</div>
+                            <span class="small text-muted" style="font-size: 0.75rem;">${dateStr}</span>
+                        </div>
                         <div class="small mt-1" style="font-size: 0.85rem; color: var(--text-muted);">${item.action} <strong class="text-success">${item.points}</strong></div>
                     </div>
                 </div>
@@ -485,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Update Last SMS Transaction
         if (data.lastSms) {
-            const smsContainer = document.querySelector('#summary-container .d-flex.flex-column.gap-3');
+            const smsContainer = document.getElementById('last-sms-container');
             if (smsContainer) {
                 const d = new Date(data.lastSms.date);
                 const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -512,13 +518,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (firstChild) {
                 // Animate up
                 ticker.style.transform = `translateY(-${firstChild.offsetHeight + 16}px)`;
-                
+
                 setTimeout(() => {
                     // Instantly reset and move child to back
                     ticker.style.transition = 'none';
                     ticker.appendChild(firstChild);
                     ticker.style.transform = 'translateY(0)';
-                    
+
                     // Restore transition for next tick
                     setTimeout(() => {
                         ticker.style.transition = 'transform 1s linear';
@@ -531,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadDynamicSettings() {
         const token = sessionStorage.getItem('adminToken');
         if (!token) return;
-        
+
         try {
             const res = await fetch('/api/admin/settings', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -539,33 +545,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success && data.data) {
                 const settings = data.data;
-                
+
                 if (settings.borrow_time_limit_hours !== undefined) {
                     window.dynamicTimeLimitHours = parseInt(settings.borrow_time_limit_hours);
                 }
-                
+
                 // Helper to update text safely
                 const updateBadge = (id, settingKey, suffix = 'pts') => {
                     const el = document.getElementById(id);
                     if (el && settings[settingKey] !== undefined) {
                         const val = parseInt(settings[settingKey]);
                         const sign = val > 0 ? '+' : '';
-                        
+
                         let displaySuffix = suffix;
                         if (suffix === 'pts' || suffix === 'pt') {
                             displaySuffix = Math.abs(val) === 1 ? 'pt' : 'pts';
                         }
-                        
+
                         el.innerText = `${sign}${val} ${displaySuffix}`;
                     }
                 };
-                
+
                 // Rewards
                 updateBadge('badge-honesty-reward', 'honesty_reward', 'pt');
                 updateBadge('badge-consistent-rider', 'consistent_rider_reward', 'pts');
                 updateBadge('badge-reward-honest-report', 'reward_honest_report', 'pts');
                 updateBadge('badge-reward-community-volunteer', 'reward_community_volunteer', 'pts');
-                
+
                 // Penalties
                 updateBadge('badge-penalty-abandoned-handshake', 'penalty_abandoned_handshake', 'pts');
                 updateBadge('badge-penalty-false-report', 'penalty_false_report', 'pts');
@@ -577,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to load dynamic settings:', err);
         }
     }
-    
+
     // Call it once on load
     loadDynamicSettings();
 });
