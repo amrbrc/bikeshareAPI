@@ -599,6 +599,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateBadge('badge-penalty-overtime', 'penalty_overtime', '/ hr');
                 updateBadge('badge-penalty-hit-and-run', 'penalty_hit_and_run', 'pts');
                 updateBadge('badge-penalty-missing-bike', 'penalty_missing_bike', 'pts');
+
+                // --- Quick Start Guide Step 9: sync with DB values ---
+                // Compact formatter — just shows "+N" or "−N" with optional suffix, no word label
+                const updateGuideVal = (id, settingKey, suffix = '') => {
+                    const el = document.getElementById(id);
+                    if (el && settings[settingKey] !== undefined) {
+                        const val = parseInt(settings[settingKey]);
+                        const sign = val > 0 ? '+' : '\u2212';
+                        el.textContent = `${sign}${Math.abs(val)}${suffix}`;
+                    }
+                };
+
+                updateGuideVal('qs-val-honest-return',  'honesty_reward');
+                updateGuideVal('qs-val-dispute-reward', 'reward_honest_report');
+                updateGuideVal('qs-val-overtime',       'penalty_overtime', '/hr');
+                updateGuideVal('qs-val-hit-run',        'penalty_hit_and_run');
+
             }
         } catch (err) {
             console.error('Failed to load dynamic settings:', err);
