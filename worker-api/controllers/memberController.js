@@ -145,6 +145,29 @@ const getStudentDashboard = async (req, res) => {
             }
         }
 
+        // Fallback to Logs table if on cloud database or if local smsd.inbox has no records
+        if (!lastSms) {
+            try {
+                const [logRows] = await db.upbsPool.query(
+                    `SELECT Request as TextDecoded, DateTime as ReceivingDateTime 
+                     FROM Logs 
+                     WHERE MobileNumber = ? OR SenderNumber = ? 
+                     ORDER BY DateTime DESC 
+                     LIMIT 1`,
+                    [phone_number, phone_number]
+                );
+
+                if (logRows.length > 0) {
+                    lastSms = {
+                        user_text: logRows[0].TextDecoded,
+                        date: logRows[0].ReceivingDateTime
+                    };
+                }
+            } catch (e) {
+                console.error("Error fetching fallback from Logs table:", e.message);
+            }
+        }
+
         // 5. Fetch Wall of Honor data (Honest Returns and helpful Logs)
         let wallOfHonor = [];
         try {
