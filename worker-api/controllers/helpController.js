@@ -23,8 +23,8 @@ const help = async (req, res) => {
 
         const { lastname, firstname, phone_number } = memberRecords[0];
 
-        const msg1 = `UPBS Help (1/2):\nFlow:\n- search [location]\n- [bike] [from] to [to] (e.g. 1 eee to vinzons)\n- done [bike]\n- [bike] good/broken/missing/delivered`;
-        const msg2 = `UPBS Help (2/2):\nOther commands:\n- points\n- locations\n- search [bike]\n- search all\n- usage [bike]\n- how`;
+        const msg1 = `UPBS Help (1/2):\nFlow: Search-Borrow-Done-Report\n- search all\n- search [location]\n- [bike] [from] to [to] (e.g. 1 eee to vinzons)\n- done [bike]\n- [bike] good/broken/missing/delivered`;
+        const msg2 = `UPBS Help (2/2):\nOther commands:\n- points\n- locations\n- usage [bike]\n- search [bike]\n- how`;
 
         // 2. Log the help request
         const logQuery = `

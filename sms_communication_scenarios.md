@@ -300,7 +300,9 @@ Utility commands allowing students to query system status without internet conne
 * **System Action:** Sends two sequential SMS parts detailing all available commands.
 * **System SMS Reply (Part 1 of 2):**
   > `"UPBS Help (1/2):
-Flow: Borrow-Done-Report
+Flow: Search-Borrow-Done-Report
+- search all
+- search [location]
 - [bike] [from] to [to] (e.g. 1 eee to vinzons)
 - done [bike]
 - [bike] good/broken/missing/delivered"`
@@ -309,9 +311,8 @@ Flow: Borrow-Done-Report
 Other commands:
 - points
 - locations
-- search [bike]
-- search all
 - usage [bike]
+- search [bike]
 - how"`
 
 ---

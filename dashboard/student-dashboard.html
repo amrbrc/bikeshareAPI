@@ -883,14 +883,36 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Check Available Bikes at a Station -->
+                <!-- Step 2: Check Campus Availability -->
                 <div class="qs-step" data-step="2">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                        <i class='bx bx-globe' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 2 of 11</div>
+                    <h2 class="qs-title">Check Campus Availability</h2>
+                    <p class="qs-desc">Before heading out, see how many bikes are ready across all UPBS stations on campus:</p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">FORMAT</span>
+                        <code>search all</code>
+                    </div>
+                    <div class="qs-example-block">
+                        <span class="qs-code-label" style="color: var(--up-green);">EXAMPLE</span>
+                        <code style="color: var(--up-green);">search all</code>
+                    </div>
+                    <div class="qs-highlight-box">
+                        <i class='bx bx-info-circle'></i>
+                        <span>The system replies with a live count of available bikes at every hub (e.g. EEE: 3 bikes, VINZONS: 5 bikes).</span>
+                    </div>
+                </div>
+
+                <!-- Step 3: Check Available Bikes at a Hub -->
+                <div class="qs-step" data-step="3">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
                         <i class='bx bx-search-alt' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 2 of 11</div>
-                    <h2 class="qs-title">Check Available Bikes</h2>
-                    <p class="qs-desc">Before heading out, check which bikes are available at a station near you:</p>
+                    <div class="qs-step-label">Step 3 of 11</div>
+                    <h2 class="qs-title">Check Bikes at a Hub</h2>
+                    <p class="qs-desc">Found a hub with available bikes? Check which exact bicycle numbers are parked there:</p>
                     <div class="qs-code-block">
                         <span class="qs-code-label">FORMAT</span>
                         <code>search [location]</code>
@@ -900,30 +922,7 @@
                         <code style="color: var(--up-green);">search eee</code>
                     </div>
                     <p class="qs-desc" style="font-size: 0.82rem;">Replace <strong>[location]</strong> with the station
-                        name (e.g. palma_hall, chk, engg). The system will reply with available bikes at that hub.</p>
-                </div>
-
-                <!-- Step 3: Check All Campus Bikes -->
-                <div class="qs-step" data-step="3">
-                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #10b981, #34d399);">
-                        <i class='bx bx-globe' style="font-size: 2rem; color: white;"></i>
-                    </div>
-                    <div class="qs-step-label">Step 3 of 11</div>
-                    <h2 class="qs-title">Check All Campus Bikes</h2>
-                    <p class="qs-desc">Want to see how many bikes are ready across all UPBS hubs? Just text:</p>
-                    <div class="qs-code-block">
-                        <span class="qs-code-label">FORMAT / EXAMPLE</span>
-                        <code>search all</code>
-                    </div>
-                    <div class="qs-example-block" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 0.8rem; border-radius: 8px; margin-top: 0.5rem; text-align: left; font-family: monospace; font-size: 0.78rem; line-height: 1.4;">
-                        <div style="color: var(--text-muted); font-weight: bold; margin-bottom: 0.3rem;">SYSTEM REPLY:</div>
-                        Available bikes across campus:<br>
-                        EEE: 3 bikes<br>
-                        ENGG: 1 bike<br>
-                        PALMA_HALL: 0 bikes<br>
-                        VINZONS: 5 bikes
-                    </div>
-                    <p class="qs-desc" style="font-size: 0.82rem; margin-top: 0.5rem;">This gives you a quick bird's-eye view of bike counts at every hub on campus!</p>
+                        name (e.g. palma_hall, chk, engg). You'll get a list of bike codes ready for checkout.</p>
                 </div>
 
                 <!-- Step 4: Borrow a Bike -->
@@ -1060,8 +1059,8 @@
                         </div>
                         <div class="qs-nav-item">
                             <span class="qs-nav-icon" style="background: rgba(14,165,233,0.1); color: #0ea5e9;"><i
-                                    class='bx bx-search'></i></span>
-                            <div><code style="font-size:0.82rem;">search all</code> — See all bikes &amp; availability
+                                    class='bx bx-current-location'></i></span>
+                            <div><code style="font-size:0.82rem;">usage [bike]</code> — Check where a bike is parked
                             </div>
                         </div>
                         <div class="qs-nav-item">
