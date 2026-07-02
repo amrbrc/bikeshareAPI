@@ -133,28 +133,39 @@ const searchAll = async (req, res) => {
             userLogInfo = memberRecords[0];
         }
 
-        // 2. Query to fetch bicycle locations
-        const bicycleQuery = "SELECT bicycle_code, new_location, previous_location FROM bicycle_codes WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL)";
-        const [bicycles] = await db.upbsPool.query(bicycleQuery);
+        // 2. Query to fetch bicycle locations and count available bikes per location
+        const locationQuery = "SELECT location_name FROM locations WHERE is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL) ORDER BY location_name ASC";
+        const [locs] = await db.upbsPool.query(locationQuery);
+
+        const countQuery = `
+            SELECT UPPER(COALESCE(new_location, previous_location)) AS loc, COUNT(*) AS cnt 
+            FROM bicycle_codes 
+            WHERE condition_status = 'Good' AND is_active = 1 AND (is_disabled = 0 OR is_disabled IS NULL) 
+            GROUP BY UPPER(COALESCE(new_location, previous_location))
+        `;
+        const [counts] = await db.upbsPool.query(countQuery);
+        const countMap = {};
+        counts.forEach(r => {
+            if (r.loc) countMap[r.loc] = r.cnt;
+        });
+
+        const summaryParts = locs.map(l => {
+            const name = l.location_name.toUpperCase();
+            const cnt = countMap[name] || 0;
+            delete countMap[name];
+            return `${name} (${cnt})`;
+        });
+
+        // Add any remaining locations from countMap that weren't in locs table
+        Object.keys(countMap).sort().forEach(name => {
+            summaryParts.push(`${name} (${countMap[name]})`);
+        });
 
         const replies = [];
-        if (bicycles.length === 0) {
-            replies.push("No bicycles available at the moment.");
+        if (summaryParts.length === 0) {
+            replies.push("No locations available at the moment.");
         } else {
-            let currentMsg = "All Bicycles Locations:\n";
-            bicycles.forEach((bike) => {
-                const location = (bike.new_location || bike.previous_location || '').toLowerCase();
-                const line = `Bike ${bike.bicycle_code} is at ${location}\n`;
-                if ((currentMsg + line).length > 160) {
-                    replies.push(currentMsg.trim());
-                    currentMsg = line;
-                } else {
-                    currentMsg += line;
-                }
-            });
-            if (currentMsg) {
-                replies.push(currentMsg.trim());
-            }
+            replies.push(`Available bikes across campus: ${summaryParts.join(', ')}. Text 'search [location]' for bike codes.`);
         }
 
         // 3. Log the search-all request
