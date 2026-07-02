@@ -280,9 +280,8 @@ Because students may forget to text `done` or confirm condition handshakes, the 
 | **Dynamic Overtime Warning**| `0 * * * *` | Hourly | Bike `Borrowed` approaching max limit hours | Calculates remaining hours and sends warning SMS to return bike soon. |
 | **Overtime Penalty Alert** | `0 * * * *` | Hourly | Bike `Borrowed` exceeding max duration limit | Applies dynamic demerit (e.g., **−3 pts/hr**), logs penalty, sends violation alert SMS. |
 | **5-Min Handshake Reminder**| `*/2 * * * *` | Every 2 Mins | Bike in `Pending_Status` for > 5 mins & `reminder_pending_sent = 0` | Sends reminder SMS to confirm condition (`GOOD`/`BROKEN`) and save local photo proof. |
-| **Handshake Timeout Expiry**| `*/5 * * * *` | Every 5 Mins | Bike in `Pending_Status` for > `handshake_timeout_mins` (30 mins) | Auto-finalizes trip as `Good`, applies abandoned handshake penalty (**−2 pts**), sends alert SMS. |
-| **24-Hour Repair Warning** | `0 * * * *` | Hourly | Bike `Broken` for > 24 hours & `reminder_24h_sent = 0` | Warns borrower that 24 hours remain to deliver bike to a hub before heavy demerits apply. |
-| **48-Hour Damage Penalty** | `0 * * * *` | Hourly | Bike `Broken` for > 48 hours & `penalty_applied = 0` | Deducts **−10 Trust Points & −10 Leaderboard Points**, sets `penalty_applied = 1`, sends violation alert. |
+| **Handshake Timeout Expiry**| `*/5 * * * *` | Every 5 Mins | Bike in `Pending_Status` for > `handshake_timeout_mins` (30 mins) | Auto-finalizes trip as `Good`, applies abandoned handshake penalty (**dynamic via `penalty_abandoned_handshake`, default: −2 pts**), sends alert SMS. |
+*(Note: 24-Hour Repair Warning and 48-Hour Damage Penalty timers were removed/disabled under the organization's community volunteer repair policy).*
 
 ---
 
@@ -385,5 +384,5 @@ WantedBy=multi-user.target
 ## 🏆 Summary of Architectural Highlights
 * **Zero Internet Requirement for Riders:** Complete bike borrow, return, and reporting lifecycle works over standard 2G/3G cellular SMS via AT modem injection.
 * **ACID Transaction Safety:** Concurrency-proof database queries utilizing `FOR UPDATE` row locking eliminate race conditions and double-borrow bugs.
-* **Fully Automated Accountability:** 7 distinct background cron jobs monitor timers, enforce handshakes, apply demerits, and reward milestones automatically.
+* **Fully Automated Accountability:** 5 active background cron jobs monitor timers, enforce handshakes, apply demerits, and reward milestones automatically.
 * **Sleek, Lightweight Web UI:** Responsive Bootstrap 5 grid combined with custom Vanilla CSS glassmorphism and Chart.js graphs delivers a premium dashboard without complex build toolchains.

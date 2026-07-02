@@ -158,9 +158,9 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.1: Borrower Reporting Bike Broken During Handshake (`broken`)
 * **Condition:** Active borrower replies `broken` instead of `good` after ending their trip.
 * **User SMS Pattern:** `broken <code>` or `<code> broken` (e.g., `broken 1` / `1 broken`)
-* **System Action:** Finalizes trip with condition `Broken`, updates bike status to `Broken`, resets borrower's `consecutive_good_rides` counter to 0, applies a **−2 Trust Points demerit**, and starts the 48-hour repair grace period countdown.
+* **System Action:** Finalizes trip with condition `Broken`, updates bike status to `Broken`, resets borrower's `consecutive_good_rides` counter to 0, and applies a **−2 Trust Points demerit**.
 * **System SMS Reply:**
-  > `"Thank you for reporting. Bike [Code] condition recorded as Broken. -2 demerit applied. Please deliver the bike to a maintenance hub/station within 48 hours to avoid further penalties."`
+  > `"Thank you for reporting. Please lock and leave Bike [Code] at the designated UPBS Hub (or current location) for the maintenance team to collect."`
 
 ### Scenario 3.2: Next User Reporting Bike Broken at Checkout (Dispute Protocol)
 * **Condition:** A bike is marked as `Good` at a station, but the *next* intending rider finds it damaged before borrowing and texts `broken`.
@@ -341,20 +341,6 @@ Background timers continuously monitor active rides, pending handshakes, and rep
 * **System SMS Reply (Automated):**
   > `"ALERT: You failed to confirm the condition of Bike [Code] within 30 minutes. Your trip has been auto-completed, and a -2 point penalty has been applied to your account."`
 
-### Scenario 5.6: 24-Hour Repair Warning Reminder
-* **Condition:** A bike was reported `Broken` by a user 24 hours ago, and has not yet been delivered to a hub for repair.
-* **Trigger:** Hourly cron job.
-* **System Action:** Sets `reminder_24h_sent = 1` and warns the responsible borrower that only 24 hours remain in their grace period.
-* **System SMS Reply (Automated):**
-  > `"REMINDER: You have 24 hours left to repair Bike [Code] before a -10 demerit is applied to your account."`
-
-### Scenario 5.7: 48-Hour Unrepaired Damage Expiry Penalty
-* **Condition:** A broken bike has remained unrepaired/undelivered for 48 hours after being reported broken.
-* **Trigger:** Hourly cron job.
-* **System Action:** Sets `penalty_applied = 1`, deducts **−10 Trust Points & −10 Leaderboard Points** from the responsible borrower, and sends violation notice.
-* **System SMS Reply (Automated):**
-  > `"ALERT: The 48-hour grace period to repair Bike [Code] has expired. A -10 demerit has been applied to your account."`
-
 ---
 
 ## 6. Summary of Trust Point Adjustments via SMS
@@ -370,5 +356,4 @@ Below is the complete ledger of how SMS actions directly impact a student's Trus
 | **Abandoned Handshake** | *30-Min Cron Timeout* | **−2** | **−2** | Unchanged |
 | **Overtime Ride Penalty** | *Hourly Cron Expiry* | **−3** / hr | **+0** | Unchanged |
 | **Unreported Damage (Dispute)**| `broken <code>` by Next Rider | **−5** | **+0** | **Reset to 0** |
-| **Unrepaired Damage Expiry** | *48-Hour Cron Expiry* | **−10** | **−10** | Unchanged |
 | **False Emergency Report** | *Admin Audit* | **−5** | **+0** | **Reset to 0** |
