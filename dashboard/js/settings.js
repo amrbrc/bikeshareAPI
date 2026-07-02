@@ -642,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
                             <div class="small mb-2" style="color: var(--text-muted);">Reporter/User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
                             
+                            ${b.dispute_image_url ? `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Resolve Dispute / Settle Report:</div>
                                 <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
@@ -657,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     Waive standard point penalty
                                 </label>
                             </div>
+                            ` : `<div class="small mt-1 fst-italic" style="color: var(--text-muted); font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i>Awaiting dispute appeal photo via FB bot</div>`}
                         </div>
                         ${b.dispute_image_url ? `
                             <div class="d-flex flex-column align-items-center align-items-md-end justify-content-center flex-shrink-0 ms-md-auto text-md-end" style="min-width: 140px;">
