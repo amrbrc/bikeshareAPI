@@ -129,17 +129,17 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **System SMS Reply:**
   > `"Trip for Bike [Code] has already been ended. Please reply 'GOOD [Code]' or 'BROKEN [Code]'."`
 
-### Scenario 2.11: Confirming Good Condition (`good`) — Normal
+### Scenario 2.11: Confirming Good Condition (`good`) — Normal (Rides 1 to 4 in Streak)
 * **Condition:** Borrower (or next user) confirms the bike is in good working condition during the `Pending_Status` handshake.
 * **User SMS Pattern:** `good <code>` or `<code> good` (e.g., `good 1` / `1 good`)
-* **System Action:** Finalizes trip (`condition_confirmed = 1`), changes bike status to `Good`, increments user's `consecutive_good_rides` counter, awards **+1 Trust Point**, and awards **+1 Leaderboard Point**.
+* **System Action:** Finalizes trip (`condition_confirmed = 1`), changes bike status to `Good`, and increments user's `consecutive_good_rides` streak counter towards the milestone reward.
 * **System SMS Reply:**
   > `"Thank you! Bike [Code] condition confirmed as Good."`
 
-### Scenario 2.12: Confirming Good Condition (`good`) — Milestone Bonus! 🎉
+### Scenario 2.12: Confirming Good Condition (`good`) — Milestone Bonus! 🎉 (Every 5th Ride)
 * **Condition:** Borrower confirms good condition and hits a consistent riding milestone (every 5th consecutive good ride: 5, 10, 15, 20...).
 * **User SMS Input:** `good 1`
-* **System Action:** Finalizes trip, awards normal +1 point, AND awards an extra **+5 Trust Points & +5 Leaderboard Points** bonus!
+* **System Action:** Finalizes trip, changes bike status to `Good`, AND awards a milestone bonus of **+5 Trust Points & +5 Leaderboard Points**!
 * **System SMS Reply:**
   > `"Thank you! Bike [Code] condition confirmed as Good. Congratulations! You earned +5 bonus points for consistent riding!"`
 
