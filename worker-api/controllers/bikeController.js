@@ -666,7 +666,7 @@ const good = async (req, res) => {
                     "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
                     [reward, reward, smsSender]
                 );
-                congratsMsg = ` Congratulations! You earned +${reward} bonus points for consistent riding!`;
+                congratsMsg = ` Congratulations! You earned +${reward} bonus points for completing ${consecutive} consecutive clean rides without disputes!`;
             }
         }
 

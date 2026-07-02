@@ -141,7 +141,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **User SMS Input:** `good 1`
 * **System Action:** Finalizes trip, changes bike status to `Good`, AND awards a milestone bonus of **+5 Trust Points & +5 Leaderboard Points**!
 * **System SMS Reply:**
-  > `"Thank you! Bike [Code] condition confirmed as Good. Congratulations! You earned +5 bonus points for consistent riding!"`
+  > `"Thank you! Bike [Code] condition confirmed as Good. Congratulations! You earned +5 bonus points for completing 5 consecutive clean rides without disputes!"`
 
 ### Scenario 2.13: Confirming Good Condition When Bike Not Awaiting Check
 * **Condition:** User texts `good` for a bike that is already `Good`, `Borrowed`, or `In_Repair` (not in `Pending_Status`).
