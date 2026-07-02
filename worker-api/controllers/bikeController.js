@@ -982,12 +982,22 @@ const delivered = async (req, res) => {
             await upbsConn.rollback();
             return res.json({ reply: `Bike ${bicycleCode} is currently disputed and can only be resolved by an administrator.` });
         }
+        if (bike[0].condition_status === 'In_Repair') {
+            await upbsConn.rollback();
+            return res.json({ reply: `Bike ${bicycleCode} is currently reported as delivered and undergoing repairs.` });
+        }
 
         // Close any active or pending return trip for this user on this bike
         const [activeTrip] = await upbsConn.query(
             "SELECT id FROM bicycle_history WHERE bicycle_code = ? AND borrowed_by = ? AND (done_text_received = 0 OR (done_text_received = 1 AND condition_confirmed = 0)) ORDER BY id DESC LIMIT 1 FOR UPDATE",
             [bicycleCode, currentUserName]
         );
+
+        if (activeTrip.length === 0 && bike[0].condition_status !== 'Broken' && bike[0].condition_status !== 'Missing') {
+            await upbsConn.rollback();
+            return res.json({ reply: `Bike ${bicycleCode} is not reported as Broken or Missing. Only damaged/missing bikes need maintenance delivery.` });
+        }
+
         if (activeTrip.length > 0) {
             await upbsConn.query(
                 "UPDATE bicycle_history SET done_text_received = 1, condition_confirmed = 1, reported_condition = 'Broken' WHERE id = ?",
