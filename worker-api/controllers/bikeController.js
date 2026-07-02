@@ -850,7 +850,7 @@ const broken = async (req, res) => {
                     // Alert the previous user by queueing the outbound alert SMS
                     await smsService.queueSMS(
                         prevMemberPhone,
-                        `ALERT: Bike ${bicycleCode} was reported broken by next user. Points frozen. To settle: (1) Send photo via FB (m.me/upbikesharebot) OR (2) Visit Admin Hub.`,
+                        `ALERT: Bike ${bicycleCode} was reported broken by next user. Points frozen. To settle: (1) Send photo via FB m(.)me/upbikesharebot (remove parenthesis) or (2) Go to Hub.`,
                         upbsConn
                     );
                 }
@@ -944,7 +944,7 @@ const missing = async (req, res) => {
                 // Alert the previous user by queueing the outbound alert SMS
                 await smsService.queueSMS(
                     prevMemberPhone,
-                    `ALERT: Bike ${bicycleCode} was reported MISSING by next user. Points frozen. To settle: (1) Send photo via FB (m.me/upbikesharebot) OR (2) Visit Admin Hub.`,
+                    `ALERT: Bike ${bicycleCode} was reported MISSING by next user. Points frozen. To settle: (1) Send photo via FB m(.)me/upbikesharebot (remove parenthesis) or (2) Go to Hub.`,
                     upbsConn
                 );
             }
