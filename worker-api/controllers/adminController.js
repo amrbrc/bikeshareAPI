@@ -491,9 +491,8 @@ const getMaintenanceQueue = async (req, res) => {
     try {
         const query = `
             SELECT b.bicycle_code, b.new_location, b.condition_status,
-                   (SELECT m.phone_number 
+                   (SELECT bh.borrower_phone 
                     FROM bicycle_history bh 
-                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
                     WHERE bh.bicycle_code = b.bicycle_code 
                     ORDER BY bh.borrowed_at DESC 
                     LIMIT 1) AS last_user_phone
@@ -924,12 +923,10 @@ const deleteLocation = async (req, res) => {
 // GET /api/admin/reports
 const getReports = async (req, res) => {
     try {
-        // 1. Maintenance Queue: active bikes in Broken, Missing, or Disputed condition
         const queueQuery = `
             SELECT b.bicycle_code, b.new_location, b.condition_status,
-                   (SELECT m.phone_number 
+                   (SELECT bh.borrower_phone 
                     FROM bicycle_history bh 
-                    JOIN members m ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
                     WHERE bh.bicycle_code = b.bicycle_code 
                     ORDER BY bh.borrowed_at DESC 
                     LIMIT 1) AS last_user_phone

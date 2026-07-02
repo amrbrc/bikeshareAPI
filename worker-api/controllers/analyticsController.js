@@ -22,7 +22,7 @@ const getAnalytics = async (req, res) => {
             SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
             GROUP BY HOUR(bh.borrowed_at)
             ORDER BY hour ASC
         `;
@@ -34,7 +34,7 @@ const getAnalytics = async (req, res) => {
             FROM bicycle_history bh
             JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
             GROUP BY bh.new_location
             ORDER BY count DESC
         `;
@@ -46,7 +46,7 @@ const getAnalytics = async (req, res) => {
             SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
             WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
             GROUP BY HOUR(bh.borrowed_at)
             ORDER BY hour ASC
@@ -59,7 +59,7 @@ const getAnalytics = async (req, res) => {
             FROM bicycle_history bh
             JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
             WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
             GROUP BY bh.new_location
             ORDER BY count DESC
@@ -71,7 +71,7 @@ const getAnalytics = async (req, res) => {
             SELECT DISTINCT DATE_FORMAT(bh.borrowed_at, '%Y-%m') AS month
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON ((bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)) AND m.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
             ORDER BY month DESC
         `;
         const [availableMonthsRows] = await db.upbsPool.query(availableMonthsQuery);

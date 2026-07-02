@@ -95,11 +95,11 @@ const getStudentDashboard = async (req, res) => {
             `SELECT bh.borrowed_at, bh.bicycle_code 
              FROM bicycle_history bh
              JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
-             WHERE bh.borrowed_by = ? 
+             WHERE bh.borrower_phone = ? 
                AND bh.done_text_received = 0 
                AND bc.condition_status = 'Borrowed'
              LIMIT 1`,
-            [fullName]
+            [phone_number]
         );
 
         const activeRide = activeRideRows.length > 0 ? {
@@ -112,10 +112,10 @@ const getStudentDashboard = async (req, res) => {
             `SELECT borrowed_at as date, bicycle_code as bike, 
                     CONCAT(previous_location, ' → ', new_location) as route 
              FROM bicycle_history 
-             WHERE borrowed_by = ? 
+             WHERE borrower_phone = ? 
              ORDER BY borrowed_at DESC 
              LIMIT 5`,
-            [fullName]
+            [phone_number]
         );
 
         // 4. Get Last SMS Transaction (from user's inbox only)
@@ -284,7 +284,7 @@ const getLeaderboards = async (req, res) => {
         const [topActiveRiders] = await db.upbsPool.query(`
             SELECT m.firstname, m.lastname, m.phone_number, COUNT(bh.id) AS score 
             FROM members m 
-            JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+            JOIN bicycle_history bh ON m.phone_number = bh.borrower_phone 
             WHERE bh.borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND m.is_active = 1 
             GROUP BY m.phone_number, m.firstname, m.lastname 
             ORDER BY score DESC, m.lastname ASC, m.firstname ASC 
@@ -322,8 +322,8 @@ const getLeaderboards = async (req, res) => {
                 userTrustedRank = trustedRankRows[0].rank;
 
                 const [activeScoreRows] = await db.upbsPool.query(
-                    "SELECT COUNT(id) as score FROM bicycle_history WHERE borrowed_by = ? AND borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)",
-                    [userFullName]
+                    "SELECT COUNT(id) as score FROM bicycle_history WHERE borrower_phone = ? AND borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)",
+                    [phone_number]
                 );
                 userActiveScore = activeScoreRows[0].score;
 
@@ -331,7 +331,7 @@ const getLeaderboards = async (req, res) => {
                     SELECT COUNT(*) + 1 as \`rank\` FROM (
                         SELECT COUNT(bh.id) as ride_count 
                         FROM members m 
-                        JOIN bicycle_history bh ON CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by 
+                        JOIN bicycle_history bh ON m.phone_number = bh.borrower_phone 
                         WHERE bh.borrowed_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND m.is_active = 1 
                         GROUP BY m.phone_number 
                         HAVING ride_count > ?

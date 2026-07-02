@@ -72,13 +72,13 @@ const startBorrowRemindersJob = () => {
             const query = `
                 SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.borrowed_at, 
                        bh.reminder_1h_sent, bh.reminder_4h_sent,
-                       m.phone_number
+                       bh.borrower_phone AS phone_number
                 FROM bicycle_history bh
-                JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 0 
                   AND bh.condition_confirmed = 0
                   AND bc.condition_status = 'Borrowed'
+                  AND bh.borrower_phone IS NOT NULL
                   AND (
                       (bh.reminder_1h_sent = 0 AND bh.borrowed_at < NOW() - INTERVAL 1 HOUR)
                       OR 
@@ -119,7 +119,7 @@ const startBorrowRemindersJob = () => {
         } catch (err) {
             console.error('[Cron] Error in borrow reminders job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 // Job 1.5 (Every 10 mins): Dynamic Timeout Penalty
@@ -137,12 +137,12 @@ const startSixHourPenaltyJob = () => {
             // Find active borrowings that exceed the borrow limit and haven't been penalized yet
             const query = `
                 SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.borrowed_at, 
-                       m.phone_number
+                       bh.borrower_phone AS phone_number
                 FROM bicycle_history bh
-                JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 0 
                   AND bc.condition_status = 'Borrowed'
+                  AND bh.borrower_phone IS NOT NULL
                   AND bh.borrowed_at < NOW() - INTERVAL ? HOUR
                   AND (bh.last_penalty_time IS NULL OR bh.last_penalty_time < NOW() - INTERVAL 1 HOUR)
             `;
@@ -178,7 +178,7 @@ const startSixHourPenaltyJob = () => {
         } catch (err) {
             console.error('[Cron] Error in dynamic timeout penalty job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 // Job 2 (Every 2 mins): 5-Minute Pending_Status handshake photo proof reminder
@@ -190,14 +190,14 @@ const startHandshakeReminderJob = () => {
             // that are older than 5 minutes and haven't had a reminder sent yet
             const query = `
                 SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.pending_status_time,
-                       m.phone_number, bh.reminder_pending_sent, bc.condition_status
+                       bh.borrower_phone AS phone_number, bh.reminder_pending_sent, bc.condition_status
                 FROM bicycle_history bh
-                JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 1 
                   AND bh.condition_confirmed = 0
                   AND (bh.reminder_pending_sent = 0 OR bh.reminder_pending_sent IS NULL)
                   AND bc.condition_status = 'Pending_Status'
+                  AND bh.borrower_phone IS NOT NULL
                   AND bh.pending_status_time < NOW() - INTERVAL 5 MINUTE
             `;
             const [records] = await db.upbsPool.query(query);
@@ -216,7 +216,7 @@ const startHandshakeReminderJob = () => {
         } catch (err) {
             console.error('[Cron] Error in handshake reminder job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 // Job 3 (Hourly): 48-Hour Unrepaired Damage grace period countdown
@@ -235,10 +235,10 @@ const startUnrepairedDamageJob = () => {
 
             for (const bike of brokenBikes) {
                 const borrowerQuery = `
-                    SELECT bh.id AS history_id, bh.borrowed_by, m.phone_number, m.trust_points
+                    SELECT bh.id AS history_id, bh.borrowed_by, bh.borrower_phone AS phone_number
                     FROM bicycle_history bh
-                    JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                     WHERE bh.bicycle_code = ?
+                      AND bh.borrower_phone IS NOT NULL
                     ORDER BY bh.borrowed_at DESC
                     LIMIT 1
                 `;
@@ -265,7 +265,7 @@ const startUnrepairedDamageJob = () => {
         } catch (err) {
             console.error('[Cron] Error in unrepaired damage job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 // Job 4: 24-Hour Repair Warning Reminder
@@ -284,10 +284,10 @@ const start24hReminderJob = () => {
 
             for (const bike of brokenBikes) {
                 const borrowerQuery = `
-                    SELECT bh.id AS history_id, bh.borrowed_by, m.phone_number
+                    SELECT bh.id AS history_id, bh.borrowed_by, bh.borrower_phone AS phone_number
                     FROM bicycle_history bh
-                    JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                     WHERE bh.bicycle_code = ?
+                      AND bh.borrower_phone IS NOT NULL
                     ORDER BY bh.borrowed_at DESC
                     LIMIT 1
                 `;
@@ -311,7 +311,7 @@ const start24hReminderJob = () => {
         } catch (err) {
             console.error('[Cron] Error in 24h reminder job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 // Job 5: Dynamic Handshake Timeout Expiry
@@ -332,13 +332,13 @@ const startHandshakeTimeoutJob = () => {
             // that have exceeded the handshake timeout limit
             const query = `
                 SELECT bh.id, bh.bicycle_code, bh.borrowed_by, bh.pending_status_time,
-                       m.phone_number
+                       bh.borrower_phone AS phone_number
                 FROM bicycle_history bh
-                JOIN members m ON (bh.borrower_phone IS NOT NULL AND m.phone_number = bh.borrower_phone) OR (bh.borrower_phone IS NULL AND CONCAT(m.firstname, ' ', m.lastname) = bh.borrowed_by)
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code
                 WHERE bh.done_text_received = 1 
                   AND bh.condition_confirmed = 0
                   AND bc.condition_status = 'Pending_Status'
+                  AND bh.borrower_phone IS NOT NULL
                   AND bh.pending_status_time < NOW() - INTERVAL ? MINUTE
             `;
             const [records] = await db.upbsPool.query(query, [timeoutMins]);
@@ -390,7 +390,7 @@ const startHandshakeTimeoutJob = () => {
         } catch (err) {
             console.error('[Cron] Error in handshake timeout job:', err);
         }
-    });
+    }, { suppressMissedWarning: true });
 };
 
 const initCronJobs = () => {
