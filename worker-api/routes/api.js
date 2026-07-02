@@ -18,7 +18,6 @@ const facebookWebhookController = require('../controllers/facebookWebhookControl
 // Gateway Secret Verification Middleware
 const verifyGateway = (req, res, next) => {
     const token = req.headers['x-gateway-secret'];
-    console.log(`[Security Debug] Incoming token: "${token}", Expected: "${process.env.GATEWAY_SECRET}"`);
     if (!token || token !== process.env.GATEWAY_SECRET) {
         console.log(`[Security] Blocked unauthorized gateway attempt from IP: ${req.ip}`);
         return res.status(403).json({ error: 'Unauthorized Gateway' });
