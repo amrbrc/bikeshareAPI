@@ -296,13 +296,14 @@ Utility commands allowing students to query system status without internet conne
 ### Scenario 4.6: Quick Instructions (`how`)
 * **Condition:** Member needs a quick reminder on how to format the checkout command.
 * **User SMS Pattern:** `how` (exact)
-* **System Action:** Returns quick 3-step system guidelines for borrowing, returning, and reporting issues.
+* **System Action:** Returns quick 4-step system guidelines matching the dashboard Quick Start Guide (search, borrow, return, report).
 * **System SMS Reply:**
   > `"UPBS Quick Guide:
-  > 1. Borrow: 1 eee to vinzons
-  > 2. Return: done 1 then 1 good
-  > 3. Report issue: broken 1
-  > Text 'bikeshare help' for all commands."`
+  > 1. Search: search all
+  > 2. Borrow: 1 eee to vinzons
+  > 3. Return: done 1 then good 1
+  > 4. Report: broken 1
+  > Text 'bikeshare help' for all."`
 
 ### Scenario 4.7: Full Command Reference (`bikeshare help`)
 * **Condition:** Member requests a complete cheat sheet of SMS commands.

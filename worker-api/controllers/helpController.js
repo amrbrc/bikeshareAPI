@@ -70,7 +70,7 @@ const how = async (req, res) => {
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
-        const replyMessage = "UPBS Quick Guide:\n1. Borrow: 1 eee to vinzons\n2. Return: done 1 then 1 good\n3. Report issue: broken 1\nText 'bikeshare help' for all commands.";
+        const replyMessage = "UPBS Quick Guide:\n1. Search: search all\n2. Borrow: 1 eee to vinzons\n3. Return: done 1 then good 1\n4. Report: broken 1";
 
         // 2. Log the how request
         const logQuery = `
