@@ -27,7 +27,7 @@ function toggleTheme() {
 function updateThemeIcon(theme) {
     const btn = document.getElementById('theme-toggle');
     if (btn) {
-        btn.innerHTML = '<i class="bi bi-circle-half"></i>';
+        btn.innerHTML = theme === 'light' ? '<i class="bi bi-moon-fill"></i>' : '<i class="bi bi-sun-fill"></i>';
         btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
     }
 }
