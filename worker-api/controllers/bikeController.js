@@ -281,42 +281,38 @@ const usage = async (req, res) => {
 
         // 3. Retrieve bicycle usage history
         const historyQuery = `
-            SELECT previous_location, new_location, borrowed_by, borrowed_at
+            SELECT previous_location, new_location, borrowed_at
             FROM bicycle_history
             WHERE bicycle_code = ?
             ORDER BY borrowed_at DESC
-            LIMIT 5
+            LIMIT 3
         `;
         const [historyRecords] = await db.upbsPool.query(historyQuery, [bicycleCode]);
 
+        const currLoc = bicycles[0].new_location ? bicycles[0].new_location.toUpperCase() : 'UNKNOWN';
+        const currStatus = bicycles[0].condition_status || 'Unknown';
+        let header = `Bike ${bicycleCode} (${currStatus} at ${currLoc}):\nRecent trips:\n`;
+        let replyMsg = header;
+
         if (historyRecords.length === 0) {
-            return res.json({ replies: [`No usage history found for bicycle code ${bicycleCode}.`] });
-        }
-
-        // 4. Format history message and split if it exceeds 160 characters
-        let historyMessage = `Usage History for Bicycle ${bicycleCode}:\n`;
-        historyRecords.forEach((record, index) => {
-            const borrowedAt = new Date(record.borrowed_at).toLocaleString();
-            historyMessage += `${index + 1}. From: ${record.previous_location.toLowerCase()} To: ${record.new_location.toLowerCase()} | By: ${record.borrowed_by} | At: ${borrowedAt}\n`;
-        });
-
-        const replies = [];
-        if (historyMessage.length > 160) {
-            let currentMessage = '';
-            historyRecords.forEach((record, index) => {
-                const borrowedAt = new Date(record.borrowed_at).toLocaleString();
-                const entry = `${index + 1}. From: ${record.previous_location.toLowerCase()} To: ${record.new_location.toLowerCase()} | By: ${record.borrowed_by} | At: ${borrowedAt}\n`;
-                if ((currentMessage + entry).length > 160) {
-                    replies.push(currentMessage);
-                    currentMessage = entry;
-                } else {
-                    currentMessage += entry;
-                }
-            });
-            if (currentMessage) replies.push(currentMessage);
+            replyMsg += "No recent trips logged.";
         } else {
-            replies.push(historyMessage);
+            for (let i = 0; i < historyRecords.length; i++) {
+                const record = historyRecords[i];
+                const dateObj = new Date(record.borrowed_at);
+                const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+                const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const line = `${i + 1}. ${record.previous_location.toLowerCase()}->${record.new_location.toLowerCase()} (${dateStr} ${timeStr})\n`;
+                
+                // Ensure adding this trip won't exceed standard 160 SMS limit to prevent multi-part out-of-order texts
+                if ((replyMsg + line).length > 160 && i > 0) {
+                    break;
+                }
+                replyMsg += line;
+            }
         }
+
+        const replies = [replyMsg.trim()];
 
         // 5. Log the usage request
         const logQuery = `
@@ -969,11 +965,11 @@ const missing = async (req, res) => {
 const delivered = async (req, res) => {
     const { smsSender, bicycleCode, deliveryLocation } = req.body;
     let upbsConn;
-    
+
     if (!deliveryLocation) {
         return res.json({ reply: `Please specify the station where you delivered Bike ${bicycleCode}. Example: delivered ${bicycleCode} engg` });
     }
-    
+
     try {
         upbsConn = await db.upbsPool.getConnection();
         await upbsConn.beginTransaction();
@@ -1037,7 +1033,7 @@ const delivered = async (req, res) => {
             [deliveryLocation, bicycleCode]
         );
 
-        let replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair. Since the bike was damaged during your trip, returning it is your responsibility as the borrower (no bonus delivery points awarded).`;
+        let replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair.`;
 
         if (!isBorrowerWhoBrokeIt) {
             const reward = await getSettingValue('reward_delivered_bike', 5, upbsConn);

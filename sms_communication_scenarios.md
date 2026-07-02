@@ -283,10 +283,15 @@ Utility commands allowing students to query system status without internet conne
 ### Scenario 4.5: Checking Bicycle Location & Usage (`usage [bike]`)
 * **Condition:** Member checks where a specific bike is currently located.
 * **User SMS Pattern:** `usage <code>` or `<code> usage` (e.g., `usage 1` / `1 usage`)
-* **System Action:** Retrieves current location and status of the bicycle.
+* **System Action:** Retrieves current location, condition status, and top 3 recent trips (without broadcasting full student names for privacy). Formats into a single SMS under 160 characters.
 * **System SMS Replies:**
-  * If found: > `"At the moment, the current location of 1 is at vinzons."`
-  * If bike code invalid: > `"Bicycle or station code "999" not found."`
+  * If found:
+    > `"Bike 1 (Good at VINZONS):
+    > Recent trips:
+    > 1. vinzons->nec (7/2 9:32 AM)
+    > 2. engg->vinzons (7/2 7:13 AM)
+    > 3. vinzons->engg (7/1 3:31 PM)"`
+  * If bike code invalid: > `"Invalid bicycle code 999. Please check and try again."`
 
 ### Scenario 4.6: Quick Instructions (`how`)
 * **Condition:** Member needs a quick reminder on how to format the checkout command.
