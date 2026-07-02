@@ -1,5 +1,10 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const smsService = require('../services/smsService');
+
+async function sendSMS(phone, message) {
+    return await smsService.queueSMS(phone, message);
+}
 
 // Helper function to dynamically fetch settings from system_settings
 async function getSettingValue(name, defaultValue) {
@@ -70,16 +75,7 @@ const addMember = async (req, res) => {
             [firstname, lastname, phone_number]
         );
 
-        try {
-            await fetch(`${gatewayUrl}/api/sms/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                body: JSON.stringify({
-                    phoneNumber: phone_number,
-                    message: `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`
-                })
-            });
-        } catch (e) { }
+        await sendSMS(phone_number, `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`);
 
         return res.json({ success: true, message: 'User registered successfully!' });
     } catch (err) {
@@ -246,23 +242,12 @@ const resolveDispute = async (req, res) => {
             }
 
             // Text the borrower that they are guilty
-            try {
-                const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
-                const message = (waive_penalty === true || waive_penalty === 'true') ?
-                    "Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time." :
-                    `You have been proven guilty of unreported damage (Hit-and-Run) on a bike. ${absolutePenalty} points were deducted from your trust points.`;
+            const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
+            const message = (waive_penalty === true || waive_penalty === 'true') ?
+                "Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time." :
+                `You have been proven guilty of unreported damage (Hit-and-Run) on a bike. ${absolutePenalty} points were deducted from your trust points.`;
 
-                await fetch(`${gatewayUrl}/api/sms/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                    body: JSON.stringify({
-                        phoneNumber: phone_number,
-                        message: message
-                    })
-                });
-            } catch (e) {
-                console.error("Failed to send guilty SMS reply:", e.message);
-            }
+            await sendSMS(phone_number, message);
 
             // Reward and text the reporter
             if (reporterPhone) {
@@ -276,18 +261,7 @@ const resolveDispute = async (req, res) => {
                     [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Conflict Report Reward']
                 );
 
-                try {
-                    await fetch(`${gatewayUrl}/api/sms/send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                        body: JSON.stringify({
-                            phoneNumber: reporterPhone,
-                            message: `The dispute you reported has been resolved. The previous user was penalized. You have earned +${reward} trust points. Thank you for keeping our bikes safe!`
-                        })
-                    });
-                } catch (e) {
-                    console.error("Failed to send guilty SMS to reporter:", e.message);
-                }
+                await sendSMS(reporterPhone, `The dispute you reported has been resolved. The previous user was penalized. You have earned +${reward} trust points. Thank you for keeping our bikes safe!`);
             }
 
         } else if (verdict === 'innocent') {
@@ -295,18 +269,7 @@ const resolveDispute = async (req, res) => {
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
 
             // Text the borrower that they are innocent
-            try {
-                await fetch(`${gatewayUrl}/api/sms/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                    body: JSON.stringify({
-                        phoneNumber: phone_number,
-                        message: `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`
-                    })
-                });
-            } catch (e) {
-                console.error("Failed to send innocent SMS reply:", e.message);
-            }
+            await sendSMS(phone_number, `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`);
 
             if (reporterPhone) {
                 const penalty = await getSettingValue('penalty_false_report', -5);
@@ -321,18 +284,7 @@ const resolveDispute = async (req, res) => {
                 );
 
                 // Text the false reporter about their points deduction
-                try {
-                    await fetch(`${gatewayUrl}/api/sms/send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                        body: JSON.stringify({
-                            phoneNumber: reporterPhone,
-                            message: `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`
-                        })
-                    });
-                } catch (e) {
-                    console.error("Failed to send false report SMS reply:", e.message);
-                }
+                await sendSMS(reporterPhone, `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`);
             }
         } else if (verdict === 'neutral') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
@@ -344,22 +296,11 @@ const resolveDispute = async (req, res) => {
             }
 
             // Text the borrower
-            try {
-                const neutralMsg = conditionStatus === 'Missing' ?
-                    `The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account.` :
-                    `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`;
+            const neutralMsg = conditionStatus === 'Missing' ?
+                `The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account.` :
+                `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`;
 
-                await fetch(`${gatewayUrl}/api/sms/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                    body: JSON.stringify({
-                        phoneNumber: phone_number,
-                        message: neutralMsg
-                    })
-                });
-            } catch (e) {
-                console.error("Failed to send neutral SMS to borrower:", e.message);
-            }
+            await sendSMS(phone_number, neutralMsg);
 
             // Text the reporter
             if (reporterPhone) {
@@ -373,18 +314,7 @@ const resolveDispute = async (req, res) => {
                     [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Neutral Report Reward']
                 );
 
-                try {
-                    await fetch(`${gatewayUrl}/api/sms/send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026' },
-                        body: JSON.stringify({
-                            phoneNumber: reporterPhone,
-                            message: `The dispute you reported has been resolved neutrally (external damage). You have earned +${reward} trust points for accurately reporting the broken bike. Thank you!`
-                        })
-                    });
-                } catch (e) {
-                    console.error("Failed to send neutral SMS to reporter:", e.message);
-                }
+                await sendSMS(reporterPhone, `The dispute you reported has been resolved neutrally (external damage). You have earned +${reward} trust points for accurately reporting the broken bike. Thank you!`);
             }
         }
         return res.json({ success: true, message: `Dispute resolved as ${verdict}.` });

@@ -45,6 +45,21 @@ async function runMigrations() {
     } catch(e) {
         console.error("[DB] Migration error settings:", e.message);
     }
+    try {
+        await upbsPool.query(`
+            CREATE TABLE IF NOT EXISTS outbound_sms (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                phone_number VARCHAR(20) NOT NULL,
+                message TEXT NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                sent_at DATETIME DEFAULT NULL
+            )
+        `);
+        console.log("[DB] Ensured outbound_sms queue table exists.");
+    } catch(e) {
+        console.error("[DB] Migration error outbound_sms:", e.message);
+    }
 }
 runMigrations();
 

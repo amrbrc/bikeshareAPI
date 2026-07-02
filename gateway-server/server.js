@@ -47,6 +47,30 @@ const workerAPI = axios.create({
     }
 });
 
+// Outbound SMS Polling loop
+async function pollOutboundSms() {
+    try {
+        const response = await workerAPI.get('/api/gateway/outbound');
+        const pendingSms = response.data.smsList;
+        for (const sms of pendingSms) {
+            console.log(`[Cloud Queue] Outbound SMS found: to ${sms.phone_number} -> "${sms.message}"`);
+            try {
+                await sendReply(sms.phone_number, sms.message);
+                await workerAPI.post(`/api/gateway/outbound/${sms.id}/sent`);
+                console.log(`[Cloud Queue] SMS ${sms.id} successfully sent and marked complete.`);
+            } catch (smsErr) {
+                console.error(`[Cloud Queue] Failed to dispatch SMS ${sms.id}:`, smsErr.message);
+            }
+        }
+    } catch (err) {
+        console.error("[Cloud Queue] Error polling outbound SMS:", err.message);
+    }
+}
+
+// Start polling outbound queue every 5 seconds
+setInterval(pollOutboundSms, 5000);
+
+
 // Main polling function to check for new SMS messages
 let isPolling = false;
 async function pollInbox() {

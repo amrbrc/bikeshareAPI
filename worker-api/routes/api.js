@@ -12,6 +12,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const adminController = require('../controllers/adminController');
 const analyticsController = require('../controllers/analyticsController');
+const gatewayController = require('../controllers/gatewayController');
 
 // Gateway Secret Verification Middleware
 const verifyGateway = (req, res, next) => {
@@ -43,6 +44,10 @@ router.post('/points', verifyGateway, bikeController.points);
 // Help Routes
 router.post('/help', verifyGateway, helpController.help);
 router.post('/how', verifyGateway, helpController.how);
+
+// Outbound SMS Gateway Queue (Secured)
+router.get('/gateway/outbound', verifyGateway, gatewayController.getPendingSms);
+router.post('/gateway/outbound/:id/sent', verifyGateway, gatewayController.markSmsSent);
 
 // Public Auth & Admin Routes
 router.post('/auth/login', memberController.login);

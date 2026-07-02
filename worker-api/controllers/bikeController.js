@@ -1,4 +1,5 @@
 const db = require('../db');
+const smsService = require('../services/smsService');
 
 // Helper function to dynamically fetch settings from system_settings
 async function getSettingValue(name, defaultValue, conn = db.upbsPool) {
@@ -820,21 +821,12 @@ const broken = async (req, res) => {
                 if (prevMemberPhone) {
                     await upbsConn.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMemberPhone]);
 
-                    // Alert the previous user using the new Gateway /api/sms/send endpoint using global fetch
-                    try {
-                        const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
-                        await fetch(`${gatewayUrl}/api/sms/send`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-                            },
-                            body: JSON.stringify({
-                                phoneNumber: prevMemberPhone,
-                                message: `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`
-                            })
-                        });
-                    } catch (e) { console.error("Failed to send dispute alert", e.message); }
+                    // Alert the previous user by queueing the outbound alert SMS
+                    await smsService.queueSMS(
+                        prevMemberPhone,
+                        `ALERT: Bike ${bicycleCode} was reported broken by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`,
+                        upbsConn
+                    );
                 }
             }
 
@@ -923,20 +915,12 @@ const missing = async (req, res) => {
             if (prevMemberPhone) {
                 await upbsConn.query("UPDATE members SET points_frozen = 1 WHERE phone_number = ?", [prevMemberPhone]);
 
-                try {
-                    const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
-                    await fetch(`${gatewayUrl}/api/sms/send`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-                        },
-                        body: JSON.stringify({
-                            phoneNumber: prevMemberPhone,
-                            message: `ALERT: Bike ${bicycleCode} was reported MISSING by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`
-                        })
-                    });
-                } catch (e) { console.error("Failed to send missing alert", e.message); }
+                // Alert the previous user by queueing the outbound alert SMS
+                await smsService.queueSMS(
+                    prevMemberPhone,
+                    `ALERT: Bike ${bicycleCode} was reported MISSING by the next user. Your points are frozen pending admin dispute resolution. You cannot borrow any bike until this is settled.`,
+                    upbsConn
+                );
             }
         }
 

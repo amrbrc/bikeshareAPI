@@ -2,31 +2,11 @@
 const cron = require('node-cron');
 const db = require('../db');
 
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:3000';
+const smsService = require('./smsService');
 
-// Helper function to send SMS via the Gateway API
+// Helper function to send SMS via the Gateway API (queues message in DB)
 async function sendSMS(phoneNumber, text) {
-    try {
-        console.log(`[Cron] Sending SMS to ${phoneNumber}: "${text}"`);
-        const response = await fetch(`${GATEWAY_URL}/api/sms/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': process.env.GATEWAY_API_KEY || 'upbs-gateway-secret-api-key-2026'
-            },
-            body: JSON.stringify({ phoneNumber, message: text })
-        });
-        if (!response.ok) {
-            console.error(`[Cron] Gateway returned status ${response.status} when sending SMS to ${phoneNumber}`);
-            return false;
-        } else {
-            console.log(`[Cron] SMS successfully sent to ${phoneNumber}`);
-            return true;
-        }
-    } catch (err) {
-        console.error(`[Cron] Failed to send SMS to ${phoneNumber}:`, err);
-        return false;
-    }
+    return await smsService.queueSMS(phoneNumber, text);
 }
 
 // Helper function to dynamically fetch settings from system_settings
