@@ -195,7 +195,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.5: Delivering a Broken Bike to a Hub for Repair (`delivered`)
 * **Condition:** Member delivers a broken/maintenance bike to a designated station or maintenance hub to be serviced by tech crew.
 * **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 1 engg` / `1 delivered vinzons`)
-* **System Action:** Updates bike status to `In_Repair`, sets location to the delivery hub, clears active 24h/48h repair countdown timers, awards **+5 Trust Points & +5 Leaderboard Points** (Community Volunteer reward), and logs the delivery.
+* **System Action:** Updates bike status to `In_Repair`, sets location to the delivery hub, awards **+5 Trust Points & +5 Leaderboard Points** (Bicycle Transport reward), and logs the delivery.
 * **System SMS Reply:**
   > `"Thank you! Bike [Code] has been marked as delivered to [LOCATION] for repair."`
   *(Example: `"Thank you! Bike 1 has been marked as delivered to ENGG for repair."`)*

@@ -57,6 +57,7 @@ INSERT INTO system_settings (setting_name, setting_value, description) VALUES
 ('consistent_rider_reward', '10', 'Points rewarded for completing multiple rides without issues.'),
 ('reward_honest_report', '15', 'Points rewarded for reporting a broken/missing bike that was disputed.'),
 ('reward_community_volunteer', '30', 'Points rewarded to a user who completes a verified Community Service shift at a hub.'),
+('reward_delivered_bike', '5', 'Points rewarded to a user who delivers a broken bike to a maintenance hub.'),
 ('penalty_hit_and_run', '-35', 'Points deducted from a user found guilty of unreported damage (Hit-and-Run).'),
 ('penalty_false_report', '-5', 'Points deducted from a user who submits a false damage/missing report.'),
 ('penalty_overtime', '-5', 'Points deducted per hour from a user who borrows a bike past the 6-hour limit.'),

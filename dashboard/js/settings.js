@@ -459,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     suspension_limit: "Minimum trust points required before account auto-suspension.",
                     honesty_reward: "Rewarded when a 'Good' report is confirmed by the next rider.",
                     reward_community_volunteer: "Rewarded to a user who completes a verified Community Service shift at a hub.",
+                    reward_delivered_bike: "Rewarded to a user who delivers a broken bike to a designated hub.",
                     consistent_rider_reward: "Rewarded for every 5 consecutive clean rides completed.",
                     borrow_time_limit_hours: "Maximum hours a user can borrow a bike before overtime penalties apply.",
                     abort_trip_grace_period_mins: "Grace period (mins) after borrowing to abort the trip and report damage without penalty.",

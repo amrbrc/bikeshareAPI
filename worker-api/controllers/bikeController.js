@@ -1001,13 +1001,20 @@ const delivered = async (req, res) => {
             [deliveryLocation, bicycleCode]
         );
 
+        // Award delivery points (+5 points default, dynamic from system settings)
+        const reward = await getSettingValue('reward_delivered_bike', 5, upbsConn);
+        await upbsConn.query(
+            "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
+            [reward, reward, smsSender]
+        );
+
         await upbsConn.query(
             "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
             [member[0].lastname, member[0].firstname, member[0].phone_number, smsSender, `Delivered to ${deliveryLocation.toUpperCase()}`]
         );
 
         await upbsConn.commit();
-        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as delivered to ${deliveryLocation.toUpperCase()} for repair.` });
+        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as delivered to ${deliveryLocation.toUpperCase()} for repair. You have been rewarded +${reward} trust points.` });
     } catch (err) {
         console.error(err);
         if (upbsConn) {

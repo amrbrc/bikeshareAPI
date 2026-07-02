@@ -592,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateBadge('badge-consistent-rider', 'consistent_rider_reward', 'pts');
                 updateBadge('badge-reward-honest-report', 'reward_honest_report', 'pts');
                 updateBadge('badge-reward-community-volunteer', 'reward_community_volunteer', 'pts');
+                updateBadge('badge-reward-delivered-bike', 'reward_delivered_bike', 'pts');
 
                 // Penalties
                 updateBadge('badge-penalty-abandoned-handshake', 'penalty_abandoned_handshake', 'pts');
