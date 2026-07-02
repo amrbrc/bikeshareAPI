@@ -79,7 +79,7 @@ const getStudentDashboard = async (req, res) => {
     try {
         // 1. Get Trust Score and basic info
         const [memberRows] = await db.upbsPool.query(
-            'SELECT firstname, lastname, trust_points FROM members WHERE phone_number = ? AND is_active = 1',
+            'SELECT firstname, lastname, trust_points, points_frozen FROM members WHERE phone_number = ? AND is_active = 1',
             [phone_number]
         );
 
@@ -257,6 +257,7 @@ const getStudentDashboard = async (req, res) => {
             success: true,
             data: {
                 trustScore: member.trust_points,
+                pointsFrozen: member.points_frozen == 1 || member.points_frozen === true || member.points_frozen === '1' || member.points_frozen === 'true',
                 activeRide: activeRide,
                 rideLog: rideLogRows,
                 lastSms: lastSms,

@@ -425,7 +425,16 @@ const getMaintenanceQueue = async (req, res) => {
                     FROM bicycle_history bh 
                     WHERE bh.bicycle_code = b.bicycle_code 
                     ORDER BY bh.borrowed_at DESC 
-                    LIMIT 1) AS last_user_phone
+                    LIMIT 1) AS last_user_phone,
+                   (SELECT CONCAT(m.firstname, ' ', m.lastname)
+                    FROM members m
+                    WHERE m.phone_number = (
+                        SELECT bh2.borrower_phone 
+                        FROM bicycle_history bh2 
+                        WHERE bh2.bicycle_code = b.bicycle_code 
+                        ORDER BY bh2.borrowed_at DESC 
+                        LIMIT 1
+                    )) AS last_user_name
             FROM bicycle_codes b
             WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') 
               AND (b.is_active = 1 OR b.is_active IS NULL)

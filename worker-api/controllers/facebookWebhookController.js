@@ -181,7 +181,7 @@ async function processIncomingMessage(psid, message) {
 
         await sendFbMessage(
             psid,
-            `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending dispute on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo of the bike showing its condition and lock to support your appeal.`
+            `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending dispute on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo of the bike showing its condition and lock to support your appeal. (Or if you prefer, you may also visit the UP Bikeshare Admin Hub to settle in person.)`
         );
 
     } else if (session.bot_state === 'AWAITING_PHOTO') {

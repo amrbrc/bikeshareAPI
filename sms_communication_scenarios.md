@@ -44,7 +44,7 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
 * **User SMS Input:** `1 eee to vinzons`
 * **System Action:** Rejects the checkout transaction to prevent further system usage until admin resolution.
 * **System SMS Reply:**
-  > `"Account frozen due to dispute."`
+  > `"Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub."`
 
 ---
 

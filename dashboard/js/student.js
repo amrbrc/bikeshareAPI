@@ -423,7 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 circle.style.strokeDashoffset = offset;
                 text.textContent = score;
 
-                if (score >= 90) {
+                if (data.pointsFrozen) {
+                    circle.style.stroke = '#ef4444'; // Red
+                    msg.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> ACCOUNT FROZEN (DISPUTE PENDING)</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">To settle & restore points:<br>1) Send photo via FB Messenger (<a href="https://m.me/upbikesharebot" target="_blank" class="fw-bold" style="color: inherit; text-decoration: underline;">m.me/upbikesharebot</a>)<br>2) Or visit UP Bikeshare Admin Hub in person.</small>';
+                } else if (score >= 90) {
                     circle.style.stroke = 'var(--up-green, #006a4e)';
                     msg.textContent = 'Excellent standing! Keep it up.';
                 } else if (score >= 60) {
