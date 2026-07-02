@@ -428,7 +428,21 @@ const borrow = async (req, res) => {
         // Apply Gatekeeper check for bicycle condition
         if (bicycle.condition_status !== 'Good') {
             await upbsConn.rollback();
-            return res.json({ reply: "Bike unavailable." });
+            let statusMsg = "Bike unavailable.";
+            if (bicycle.condition_status === 'Broken') {
+                statusMsg = `Bike ${bicycleCode} cannot be used because it was reported damaged/broken. It is waiting for maintenance collection.`;
+            } else if (bicycle.condition_status === 'In_Repair') {
+                statusMsg = `Bike ${bicycleCode} is currently undergoing maintenance/repairs and cannot be borrowed.`;
+            } else if (bicycle.condition_status === 'Disputed') {
+                statusMsg = `Bike ${bicycleCode} is currently disputed and under admin review. Please choose another bike.`;
+            } else if (bicycle.condition_status === 'Missing') {
+                statusMsg = `Bike ${bicycleCode} has been reported missing and is under investigation.`;
+            } else if (bicycle.condition_status === 'Borrowed') {
+                statusMsg = `Bike ${bicycleCode} is currently checked out by another member.`;
+            } else if (bicycle.condition_status === 'Pending_Status') {
+                statusMsg = `Bike ${bicycleCode} is currently pending a condition report from the previous user. Please try another bike.`;
+            }
+            return res.json({ reply: statusMsg });
         }
 
 
@@ -1010,18 +1024,29 @@ const delivered = async (req, res) => {
             );
         }
 
-        // Update the status to 'In_Repair' and update the location
+        // Check if the person delivering is the borrower who broke/used it
+        const [lastHistory] = await upbsConn.query(
+            "SELECT borrowed_by, reported_condition FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1",
+            [bicycleCode]
+        );
+        const isBorrowerWhoBrokeIt = (activeTrip.length > 0) || (lastHistory.length > 0 && lastHistory[0].borrowed_by === currentUserName && lastHistory[0].reported_condition === 'Broken');
+
+        // Update the status to 'Broken' (awaiting admin pickup for repair) and update the location
         await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'In_Repair', new_location = ?, dispute_reported_by = NULL WHERE bicycle_code = ?",
+            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = NULL WHERE bicycle_code = ?",
             [deliveryLocation, bicycleCode]
         );
 
-        // Award delivery points (+5 points default, dynamic from system settings)
-        const reward = await getSettingValue('reward_delivered_bike', 5, upbsConn);
-        await upbsConn.query(
-            "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
-            [reward, reward, smsSender]
-        );
+        let replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair. Since the bike was damaged during your trip, returning it is your responsibility as the borrower (no bonus delivery points awarded).`;
+
+        if (!isBorrowerWhoBrokeIt) {
+            const reward = await getSettingValue('reward_delivered_bike', 5, upbsConn);
+            await upbsConn.query(
+                "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
+                [reward, reward, smsSender]
+            );
+            replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. As a volunteer transport, you have been rewarded +${reward} trust points!`;
+        }
 
         await upbsConn.query(
             "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
@@ -1029,7 +1054,7 @@ const delivered = async (req, res) => {
         );
 
         await upbsConn.commit();
-        return res.json({ reply: `Thank you! Bike ${bicycleCode} has been marked as delivered to ${deliveryLocation.toUpperCase()} for repair. You have been rewarded +${reward} trust points.` });
+        return res.json({ reply: replyMessage });
     } catch (err) {
         console.error(err);
         if (upbsConn) {

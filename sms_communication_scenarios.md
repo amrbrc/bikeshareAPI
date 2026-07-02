@@ -195,10 +195,11 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.5: Delivering a Broken Bike to a Hub for Repair (`delivered`)
 * **Condition:** Member delivers a broken/maintenance bike to a designated station or maintenance hub to be serviced by tech crew.
 * **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 1 engg` / `1 delivered vinzons`)
-* **System Action:** Updates bike status to `In_Repair`, sets location to the delivery hub, awards **+5 Trust Points & +5 Leaderboard Points** (Bicycle Transport reward), and logs the delivery.
-* **System SMS Reply:**
-  > `"Thank you! Bike [Code] has been marked as delivered to [LOCATION] for repair."`
-  *(Example: `"Thank you! Bike 1 has been marked as delivered to ENGG for repair."`)*
+* **System Action:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery. Awards **+5 Trust Points & +5 Leaderboard Points** to community volunteers who transport the bike. *(Note: If the deliverer is the borrower who broke/used it during the trip, 0 bonus reward points are awarded since returning it is their standard borrower duty).*
+* **System SMS Reply (If Volunteer):**
+  > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. As a volunteer transport, you have been rewarded +5 trust points!"`
+* **System SMS Reply (If Borrower who broke it):**
+  > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
 
 ### Scenario 3.6: Delivering Without Specifying Location
 * **Condition:** User texts `delivered 1` but forgets to include the station/hub name.
