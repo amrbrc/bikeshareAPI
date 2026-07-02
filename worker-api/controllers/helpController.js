@@ -70,7 +70,7 @@ const how = async (req, res) => {
         }
 
         const { lastname, firstname, phone_number } = memberRecords[0];
-        const replyMessage = 'Use the format: <bicycle_code> <previous_location> to <new_location>. Example: 1 eee to vinzons';
+        const replyMessage = "UPBS Quick Guide:\n1. Borrow: 1 eee to vinzons\n2. Return: done 1 then 1 good\n3. Report issue: broken 1\nText 'bikeshare help' for all commands.";
 
         // 2. Log the how request
         const logQuery = `
