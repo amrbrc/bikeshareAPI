@@ -407,7 +407,7 @@ const borrow = async (req, res) => {
 
         if (bicycles.length === 0) {
             await upbsConn.rollback();
-            return res.json({ invalidBicycle: true });
+            return res.json({ reply: `Bike ${bicycleCode} not found or inactive.` });
         }
 
         const bicycle = bicycles[0];

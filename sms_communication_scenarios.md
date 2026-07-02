@@ -80,10 +80,17 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **System SMS Reply:**
   > `"Bike unavailable."`
 
-### Scenario 2.5: Borrowing with Invalid Bike Code or Station Name
-* **Condition:** The bike code does not exist, or either origin/destination station name is invalid or disabled/offline.
-* **User SMS Input:** `999 xxx to yyy`
-* **System Action:** Rejects transaction.
+### Scenario 2.5A: Borrowing with Non-Existent / Invalid Bike Code
+* **Condition:** User attempts to borrow using a bicycle code that does not exist or is inactive in the database (even if station names are valid, e.g., `999 eee to vinzons`).
+* **User SMS Input:** `999 eee to vinzons` / `999 xxx to yyy`
+* **System Action:** Bicycle check fails at Step 1. Rejects checkout immediately without checking locations.
+* **System SMS Reply:**
+  > `"Bike [Code] not found or inactive."`
+
+### Scenario 2.5B: Borrowing with Valid Bike Code but Invalid / Offline Station Name
+* **Condition:** The requested bike code is valid and available, but either origin or destination station name is invalid, misspelled, or offline (e.g., `1 xxx to yyy` or `1 eee to mars`).
+* **User SMS Input:** `1 xxx to yyy`
+* **System Action:** Bicycle check passes, but location validation fails at Step 2. Rejects checkout.
 * **System SMS Reply:**
   > `"One or both locations are invalid, offline, or unavailable at the moment."`
 
