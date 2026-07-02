@@ -13,6 +13,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
 const analyticsController = require('../controllers/analyticsController');
 const gatewayController = require('../controllers/gatewayController');
+const facebookWebhookController = require('../controllers/facebookWebhookController');
 
 // Gateway Secret Verification Middleware
 const verifyGateway = (req, res, next) => {
@@ -95,5 +96,82 @@ router.post('/admin/bicycles/override', authMiddleware, adminController.override
 router.delete('/admin/locations/:name', authMiddleware, adminController.deleteLocation);
 router.get('/admin/maintenance', authMiddleware, adminController.getMaintenanceQueue);
 router.get('/admin/honesty', authMiddleware, adminController.getHonestyLogs);
+
+// Facebook Webhook Routes (Publicly accessible by Meta servers)
+router.get('/webhook/facebook', facebookWebhookController.verifyWebhook);
+router.post('/webhook/facebook', facebookWebhookController.handleWebhookEvent);
+
+// Public Privacy Policy Route (Required by Facebook App Review)
+router.get('/privacy-policy', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>UP Bikeshare Privacy Policy</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    padding: 40px 20px;
+                    max-width: 700px;
+                    margin: auto;
+                    line-height: 1.6;
+                    color: #1e293b;
+                    background-color: #f8fafc;
+                }
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+                    border: 1px solid #e2e8f0;
+                }
+                h1 {
+                    color: #7b1113;
+                    font-size: 1.8rem;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 12px;
+                    margin-bottom: 24px;
+                }
+                h2 {
+                    color: #0f172a;
+                    font-size: 1.3rem;
+                    margin-top: 32px;
+                }
+                ul {
+                    padding-left: 20px;
+                }
+                li {
+                    margin-bottom: 10px;
+                }
+                p {
+                    margin-bottom: 16px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>UP Bikeshare Privacy Policy</h1>
+                <p><strong>Effective Date:</strong> July 2, 2026</p>
+                <p>This privacy policy explains how UP Bikeshare handles user data within the Facebook Messenger Chatbot. We are committed to protecting the privacy of our registered members and students.</p>
+                
+                <h2>1. Information We Collect & How We Use It</h2>
+                <ul>
+                    <li><strong>Facebook PSID (Page-Scoped ID):</strong> Used solely to identify your chat thread so our bot can guide you through the dispute appeal process step-by-step.</li>
+                    <li><strong>Registered Phone Number:</strong> Requested during verification to verify you are a registered UP Bikeshare member with frozen points.</li>
+                    <li><strong>Appeal Photos:</strong> The bike photo you upload is stored securely and displayed to verified administrators in the UP Bikeshare dashboard for the sole purpose of auditing dispute tickets and restoring points.</li>
+                </ul>
+                
+                <h2>2. Data Retention & Deletion</h2>
+                <p>We only store chat session states and image links for the duration of the dispute. Once the admin resolves the dispute verdict, the photo link is cleared from our active bicycle states. If you wish to delete your chatbot session, type <strong>"RESET"</strong> in the chat to clear session records immediately.</p>
+                
+                <h2>3. Contact Us</h2>
+                <p>For questions or requests regarding your data, please contact the UP Bikeshare Student Committee.</p>
+            </div>
+        </body>
+        </html>
+    `);
+});
 
 module.exports = router;

@@ -224,9 +224,9 @@ const resolveDispute = async (req, res) => {
             }
 
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
 
             // Set the borrower's history record to reflect the truth
@@ -266,7 +266,7 @@ const resolveDispute = async (req, res) => {
 
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
 
             // Text the borrower that they are innocent
             await sendSMS(phone_number, `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`);
@@ -290,9 +290,9 @@ const resolveDispute = async (req, res) => {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
 
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
 
             // Text the borrower
@@ -420,7 +420,7 @@ const overrideBicycle = async (req, res) => {
 const getMaintenanceQueue = async (req, res) => {
     try {
         const query = `
-            SELECT b.bicycle_code, b.new_location, b.condition_status,
+            SELECT b.bicycle_code, b.new_location, b.condition_status, b.dispute_image_url,
                    (SELECT bh.borrower_phone 
                     FROM bicycle_history bh 
                     WHERE bh.bicycle_code = b.bicycle_code 

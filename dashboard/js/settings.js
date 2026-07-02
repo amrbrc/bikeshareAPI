@@ -637,6 +637,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-danger small mt-1">Status: ${b.condition_status}</div>
                     <div class="small mt-1" style="color: var(--text-muted);">Location: ${b.new_location || 'Unknown'}</div>
                     ${b.last_user_phone ? `<div class="small" style="color: var(--text-muted);">Reporter/User: ${b.last_user_phone}</div>` : ''}
+                    ${b.dispute_image_url ? `
+                        <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                            <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Dispute Appeal Photo:</div>
+                            <a href="${b.dispute_image_url}" target="_blank">
+                                <img src="${b.dispute_image_url}" style="max-width: 100%; max-height: 140px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover;" alt="Appeal proof" />
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>`).join('');
             } else {
                 qList.innerHTML = '<div class="text-muted small">No broken bikes.</div>';

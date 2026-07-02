@@ -69,6 +69,31 @@ async function runMigrations() {
     } catch(e) {
         console.error("[DB] Migration error reward_delivered_bike setting:", e.message);
     }
+    try {
+        await upbsPool.query("ALTER TABLE bicycle_codes ADD COLUMN dispute_image_url VARCHAR(512) DEFAULT NULL");
+        console.log("[DB] Added dispute_image_url column to bicycle_codes.");
+    } catch(e) {
+        if(e.code !== 'ER_DUP_FIELDNAME') console.error("[DB] Migration error dispute_image_url (bicycle_codes):", e.message);
+    }
+    try {
+        await upbsPool.query("ALTER TABLE bicycle_history ADD COLUMN dispute_image_url VARCHAR(512) DEFAULT NULL");
+        console.log("[DB] Added dispute_image_url column to bicycle_history.");
+    } catch(e) {
+        if(e.code !== 'ER_DUP_FIELDNAME') console.error("[DB] Migration error dispute_image_url (bicycle_history):", e.message);
+    }
+    try {
+        await upbsPool.query(`
+            CREATE TABLE IF NOT EXISTS fb_bot_sessions (
+                psid VARCHAR(100) PRIMARY KEY,
+                phone_number VARCHAR(20) DEFAULT NULL,
+                bot_state VARCHAR(50) NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+        console.log("[DB] Ensured fb_bot_sessions table exists.");
+    } catch(e) {
+        console.error("[DB] Migration error fb_bot_sessions table:", e.message);
+    }
 }
 runMigrations();
 
