@@ -272,10 +272,10 @@ Utility commands allowing students to query system status without internet conne
 * **System Action:** Summarizes count of available (`Good`) bikes grouped by station.
 * **System SMS Reply:**
   > `"Available bikes across campus:
-  > EEE (3)
-  > ENGG (1)
-  > PALMA_HALL (0)
-  > VINZONS (5)
+  > EEE: 3 bikes
+  > ENGG: 1 bike
+  > PALMA_HALL: 0 bikes
+  > VINZONS: 5 bikes
   > 
   > Text 'search [location]' for bike codes."`
 

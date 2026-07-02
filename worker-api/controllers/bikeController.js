@@ -153,12 +153,13 @@ const searchAll = async (req, res) => {
             const name = l.location_name.toUpperCase();
             const cnt = countMap[name] || 0;
             delete countMap[name];
-            return `${name} (${cnt})`;
+            return `${name}: ${cnt} ${cnt === 1 ? 'bike' : 'bikes'}`;
         });
 
         // Add any remaining locations from countMap that weren't in locs table
         Object.keys(countMap).sort().forEach(name => {
-            summaryParts.push(`${name} (${countMap[name]})`);
+            const cnt = countMap[name];
+            summaryParts.push(`${name}: ${cnt} ${cnt === 1 ? 'bike' : 'bikes'}`);
         });
 
         const replies = [];
