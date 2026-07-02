@@ -53,6 +53,8 @@ const verifyWebhook = (req, res) => {
 const handleWebhookEvent = async (req, res) => {
     const body = req.body;
 
+    console.log('[FB Webhook] POST received:', JSON.stringify(body, null, 2));
+
     if (body.object === 'page') {
         // Iterate over each entry - there may be multiple if batched
         for (const entry of body.entry) {
@@ -62,6 +64,8 @@ const handleWebhookEvent = async (req, res) => {
                 // Get the sender PSID and message
                 const senderPsid = webhookEvent.sender.id;
                 const message = webhookEvent.message;
+
+                console.log(`[FB Webhook] Processing message for PSID ${senderPsid}`);
 
                 if (message && (message.text || message.attachments)) {
                     try {
@@ -82,6 +86,7 @@ const handleWebhookEvent = async (req, res) => {
 async function processIncomingMessage(psid, message) {
     const rawText = message.text ? message.text.trim() : '';
     const upperText = rawText.toUpperCase();
+    console.log(`[FB Bot] processIncomingMessage PSID=${psid}: text="${rawText}", attachments=${message.attachments ? message.attachments.length : 0}`);
 
     // 1. Check if the user wants to reset or start over
     if (upperText === 'RESET' || upperText === 'START' || upperText === 'HELLO' || upperText === 'HI') {
