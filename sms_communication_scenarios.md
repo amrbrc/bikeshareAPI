@@ -71,7 +71,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **User SMS Input:** `3 palma to engg`
 * **System Action:** Forces the user to complete the handshake first.
 * **System SMS Reply:**
-  > `"You have a pending return confirmation for Bike [Code]. Please reply GOOD or BROKEN first before checking out another bike."`
+  > `"You have a pending return confirmation for Bike [Code]. Please reply 'GOOD [Code]' or 'BROKEN [Code]' first before checking out another bike."`
 
 ### Scenario 2.4: Borrowing an Unavailable / Parked-Out Bike
 * **Condition:** The requested bike code is currently `Borrowed`, `In_Repair`, `Missing`, or `Pending_Status` by someone else.

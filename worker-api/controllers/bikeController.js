@@ -395,7 +395,7 @@ const borrow = async (req, res) => {
             await upbsConn.rollback();
             const activeTrip = activeTrips[0];
             if (activeTrip.done_text_received === 1) {
-                return res.json({ reply: `You have a pending return confirmation for Bike ${activeTrip.bicycle_code}. Please reply GOOD or BROKEN first before checking out another bike.` });
+                return res.json({ reply: `You have a pending return confirmation for Bike ${activeTrip.bicycle_code}. Please reply 'GOOD ${activeTrip.bicycle_code}' or 'BROKEN ${activeTrip.bicycle_code}' first before checking out another bike.` });
             } else {
                 return res.json({ reply: "You already have an active bike checked out. Please return it and text 'done' before borrowing another." });
             }
