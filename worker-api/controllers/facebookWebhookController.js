@@ -59,16 +59,33 @@ const handleWebhookEvent = async (req, res) => {
             if (!entry.messaging) continue;
 
             for (const webhookEvent of entry.messaging) {
-                // Get the sender PSID and message
                 const senderPsid = webhookEvent.sender.id;
-                const message = webhookEvent.message;
 
-                if (message && (message.text || message.attachments)) {
-                    try {
-                        await processIncomingMessage(senderPsid, message);
-                    } catch (err) {
-                        console.error('[FB Bot] Error processing message:', err);
-                        await sendFbMessage(senderPsid, 'Sorry, there was a system error processing your request. Please try again later.');
+                // 1. Handle standard message events (text, attachments)
+                if (webhookEvent.message) {
+                    const message = webhookEvent.message;
+                    if (message.text || message.attachments) {
+                        try {
+                            await processIncomingMessage(senderPsid, message);
+                        } catch (err) {
+                            console.error('[FB Bot] Error processing message:', err);
+                            await sendFbMessage(senderPsid, 'Sorry, there was a system error processing your request. Please try again later.');
+                        }
+                    }
+                }
+
+                // 2. Handle postback events (Get Started, Ice Breakers, button clicks)
+                if (webhookEvent.postback) {
+                    const payload = webhookEvent.postback.payload;
+                    if (payload) {
+                        // Map the payload to text commands so it feeds into the existing state machine
+                        const simulatedMessage = { text: payload };
+                        try {
+                            await processIncomingMessage(senderPsid, simulatedMessage);
+                        } catch (err) {
+                            console.error('[FB Bot] Error processing postback:', err);
+                            await sendFbMessage(senderPsid, 'Sorry, there was a system error processing your request. Please try again later.');
+                        }
                     }
                 }
             }
