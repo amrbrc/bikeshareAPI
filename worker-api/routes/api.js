@@ -48,6 +48,7 @@ router.post('/how', verifyGateway, helpController.how);
 // Outbound SMS Gateway Queue (Secured)
 router.get('/gateway/outbound', verifyGateway, gatewayController.getPendingSms);
 router.post('/gateway/outbound/:id/sent', verifyGateway, gatewayController.markSmsSent);
+router.get('/gateway/debug-db', verifyGateway, gatewayController.debugDb);
 
 // Public Auth & Admin Routes
 router.post('/auth/login', memberController.login);

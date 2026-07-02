@@ -12,7 +12,7 @@ const getPendingSms = async (req, res) => {
         return res.json({ success: true, smsList: rows });
     } catch (err) {
         console.error("Error fetching pending SMS:", err.message);
-        return res.status(500).json({ error: "Database error fetching outbound queue" });
+        return res.status(500).json({ error: "Database error fetching outbound queue", details: err.message, stack: err.stack });
     }
 };
 
@@ -34,4 +34,18 @@ const markSmsSent = async (req, res) => {
     }
 };
 
-module.exports = { getPendingSms, markSmsSent };
+/**
+ * GET /api/gateway/debug-db
+ * Runs a simple test query to verify the database pool connection status and returns errors if any.
+ */
+const debugDb = async (req, res) => {
+    try {
+        const [rows] = await db.upbsPool.query("SELECT 1 as test");
+        return res.json({ success: true, message: "Database connection successful", data: rows });
+    } catch (err) {
+        console.error("Database debug connection failed:", err.message);
+        return res.status(500).json({ success: false, error: err.message, stack: err.stack });
+    }
+};
+
+module.exports = { getPendingSms, markSmsSent, debugDb };
