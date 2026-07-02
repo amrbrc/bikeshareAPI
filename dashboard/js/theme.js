@@ -28,8 +28,7 @@ function updateThemeIcon(theme) {
     const btn = document.getElementById('theme-toggle');
     if (btn) {
         // Show Moon in light mode (to click and go dark)
-        // Show Sun in dark mode (to click and go light)
-        btn.textContent = theme === 'light' ? '🌙' : '☀️';
+        btn.innerHTML = theme === 'light' ? '<i class="bi bi-moon-stars-fill"></i>' : '<i class="bi bi-sun-fill text-warning"></i>';
         btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
     }
 }
