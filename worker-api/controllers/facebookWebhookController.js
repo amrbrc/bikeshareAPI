@@ -159,7 +159,7 @@ async function processIncomingMessage(psid, message) {
 
         // Find the disputed bicycle code and the last trip of this member
         const [disputes] = await db.upbsPool.query(
-            `SELECT DISTINCT bc.bicycle_code, bh.id AS history_id
+            `SELECT bc.bicycle_code, bh.id AS history_id
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
              WHERE bc.condition_status = 'Disputed' 
@@ -218,7 +218,7 @@ async function processIncomingMessage(psid, message) {
         const member = members[0];
 
         const [disputes] = await db.upbsPool.query(
-            `SELECT DISTINCT bc.bicycle_code, bh.id AS history_id
+            `SELECT bc.bicycle_code, bh.id AS history_id
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
              WHERE bc.condition_status = 'Disputed' 
