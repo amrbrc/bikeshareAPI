@@ -165,7 +165,7 @@ const searchAll = async (req, res) => {
         if (summaryParts.length === 0) {
             replies.push("No locations available at the moment.");
         } else {
-            replies.push(`Available bikes across campus: ${summaryParts.join(', ')}. Text 'search [location]' for bike codes.`);
+            replies.push(`Available bikes across campus:\n${summaryParts.join('\n')}\n\nText 'search [location]' for bike codes.`);
         }
 
         // 3. Log the search-all request

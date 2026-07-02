@@ -271,7 +271,13 @@ Utility commands allowing students to query system status without internet conne
 * **User SMS Pattern:** `search all` (exact)
 * **System Action:** Summarizes count of available (`Good`) bikes grouped by station.
 * **System SMS Reply:**
-  > `"Available bikes across campus: EEE (3), ENGG (1), PALMA_HALL (0), VINZONS (5). Text 'search [location]' for bike codes."`
+  > `"Available bikes across campus:
+  > EEE (3)
+  > ENGG (1)
+  > PALMA_HALL (0)
+  > VINZONS (5)
+  > 
+  > Text 'search [location]' for bike codes."`
 
 ### Scenario 4.5: Checking Bicycle Location & Usage (`usage [bike]`)
 * **Condition:** Member checks where a specific bike is currently located.
