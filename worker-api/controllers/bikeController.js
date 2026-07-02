@@ -777,11 +777,7 @@ const broken = async (req, res) => {
 
             return res.json({ reply: replyMsg });
         } else {
-            // If the bike is currently actively borrowed by another user, outsiders cannot dispute it.
-            if (bike[0].condition_status === 'Borrowed' && !isAbortedTrip) {
-                await upbsConn.rollback();
-                return res.json({ reply: `Bike ${bicycleCode} is currently checked out by another member.` });
-            }
+            // If the bike is currently actively borrowed, next users can still dispute it (e.g. if the borrower forgot to text done and left it broken).
 
             if (isAbortedTrip) {
                 const startingLocation = history[0].previous_location;
