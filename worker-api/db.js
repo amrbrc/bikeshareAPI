@@ -60,6 +60,15 @@ async function runMigrations() {
     } catch(e) {
         console.error("[DB] Migration error outbound_sms:", e.message);
     }
+    try {
+        await upbsPool.query(`
+            INSERT IGNORE INTO system_settings (setting_name, setting_value, description)
+            VALUES ('reward_delivered_bike', '5', 'Points rewarded to a user who delivers a broken bike to a maintenance hub.')
+        `);
+        console.log("[DB] Ensured reward_delivered_bike setting exists.");
+    } catch(e) {
+        console.error("[DB] Migration error reward_delivered_bike setting:", e.message);
+    }
 }
 runMigrations();
 
