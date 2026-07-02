@@ -640,25 +640,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="badge bg-danger" style="font-size: 0.75rem;">${b.condition_status}</span>
                             </div>
                             <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
-                            <div class="small mb-2" style="color: var(--text-muted);">Reporter/User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
+                            <div class="small mb-2" style="color: var(--text-muted);">Reported User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
                             
                             ${b.dispute_image_url ? `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Resolve Dispute / Settle Report:</div>
-                                <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
-                                    <input type="text" class="form-control settings-input resolve-phone-input flex-grow-1" value="${b.last_user_phone || ''}" placeholder="User Phone Number" style="height: 32px; font-size: 0.75rem; max-width: 170px;">
-                                    <div class="d-flex gap-1 flex-grow-1">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-verdict="innocent" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-verdict="guilty" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-verdict="neutral" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
-                                    </div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
+                                <div class="d-flex gap-2" style="max-width: 260px;">
+                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                    <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
                                 </div>
                                 <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
                                     <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
                                     Waive standard point penalty
                                 </label>
                             </div>
-                            ` : `<div class="small mt-1 fst-italic" style="color: var(--text-muted); font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i>Awaiting dispute appeal photo via FB bot</div>`}
+                            ` : ''}
                         </div>
                         ${b.dispute_image_url ? `
                             <div class="d-flex flex-column align-items-center align-items-md-end justify-content-center flex-shrink-0 ms-md-auto text-md-end" style="min-width: 140px;">
@@ -677,12 +674,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const verdict = btn.getAttribute('data-verdict');
                         const bikeCode = btn.getAttribute('data-bike');
                         const card = btn.closest('.maintenance-card');
-                        const phoneInput = card ? card.querySelector('.resolve-phone-input') : null;
                         const waiveCheckbox = card ? card.querySelector('.waive-penalty-checkbox-mq') : null;
-                        const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
+                        const phoneNumber = btn.getAttribute('data-phone') || '';
 
                         if (!phoneNumber) {
-                            return alert("Please enter the user's phone number to resolve this dispute!");
+                            return alert("Error: Reported user's phone number is missing!");
                         }
 
                         confirmAction('Resolve Dispute', `Mark user (${phoneNumber}) as ${verdict.toUpperCase()} for bike #${bikeCode}?`, async () => {
