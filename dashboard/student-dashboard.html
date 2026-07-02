@@ -871,7 +871,7 @@
                             <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
                         </svg>
                     </div>
-                    <div class="qs-step-label">Step 1 of 10</div>
+                    <div class="qs-step-label">Step 1 of 11</div>
                     <h2 class="qs-title" id="qs-title">Welcome to UP Bikeshare! 🎉</h2>
                     <p class="qs-desc">Here's how UP Bikeshare works — a community bike-sharing system for UP students.
                         Everything is operated via <strong>SMS</strong>, so you don't need internet when you're on the
@@ -883,12 +883,12 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Check Available Bikes -->
+                <!-- Step 2: Check Available Bikes at a Station -->
                 <div class="qs-step" data-step="2">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
                         <i class='bx bx-search-alt' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 2 of 10</div>
+                    <div class="qs-step-label">Step 2 of 11</div>
                     <h2 class="qs-title">Check Available Bikes</h2>
                     <p class="qs-desc">Before heading out, check which bikes are available at a station near you:</p>
                     <div class="qs-code-block">
@@ -903,12 +903,35 @@
                         name (e.g. palma_hall, chk, engg). The system will reply with available bikes at that hub.</p>
                 </div>
 
-                <!-- Step 3: Borrow a Bike -->
+                <!-- Step 3: Check All Campus Bikes -->
                 <div class="qs-step" data-step="3">
+                    <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                        <i class='bx bx-globe' style="font-size: 2rem; color: white;"></i>
+                    </div>
+                    <div class="qs-step-label">Step 3 of 11</div>
+                    <h2 class="qs-title">Check All Campus Bikes</h2>
+                    <p class="qs-desc">Want to see how many bikes are ready across all UPBS hubs? Just text:</p>
+                    <div class="qs-code-block">
+                        <span class="qs-code-label">FORMAT / EXAMPLE</span>
+                        <code>search all</code>
+                    </div>
+                    <div class="qs-example-block" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 0.8rem; border-radius: 8px; margin-top: 0.5rem; text-align: left; font-family: monospace; font-size: 0.78rem; line-height: 1.4;">
+                        <div style="color: var(--text-muted); font-weight: bold; margin-bottom: 0.3rem;">SYSTEM REPLY:</div>
+                        Available bikes across campus:<br>
+                        EEE: 3 bikes<br>
+                        ENGG: 1 bike<br>
+                        PALMA_HALL: 0 bikes<br>
+                        VINZONS: 5 bikes
+                    </div>
+                    <p class="qs-desc" style="font-size: 0.82rem; margin-top: 0.5rem;">This gives you a quick bird's-eye view of bike counts at every hub on campus!</p>
+                </div>
+
+                <!-- Step 4: Borrow a Bike -->
+                <div class="qs-step" data-step="4">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #1d4ed8, #3b82f6);">
                         <i class='bx bx-cycling' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 3 of 10</div>
+                    <div class="qs-step-label">Step 4 of 11</div>
                     <h2 class="qs-title">Borrow a Bike via SMS</h2>
                     <p class="qs-desc">Found a bike? Text the system to start your ride:</p>
                     <div class="qs-code-block">
@@ -924,12 +947,12 @@
                     </p>
                 </div>
 
-                <!-- Step 4: Return on Time -->
-                <div class="qs-step" data-step="4">
+                <!-- Step 5: Return on Time -->
+                <div class="qs-step" data-step="5">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
                         <i class='bx bx-timer' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 4 of 10</div>
+                    <div class="qs-step-label">Step 5 of 11</div>
                     <h2 class="qs-title">Return it On Time</h2>
                     <p class="qs-desc">When you're done riding, text <strong>done</strong> to end the borrow. You have a
                         <strong>6-hour limit</strong>.
@@ -949,12 +972,12 @@
                     </div>
                 </div>
 
-                <!-- Step 5: Review the Bike -->
-                <div class="qs-step" data-step="5">
+                <!-- Step 6: Review the Bike -->
+                <div class="qs-step" data-step="6">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #006a4e, #10b981);">
                         <i class='bx bx-check-shield' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 5 of 10</div>
+                    <div class="qs-step-label">Step 6 of 11</div>
                     <h2 class="qs-title">Review the Bike Condition</h2>
                     <p class="qs-desc">After returning, the <em>next rider</em> will inspect the bike and reply to
                         confirm its condition. When you pick up a bike, you may also be asked to reply:</p>
@@ -973,12 +996,12 @@
                     </div>
                 </div>
 
-                <!-- Step 6: Get Back to Fixing Stations -->
-                <div class="qs-step" data-step="6">
+                <!-- Step 7: Get Back to Fixing Stations -->
+                <div class="qs-step" data-step="7">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
                         <i class='bx bx-wrench' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 6 of 10</div>
+                    <div class="qs-step-label">Step 7 of 11</div>
                     <h2 class="qs-title">Deliver a Broken Bike to a Hub</h2>
                     <p class="qs-desc">If a bike is broken or needs repair, you can bring it to a hub and notify the
                         system:</p>
@@ -997,12 +1020,12 @@
                     </div>
                 </div>
 
-                <!-- Step 7: Report a Bike -->
-                <div class="qs-step" data-step="7">
+                <!-- Step 8: Report a Bike -->
+                <div class="qs-step" data-step="8">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
                         <i class='bx bx-error-circle' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 7 of 10</div>
+                    <div class="qs-step-label">Step 8 of 11</div>
                     <h2 class="qs-title">Report a Bike</h2>
                     <p class="qs-desc">Spotted a damaged or missing bike? Report it immediately so admins can act fast:
                     </p>
@@ -1021,12 +1044,12 @@
                     </div>
                 </div>
 
-                <!-- Step 8: Other Functions -->
-                <div class="qs-step" data-step="8">
+                <!-- Step 9: Other Functions -->
+                <div class="qs-step" data-step="9">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #0f766e, #14b8a6);">
                         <i class='bx bx-command' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 8 of 10</div>
+                    <div class="qs-step-label">Step 9 of 11</div>
                     <h2 class="qs-title">Other Useful Commands</h2>
                     <p class="qs-desc">Here are more SMS commands you can use anytime:</p>
                     <div class="qs-nav-list">
@@ -1055,12 +1078,12 @@
                     </div>
                 </div>
 
-                <!-- Step 9: Trust Score -->
-                <div class="qs-step" data-step="9">
+                <!-- Step 10: Trust Score -->
+                <div class="qs-step" data-step="10">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #006a4e, #10b981);">
                         <i class='bx bxs-shield-alt-2' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 9 of 10</div>
+                    <div class="qs-step-label">Step 10 of 11</div>
                     <h2 class="qs-title">Your Trust Score</h2>
                     <p class="qs-desc">Every student has a Trust Score. Ride responsibly to earn points — violations
                         cost you.</p>
@@ -1088,12 +1111,12 @@
                     </div>
                 </div>
 
-                <!-- Step 10: Navigate the Dashboard -->
-                <div class="qs-step" data-step="10">
+                <!-- Step 11: Navigate the Dashboard -->
+                <div class="qs-step" data-step="11">
                     <div class="qs-icon-wrap" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
                         <i class='bx bx-layout' style="font-size: 2rem; color: white;"></i>
                     </div>
-                    <div class="qs-step-label">Step 10 of 10</div>
+                    <div class="qs-step-label">Step 11 of 11</div>
                     <h2 class="qs-title">Your Dashboard at a Glance</h2>
                     <p class="qs-desc">Use the sidebar to explore all sections:</p>
                     <div class="qs-nav-list">
@@ -1137,6 +1160,7 @@
                     <span class="qs-dot" data-dot="8"></span>
                     <span class="qs-dot" data-dot="9"></span>
                     <span class="qs-dot" data-dot="10"></span>
+                    <span class="qs-dot" data-dot="11"></span>
                 </div>
                 <button class="qs-btn qs-btn-primary" id="qs-btn-next">Next →</button>
             </div>

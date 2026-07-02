@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- QUICK START GUIDE ---
     (function initQuickStartGuide() {
-        const TOTAL_STEPS = 10;
+        const TOTAL_STEPS = 11;
         let currentStep = 1;
         let guideOpened = false;
 
