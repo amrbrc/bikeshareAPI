@@ -1,30 +1,11 @@
 const db = require('../db');
 
-// Default Quick Reply buttons shown after conversation ends or when awaiting user action
-const DEFAULT_QUICK_REPLIES = [
-    {
-        content_type: "text",
-        title: "File a dispute appeal 🚲",
-        payload: "RESET"
-    },
-    {
-        content_type: "text",
-        title: "Restart bot conversation",
-        payload: "RESET"
-    }
-];
-
 // Helper to send messages back to the user via Meta's Send API using built-in fetch
-async function sendFbMessage(recipientPsid, messageText, quickReplies = DEFAULT_QUICK_REPLIES) {
+async function sendFbMessage(recipientPsid, messageText) {
     const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN;
     if (!pageAccessToken) {
         console.error('[FB Bot] Missing FB_PAGE_ACCESS_TOKEN environment variable.');
         return;
-    }
-
-    const messagePayload = { text: messageText };
-    if (quickReplies && Array.isArray(quickReplies) && quickReplies.length > 0) {
-        messagePayload.quick_replies = quickReplies;
     }
 
     try {
@@ -35,7 +16,7 @@ async function sendFbMessage(recipientPsid, messageText, quickReplies = DEFAULT_
             },
             body: JSON.stringify({
                 recipient: { id: recipientPsid },
-                message: messagePayload
+                message: { text: messageText }
             })
         });
         const result = await response.json();
@@ -46,6 +27,53 @@ async function sendFbMessage(recipientPsid, messageText, quickReplies = DEFAULT_
         }
     } catch (err) {
         console.error('[FB Bot] Fetch error calling Send API:', err);
+    }
+}
+
+// Helper to send vertical stacked buttons (Button Template) after conversation finishes
+async function sendFbCompletionButtons(recipientPsid, textMessage = "Select an option below to continue:") {
+    const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN;
+    if (!pageAccessToken) return;
+
+    try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipient: { id: recipientPsid },
+                message: {
+                    attachment: {
+                        type: "template",
+                        payload: {
+                            template_type: "button",
+                            text: textMessage,
+                            buttons: [
+                                {
+                                    type: "postback",
+                                    title: "File a dispute appeal 🚲",
+                                    payload: "RESET"
+                                },
+                                {
+                                    type: "postback",
+                                    title: "Restart bot conversation",
+                                    payload: "RESET"
+                                }
+                            ]
+                        }
+                    }
+                }
+            })
+        });
+        const result = await response.json();
+        if (result.error) {
+            console.error('[FB Bot] Completion buttons Send API error:', result.error);
+        } else {
+            console.log(`[FB Bot] Vertical completion buttons sent to PSID ${recipientPsid}`);
+        }
+    } catch (err) {
+        console.error('[FB Bot] Error sending completion buttons:', err);
     }
 }
 
@@ -185,6 +213,7 @@ async function processIncomingMessage(psid, message) {
                 psid,
                 `Hello ${member.firstname}! Your account (associated with ${normalizedPhone}) is currently in good standing (not frozen). You do not need to file an appeal. If you have any questions, feel free to contact us!`
             );
+            await sendFbCompletionButtons(psid);
             return;
         }
 
@@ -204,6 +233,7 @@ async function processIncomingMessage(psid, message) {
                 psid,
                 `Hello ${member.firstname}. Your points are frozen, but we couldn't automatically locate an active dispute ticket for your last trip. Please contact page administrators directly for manual resolution.`
             );
+            await sendFbCompletionButtons(psid);
             return;
         }
 
@@ -260,6 +290,7 @@ async function processIncomingMessage(psid, message) {
 
         if (disputes.length === 0) {
             await sendFbMessage(psid, 'We could not find an active dispute ticket for your account anymore. It might have already been resolved. Type "RESET" to check again.');
+            await sendFbCompletionButtons(psid);
             return;
         }
 
@@ -276,12 +307,14 @@ async function processIncomingMessage(psid, message) {
             psid,
             `Thank you! Your dispute appeal photo has been successfully uploaded and linked to Bike #${dispute.bicycle_code}.\n\nOur administrators will review the evidence shortly. You will receive an SMS notification once a decision is made.`
         );
+        await sendFbCompletionButtons(psid);
 
     } else if (session.bot_state === 'COMPLETED') {
         await sendFbMessage(
             psid,
             'Your appeal photo has already been submitted and is pending administrator review. If you need to submit a new photo, please reply with "RESET" to start over.'
         );
+        await sendFbCompletionButtons(psid);
     }
 }
 
