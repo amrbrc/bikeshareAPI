@@ -22,6 +22,12 @@ const upbsPool = mysql.createPool(poolConfig);
 
 async function runMigrations() {
     try {
+        const [tz] = await upbsPool.query("SELECT @@global.time_zone, @@session.time_zone, NOW() as now_val");
+        console.log("[DB] Timezone check:", tz[0]);
+    } catch (e) {
+        console.error("[DB] Timezone check error:", e.message);
+    }
+    try {
         await upbsPool.query("ALTER TABLE members ADD COLUMN leaderboard_points INT DEFAULT 100");
         console.log("[DB] Added leaderboard_points column to members.");
     } catch(e) {
@@ -97,8 +103,8 @@ async function runMigrations() {
         console.error("[DB] Migration error fb_bot_sessions table:", e.message);
     }
     try {
-        // Shift existing UTC datetimes to PST (+08:00) exactly once
-        const [rows] = await upbsPool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'utc_to_pst_shifted'");
+        // Shift existing UTC datetimes to PST (+08:00) exactly once (v2)
+        const [rows] = await upbsPool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'utc_to_pst_shifted_v2'");
         if (rows.length === 0) {
             console.log("[DB] Shifting historical UTC datetimes to PST (+08:00)...");
             
@@ -108,25 +114,25 @@ async function runMigrations() {
                 SET borrowed_at = DATE_ADD(borrowed_at, INTERVAL 8 HOUR),
                     pending_status_time = CASE WHEN pending_status_time IS NOT NULL THEN DATE_ADD(pending_status_time, INTERVAL 8 HOUR) ELSE NULL END,
                     last_penalty_time = CASE WHEN last_penalty_time IS NOT NULL THEN DATE_ADD(last_penalty_time, INTERVAL 8 HOUR) ELSE NULL END
-                WHERE borrowed_at < '2026-07-03 16:10:00'
+                WHERE borrowed_at < '2026-07-03 10:00:00'
             `);
             
             // 2. Shift bicycle_codes
             await upbsPool.query(`
                 UPDATE bicycle_codes 
                 SET broken_reported_at = DATE_ADD(broken_reported_at, INTERVAL 8 HOUR)
-                WHERE broken_reported_at < '2026-07-03 16:10:00'
+                WHERE broken_reported_at < '2026-07-03 10:00:00'
             `);
             
             // 3. Shift Logs
             await upbsPool.query(`
                 UPDATE Logs 
                 SET DateTime = DATE_ADD(DateTime, INTERVAL 8 HOUR)
-                WHERE DateTime < '2026-07-03 16:10:00'
+                WHERE DateTime < '2026-07-03 10:00:00'
             `);
 
             // Mark as completed
-            await upbsPool.query("INSERT INTO app_settings (setting_key, setting_value) VALUES ('utc_to_pst_shifted', 'true')");
+            await upbsPool.query("INSERT INTO app_settings (setting_key, setting_value) VALUES ('utc_to_pst_shifted_v2', 'true')");
             console.log("[DB] Successfully shifted historical UTC datetimes to PST.");
         }
     } catch (e) {
