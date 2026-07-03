@@ -95,6 +95,42 @@ async function runMigrations() {
     } catch(e) {
         console.error("[DB] Migration error fb_bot_sessions table:", e.message);
     }
+    try {
+        // Shift existing UTC datetimes to PST (+08:00) exactly once
+        const [rows] = await upbsPool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'utc_to_pst_shifted'");
+        if (rows.length === 0) {
+            console.log("[DB] Shifting historical UTC datetimes to PST (+08:00)...");
+            
+            // 1. Shift bicycle_history
+            await upbsPool.query(`
+                UPDATE bicycle_history 
+                SET borrowed_at = DATE_ADD(borrowed_at, INTERVAL 8 HOUR),
+                    pending_status_time = CASE WHEN pending_status_time IS NOT NULL THEN DATE_ADD(pending_status_time, INTERVAL 8 HOUR) ELSE NULL END,
+                    last_penalty_time = CASE WHEN last_penalty_time IS NOT NULL THEN DATE_ADD(last_penalty_time, INTERVAL 8 HOUR) ELSE NULL END
+                WHERE borrowed_at < '2026-07-03 16:10:00'
+            `);
+            
+            // 2. Shift bicycle_codes
+            await upbsPool.query(`
+                UPDATE bicycle_codes 
+                SET broken_reported_at = DATE_ADD(broken_reported_at, INTERVAL 8 HOUR)
+                WHERE broken_reported_at < '2026-07-03 16:10:00'
+            `);
+            
+            // 3. Shift Logs
+            await upbsPool.query(`
+                UPDATE Logs 
+                SET DateTime = DATE_ADD(DateTime, INTERVAL 8 HOUR)
+                WHERE DateTime < '2026-07-03 16:10:00'
+            `);
+
+            // Mark as completed
+            await upbsPool.query("INSERT INTO app_settings (setting_key, setting_value) VALUES ('utc_to_pst_shifted', 'true')");
+            console.log("[DB] Successfully shifted historical UTC datetimes to PST.");
+        }
+    } catch (e) {
+        console.error("[DB] Error shifting datetimes to PST:", e.message);
+    }
 }
 runMigrations();
 
