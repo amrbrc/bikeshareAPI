@@ -7,7 +7,6 @@ const poolConfig = {
     password: process.env.DB_PASSWORD || 'upbs2024',
     database: process.env.DB_NAME || 'upbs',
     timezone: '+08:00',
-    initCommand: "SET time_zone = '+08:00'",
     connectionLimit: 10
 };
 
@@ -18,6 +17,11 @@ if (process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' || (p
 }
 
 const upbsPool = mysql.createPool(poolConfig);
+
+// Ensure every connection created in the pool has the session time_zone set to +08:00 (Philippine Time)
+upbsPool.on('connection', (connection) => {
+    connection.query("SET time_zone = '+08:00'");
+});
 
 
 async function runMigrations() {
@@ -103,8 +107,8 @@ async function runMigrations() {
         console.error("[DB] Migration error fb_bot_sessions table:", e.message);
     }
     try {
-        // Shift existing UTC datetimes to PST (+08:00) exactly once (v2)
-        const [rows] = await upbsPool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'utc_to_pst_shifted_v2'");
+        // Shift existing UTC datetimes to PST (+08:00) exactly once (v3)
+        const [rows] = await upbsPool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'utc_to_pst_shifted_v3'");
         if (rows.length === 0) {
             console.log("[DB] Shifting historical UTC datetimes to PST (+08:00)...");
             
@@ -132,7 +136,7 @@ async function runMigrations() {
             `);
 
             // Mark as completed
-            await upbsPool.query("INSERT INTO app_settings (setting_key, setting_value) VALUES ('utc_to_pst_shifted_v2', 'true')");
+            await upbsPool.query("INSERT INTO app_settings (setting_key, setting_value) VALUES ('utc_to_pst_shifted_v3', 'true')");
             console.log("[DB] Successfully shifted historical UTC datetimes to PST.");
         }
     } catch (e) {
