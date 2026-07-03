@@ -114,15 +114,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Timeframe Dropdown Logic ────────────────────────────────────────────
+    function toggleMonthVisibility(isYearly) {
+        if (monthWrapper) {
+            if (isYearly) {
+                monthWrapper.classList.remove('d-flex');
+                monthWrapper.classList.add('d-none');
+                monthWrapper.style.setProperty('display', 'none', 'important');
+            } else {
+                monthWrapper.classList.remove('d-none');
+                monthWrapper.classList.add('d-flex');
+                monthWrapper.style.setProperty('display', 'flex', 'important');
+            }
+        }
+        if (monthSelect) {
+            monthSelect.style.setProperty('display', isYearly ? 'none' : '', isYearly ? 'important' : '');
+        }
+    }
+
     if (periodSelect && yearSelect && monthSelect) {
         periodSelect.addEventListener('change', () => {
             currentPeriod = periodSelect.value;
-            const targetEl = monthWrapper || monthSelect;
-            if (currentPeriod === 'year') {
-                targetEl.style.display = 'none';
-            } else {
-                targetEl.style.display = '';
-            }
+            toggleMonthVisibility(currentPeriod === 'year');
             loadAnalyticsData(currentPeriod, yearSelect.value, monthSelect.value);
         });
 
@@ -237,9 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (monthSelect) {
             monthSelect.value = String(monthNum);
         }
-        const targetEl = monthWrapper || monthSelect;
-        if (targetEl) {
-            targetEl.style.display = period === 'year' ? 'none' : '';
+        if (typeof toggleMonthVisibility === 'function') {
+            toggleMonthVisibility(period === 'year');
         }
 
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
