@@ -640,7 +640,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="badge bg-danger" style="font-size: 0.75rem;">${b.condition_status}</span>
                             </div>
                             <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
-                            <div class="small mb-2" style="color: var(--text-muted);">Reported User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
+                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
+                            <div class="small mb-2" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
                             
                             ${b.dispute_image_url ? `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
@@ -720,11 +721,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.data.length > 0) {
                 hList.innerHTML = data.data.map(log => {
                     const formattedDate = new Date(log.DateTime).toLocaleString();
-                    let actionColor = '#0288d1'; // clean professional blue instead of neon cyan
-                    if (log.Request === 'False Report Penalty') actionColor = '#c62828'; // professional deep red/maroon
-                    else if (log.Request === 'Missing Report') actionColor = '#e65100'; // deep orange
-                    else if (log.Request === 'Broken Report') actionColor = '#ad1457'; // deep rose/red
-                    else if (log.Request === 'Delivered for Repair') actionColor = '#2e7d32'; // forest green
+                    let actionColor = '#4a6b82'; // muted slate blue
+                    if (log.Request === 'False Report Penalty') actionColor = '#803a3a'; // muted dusky burgundy/maroon
+                    else if (log.Request === 'Missing Report') actionColor = '#945d2e'; // muted warm bronze
+                    else if (log.Request === 'Broken Report') actionColor = '#824462'; // muted dusky plum
+                    else if (log.Request === 'Delivered for Repair') actionColor = '#3e6b42'; // muted forest green
                     return `<div class="d-flex flex-column p-3 border rounded shadow-sm mb-2" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
                         <strong>👤 ${log.FirstName || ''} ${log.LastName || ''} (${log.MobileNumber || log.SenderNumber})</strong>
                         <div class="fw-bold small mt-1" style="color: ${actionColor};">Action: ${log.Request}</div>

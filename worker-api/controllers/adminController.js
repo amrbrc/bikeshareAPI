@@ -458,6 +458,7 @@ const getHonestyLogs = async (req, res) => {
             SELECT FirstName, LastName, MobileNumber, SenderNumber, DateTime, Request, MessageID
             FROM Logs
             WHERE Request IN ('Broken Report', 'Delivered for Repair', 'Missing Report', 'False Report Penalty')
+              AND DateTime >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             ORDER BY DateTime DESC
             LIMIT 100
         `;
