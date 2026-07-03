@@ -434,10 +434,14 @@ const getMaintenanceQueue = async (req, res) => {
                         WHERE bh2.bicycle_code = b.bicycle_code 
                         ORDER BY bh2.borrowed_at DESC 
                         LIMIT 1
-                    )) AS last_user_name
+                    )) AS last_user_name,
+                   (SELECT MAX(bh3.borrowed_at)
+                    FROM bicycle_history bh3
+                    WHERE bh3.bicycle_code = b.bicycle_code) AS last_activity
             FROM bicycle_codes b
             WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') 
               AND (b.is_active = 1 OR b.is_active IS NULL)
+            ORDER BY last_activity DESC, b.bicycle_code ASC
         `;
         const [rows] = await db.upbsPool.query(query);
         return res.json({ success: true, data: rows });

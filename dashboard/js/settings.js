@@ -720,9 +720,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.data.length > 0) {
                 hList.innerHTML = data.data.map(log => {
                     const formattedDate = new Date(log.DateTime).toLocaleString();
+                    let actionColor = '#0288d1'; // clean professional blue instead of neon cyan
+                    if (log.Request === 'False Report Penalty') actionColor = '#c62828'; // professional deep red/maroon
+                    else if (log.Request === 'Missing Report') actionColor = '#e65100'; // deep orange
+                    else if (log.Request === 'Broken Report') actionColor = '#ad1457'; // deep rose/red
+                    else if (log.Request === 'Delivered for Repair') actionColor = '#2e7d32'; // forest green
                     return `<div class="d-flex flex-column p-3 border rounded shadow-sm mb-2" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
                         <strong>👤 ${log.FirstName || ''} ${log.LastName || ''} (${log.MobileNumber || log.SenderNumber})</strong>
-                        <div class="text-info fw-bold small mt-1">Action: ${log.Request}</div>
+                        <div class="fw-bold small mt-1" style="color: ${actionColor};">Action: ${log.Request}</div>
                         <div class="small mt-1" style="color: var(--text-muted);">Time: ${formattedDate}</div>
                     </div>`;
                 }).join('');
