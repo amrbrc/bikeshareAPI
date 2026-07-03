@@ -273,28 +273,40 @@
                         </p>
                     </div>
                     <!-- Timeframe Filter Bar -->
-                    <div class="d-flex align-items-center gap-2 flex-wrap" id="analytics-filter-bar">
-                        <select id="analytics-period-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
-                            <option value="month">Monthly View</option>
-                            <option value="year">Yearly View</option>
-                        </select>
-                        <select id="analytics-year-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
-                            <!-- Populated by JS -->
-                        </select>
-                        <select id="analytics-month-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
-                            <option value="1">January</option>
-                            <option value="2">February</option>
-                            <option value="3">March</option>
-                            <option value="4">April</option>
-                            <option value="5">May</option>
-                            <option value="6">June</option>
-                            <option value="7">July</option>
-                            <option value="8">August</option>
-                            <option value="9">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
-                        </select>
+                    <div class="d-flex align-items-center gap-3 flex-wrap" id="analytics-filter-bar" style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                        <!-- Mode Indicator & Dropdown -->
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">View:</span>
+                            <select id="analytics-period-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 140px; border-radius: 8px; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 12px; cursor: pointer;">
+                                <option value="month">Monthly View</option>
+                                <option value="year">Yearly View</option>
+                            </select>
+                        </div>
+                        <!-- Year Indicator & Dropdown -->
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Year:</span>
+                            <select id="analytics-year-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 110px; max-height: 250px; border-radius: 8px; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <!-- Month Indicator & Dropdown -->
+                        <div class="d-flex align-items-center gap-2" id="analytics-month-wrapper">
+                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Month:</span>
+                            <select id="analytics-month-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 130px; border-radius: 8px; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 

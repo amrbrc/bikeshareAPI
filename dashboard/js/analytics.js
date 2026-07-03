@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const periodSelect = document.getElementById('analytics-period-select');
     const yearSelect = document.getElementById('analytics-year-select');
     const monthSelect = document.getElementById('analytics-month-select');
+    const monthWrapper = document.getElementById('analytics-month-wrapper');
     const periodicTitleEl = document.getElementById('periodic-analytics-title');
     const noDataMsgText = document.getElementById('no-data-msg-text');
 
@@ -116,10 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (periodSelect && yearSelect && monthSelect) {
         periodSelect.addEventListener('change', () => {
             currentPeriod = periodSelect.value;
+            const targetEl = monthWrapper || monthSelect;
             if (currentPeriod === 'year') {
-                monthSelect.style.display = 'none';
+                targetEl.style.display = 'none';
             } else {
-                monthSelect.style.display = '';
+                targetEl.style.display = '';
             }
             loadAnalyticsData(currentPeriod, yearSelect.value, monthSelect.value);
         });
@@ -227,7 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (periodSelect) periodSelect.value = period;
         if (monthSelect) {
             monthSelect.value = String(monthNum);
-            monthSelect.style.display = period === 'year' ? 'none' : '';
+        }
+        const targetEl = monthWrapper || monthSelect;
+        if (targetEl) {
+            targetEl.style.display = period === 'year' ? 'none' : '';
         }
 
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
