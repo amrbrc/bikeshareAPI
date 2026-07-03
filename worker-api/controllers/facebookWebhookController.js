@@ -52,12 +52,12 @@ async function sendFbCompletionButtons(recipientPsid, textMessage = "Select an o
                             buttons: [
                                 {
                                     type: "postback",
-                                    title: "File a dispute appeal 🚲",
+                                    title: "🚲 File Appeal",
                                     payload: "RESET"
                                 },
                                 {
                                     type: "postback",
-                                    title: "Restart bot conversation",
+                                    title: "🔄 Start Over",
                                     payload: "RESET"
                                 }
                             ]
@@ -209,11 +209,10 @@ async function processIncomingMessage(psid, message) {
         const member = members[0];
 
         if (member.points_frozen !== 1) {
-            await sendFbMessage(
+            await sendFbCompletionButtons(
                 psid,
                 `Hello ${member.firstname}! Your account (associated with ${normalizedPhone}) is currently in good standing (not frozen). You do not need to file an appeal. If you have any questions, feel free to contact us!`
             );
-            await sendFbCompletionButtons(psid);
             return;
         }
 
@@ -229,11 +228,10 @@ async function processIncomingMessage(psid, message) {
         );
 
         if (disputes.length === 0) {
-            await sendFbMessage(
+            await sendFbCompletionButtons(
                 psid,
                 `Hello ${member.firstname}. Your points are frozen, but we couldn't automatically locate an active dispute ticket for your last trip. Please contact page administrators directly for manual resolution.`
             );
-            await sendFbCompletionButtons(psid);
             return;
         }
 
@@ -289,8 +287,7 @@ async function processIncomingMessage(psid, message) {
         );
 
         if (disputes.length === 0) {
-            await sendFbMessage(psid, 'We could not find an active dispute ticket for your account anymore. It might have already been resolved. Type "RESET" to check again.');
-            await sendFbCompletionButtons(psid);
+            await sendFbCompletionButtons(psid, 'We could not find an active dispute ticket for your account anymore. It might have already been resolved. Select an option below to continue.');
             return;
         }
 
@@ -303,18 +300,16 @@ async function processIncomingMessage(psid, message) {
         // Mark session as COMPLETED
         await db.upbsPool.query('UPDATE fb_bot_sessions SET bot_state = ? WHERE psid = ?', ['COMPLETED', psid]);
 
-        await sendFbMessage(
+        await sendFbCompletionButtons(
             psid,
             `Thank you! Your dispute appeal photo has been successfully uploaded and linked to Bike #${dispute.bicycle_code}.\n\nOur administrators will review the evidence shortly. You will receive an SMS notification once a decision is made.`
         );
-        await sendFbCompletionButtons(psid);
 
     } else if (session.bot_state === 'COMPLETED') {
-        await sendFbMessage(
+        await sendFbCompletionButtons(
             psid,
-            'Your appeal photo has already been submitted and is pending administrator review. If you need to submit a new photo, please reply with "RESET" to start over.'
+            'Your appeal photo has already been submitted and is pending administrator review. Select an option below if you need to start over.'
         );
-        await sendFbCompletionButtons(psid);
     }
 }
 

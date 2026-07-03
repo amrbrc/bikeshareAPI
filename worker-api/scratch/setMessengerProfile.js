@@ -21,12 +21,12 @@ const data = JSON.stringify({
             call_to_actions: [
                 {
                     type: 'postback',
-                    title: 'File a dispute appeal 🚲',
+                    title: '🚲 File Appeal',
                     payload: 'RESET'
                 },
                 {
                     type: 'postback',
-                    title: 'Restart bot conversation',
+                    title: '🔄 Start Over',
                     payload: 'RESET'
                 }
             ]
@@ -34,11 +34,11 @@ const data = JSON.stringify({
     ],
     ice_breakers: [
         {
-            question: 'File a dispute appeal 🚲',
+            question: '🚲 File Appeal',
             payload: 'RESET'
         },
         {
-            question: 'Restart bot conversation',
+            question: '🔄 Start Over',
             payload: 'RESET'
         }
     ]
