@@ -14,6 +14,24 @@ const data = JSON.stringify({
     get_started: {
         payload: 'RESET'
     },
+    persistent_menu: [
+        {
+            locale: 'default',
+            composer_input_disabled: false,
+            call_to_actions: [
+                {
+                    type: 'postback',
+                    title: 'File a dispute appeal 🚲',
+                    payload: 'RESET'
+                },
+                {
+                    type: 'postback',
+                    title: 'Restart bot conversation',
+                    payload: 'RESET'
+                }
+            ]
+        }
+    ],
     ice_breakers: [
         {
             question: 'File a dispute appeal 🚲',

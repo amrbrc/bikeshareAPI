@@ -1,11 +1,30 @@
 const db = require('../db');
 
+// Default Quick Reply buttons shown after conversation ends or when awaiting user action
+const DEFAULT_QUICK_REPLIES = [
+    {
+        content_type: "text",
+        title: "File a dispute appeal 🚲",
+        payload: "RESET"
+    },
+    {
+        content_type: "text",
+        title: "Restart bot conversation",
+        payload: "RESET"
+    }
+];
+
 // Helper to send messages back to the user via Meta's Send API using built-in fetch
-async function sendFbMessage(recipientPsid, messageText) {
+async function sendFbMessage(recipientPsid, messageText, quickReplies = DEFAULT_QUICK_REPLIES) {
     const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN;
     if (!pageAccessToken) {
         console.error('[FB Bot] Missing FB_PAGE_ACCESS_TOKEN environment variable.');
         return;
+    }
+
+    const messagePayload = { text: messageText };
+    if (quickReplies && Array.isArray(quickReplies) && quickReplies.length > 0) {
+        messagePayload.quick_replies = quickReplies;
     }
 
     try {
@@ -16,7 +35,7 @@ async function sendFbMessage(recipientPsid, messageText) {
             },
             body: JSON.stringify({
                 recipient: { id: recipientPsid },
-                message: { text: messageText }
+                message: messagePayload
             })
         });
         const result = await response.json();
