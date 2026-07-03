@@ -7,6 +7,7 @@ const poolConfig = {
     password: process.env.DB_PASSWORD || 'upbs2024',
     database: process.env.DB_NAME || 'upbs',
     timezone: '+08:00',
+    initCommand: "SET time_zone = '+08:00'",
     connectionLimit: 10
 };
 
