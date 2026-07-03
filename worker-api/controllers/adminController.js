@@ -266,7 +266,7 @@ const resolveDispute = async (req, res) => {
 
         } else if (verdict === 'innocent') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
-            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
+            await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NULL WHERE bicycle_code = ?", [bicycle_code]);
 
             // Text the borrower that they are innocent
             await sendSMS(phone_number, `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`);
@@ -290,7 +290,7 @@ const resolveDispute = async (req, res) => {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
 
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
@@ -373,7 +373,15 @@ const overrideBicycle = async (req, res) => {
         let updateQuery = "UPDATE bicycle_codes SET ";
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
-        if (condition_status) { updateQuery += "condition_status = ?, "; params.push(condition_status); }
+        if (condition_status) { 
+            updateQuery += "condition_status = ?, "; 
+            params.push(condition_status); 
+            if (condition_status === 'Good') {
+                updateQuery += "broken_reported_at = NULL, ";
+            } else if (condition_status === 'Broken' || condition_status === 'Disputed' || condition_status === 'Missing') {
+                updateQuery += "broken_reported_at = COALESCE(broken_reported_at, NOW()), ";
+            }
+        }
         if (new_location) { updateQuery += "new_location = ?, previous_location = ?, "; params.push(new_location, new_location); }
         updateQuery = updateQuery.slice(0, -2) + " WHERE bicycle_code = ? AND (is_active = 1 OR is_active IS NULL)";
         params.push(bicycle_code);
@@ -451,9 +459,11 @@ const getMaintenanceQueue = async (req, res) => {
                         ORDER BY bh5.borrowed_at DESC 
                         LIMIT 1
                     ))) AS reporter_name,
-                   (SELECT MAX(bh3.borrowed_at)
-                    FROM bicycle_history bh3
-                    WHERE bh3.bicycle_code = b.bicycle_code) AS last_activity
+                    COALESCE(b.broken_reported_at, (
+                        SELECT MAX(bh3.borrowed_at)
+                        FROM bicycle_history bh3
+                        WHERE bh3.bicycle_code = b.bicycle_code
+                    )) AS last_activity
             FROM bicycle_codes b
             WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') 
               AND (b.is_active = 1 OR b.is_active IS NULL)

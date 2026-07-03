@@ -825,7 +825,7 @@ const broken = async (req, res) => {
 
             // Conflict! Next user is reporting it broken after previous user said Good.
             await upbsConn.query(
-                "UPDATE bicycle_codes SET condition_status = 'Disputed', dispute_reported_by = ? WHERE bicycle_code = ?",
+                "UPDATE bicycle_codes SET condition_status = 'Disputed', dispute_reported_by = ?, broken_reported_at = NOW() WHERE bicycle_code = ?",
                 [smsSender, bicycleCode]
             );
 
@@ -919,7 +919,7 @@ const missing = async (req, res) => {
 
         // It is currently Good, but they can't find it.
         await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = ? WHERE bicycle_code = ?",
+            "UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = ?, broken_reported_at = NOW() WHERE bicycle_code = ?",
             [smsSender, bicycleCode]
         );
 
@@ -1029,7 +1029,7 @@ const delivered = async (req, res) => {
 
         // Update the status to 'Broken' (awaiting admin pickup for repair) and update the location
         await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = ? WHERE bicycle_code = ?",
+            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = ?, broken_reported_at = COALESCE(broken_reported_at, NOW()) WHERE bicycle_code = ?",
             [deliveryLocation, smsSender, bicycleCode]
         );
 
