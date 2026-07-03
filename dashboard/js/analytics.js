@@ -141,7 +141,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!yearSelect) return;
         yearSelect.innerHTML = '';
         const years = availableYears && availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
-        years.forEach(y => {
+        
+        // Only render the 10 most recent years so the native OS dropdown never stretches off screen when the system runs for decades
+        const recentYears = years.slice(0, 10);
+        if (!recentYears.includes(Number(selectedYear)) && selectedYear) {
+            recentYears.push(Number(selectedYear));
+        }
+
+        recentYears.forEach(y => {
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;

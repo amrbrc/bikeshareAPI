@@ -36,13 +36,13 @@ const getAnalytics = async (req, res) => {
         }
 
         // --- Overall (All-Time) Queries ---
-        // 1. Peak usage hours (overall)
+        // 1. Peak usage hours (overall, shifted to PHT +8)
         const overallPeakHoursQuery = `
-            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+            SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            GROUP BY HOUR(bh.borrowed_at)
+            GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
             ORDER BY hour ASC
         `;
         const [overallPeakHours] = await db.upbsPool.query(overallPeakHoursQuery);
@@ -63,12 +63,12 @@ const getAnalytics = async (req, res) => {
         let peakHoursQuery, popularStationsQuery, queryParams;
         if (period === 'year') {
             peakHoursQuery = `
-                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+                SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
                 FROM bicycle_history bh
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
                 JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ?
-                GROUP BY HOUR(bh.borrowed_at)
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
@@ -77,19 +77,19 @@ const getAnalytics = async (req, res) => {
                 JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
                 JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ?
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
                 GROUP BY bh.new_location
                 ORDER BY count DESC
             `;
             queryParams = [year];
         } else {
             peakHoursQuery = `
-                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+                SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
                 FROM bicycle_history bh
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
                 JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
-                GROUP BY HOUR(bh.borrowed_at)
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ? AND MONTH(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
@@ -98,7 +98,7 @@ const getAnalytics = async (req, res) => {
                 JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
                 JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
                 JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ? AND MONTH(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
                 GROUP BY bh.new_location
                 ORDER BY count DESC
             `;
@@ -109,7 +109,7 @@ const getAnalytics = async (req, res) => {
 
         // 5. Available years and months
         const availableYearsQuery = `
-            SELECT DISTINCT YEAR(bh.borrowed_at) AS year
+            SELECT DISTINCT YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS year
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
@@ -120,7 +120,7 @@ const getAnalytics = async (req, res) => {
         if (availableYears.length === 0) availableYears = [year];
 
         const availableMonthsQuery = `
-            SELECT DISTINCT DATE_FORMAT(bh.borrowed_at, '%Y-%m') AS month
+            SELECT DISTINCT DATE_FORMAT(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR), '%Y-%m') AS month
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
