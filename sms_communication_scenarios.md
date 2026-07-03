@@ -44,7 +44,7 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
 * **User SMS Input:** `1 eee to vinzons`
 * **System Action:** Rejects the checkout transaction to prevent further system usage until admin resolution.
 * **System SMS Reply:**
-  > `"Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub."`
+  > `"Account frozen due to dispute. To settle: send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UP Bikeshare Admin Hub."`
 
 ---
 
@@ -175,6 +175,8 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **System Action:** Triggers Dispute Protocol. Flags bike status to `Disputed` (or `In_Repair`), freezes the *previous* borrower's account pending admin review, resets previous user's streak, and applies a **−5 Trust Points penalty** to the previous borrower for leaving unreported damage.
 * **System SMS Reply (To Reporter):**
   > `"Thank you for reporting. Bike [Code] is marked as Disputed for admin review. You will be rewarded trust points if this is verified."`
+* **Outbound Alert SMS (To Previous Borrower):**
+  > `"ALERT: Bike [Code] reported broken! Points frozen. Send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UPBS Admin Hub to appeal."`
 
 ### Scenario 3.3: Reporting Broken on an Already Disputed or Under-Repair Bike
 * **Condition:** User texts `broken` for a bike that is already undergoing maintenance or admin dispute review.
