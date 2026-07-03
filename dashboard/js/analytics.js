@@ -29,11 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const monthlyPeakHoursTitleEl = document.getElementById('monthly-peak-hours-title');
     const monthlyPopularStationsTitleEl = document.getElementById('monthly-popular-stations-title');
 
-    // History UI elements
-    const btnHistory = document.getElementById('btn-analytics-history');
-    const historyDropdown = document.getElementById('analytics-history-dropdown');
-    const historyList = document.getElementById('analytics-history-list');
-    const historyChevron = document.getElementById('history-chevron');
+    // Timeframe Filter UI elements
+    const periodSelect = document.getElementById('analytics-period-select');
+    const yearSelect = document.getElementById('analytics-year-select');
+    const monthSelect = document.getElementById('analytics-month-select');
+    const periodicTitleEl = document.getElementById('periodic-analytics-title');
+    const noDataMsgText = document.getElementById('no-data-msg-text');
 
     // No-data + chart col elements (Monthly)
     const noDataEl = document.getElementById('analytics-no-data');
@@ -51,8 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let monthlyPeakHoursChart = null;
     let monthlyPopularStationsChart = null;
 
-    let currentMonth = null;  // 'YYYY-MM' of the currently displayed month
-    let historyOpen = false;
+    let currentPeriod = 'month';
+    let currentYear = new Date().getFullYear();
+    let currentMonthNum = new Date().getMonth() + 1;
 
     // Station colors matching STATION_COLORS in map.js
     const stationColors = {
@@ -74,21 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'nec': 'NEC Building',
         'ncpag': 'NCPAG'
     };
-
-    // Month names for formatting
-    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
-
-    function formatMonthLabel(yyyyMM) {
-        if (!yyyyMM) return '--';
-        const [y, m] = yyyyMM.split('-');
-        return `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
-    }
-
-    function getCurrentMonthKey() {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    }
 
     function getThemeColors() {
         const theme = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -125,66 +112,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ── History Dropdown Logic ──────────────────────────────────────────────
-    function toggleHistoryDropdown(open) {
-        historyOpen = open !== undefined ? open : !historyOpen;
-        if (historyDropdown) {
-            historyDropdown.style.display = historyOpen ? 'block' : 'none';
-        }
-        if (historyChevron) {
-            historyChevron.style.transform = historyOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
-    }
+    // ── Timeframe Dropdown Logic ────────────────────────────────────────────
+    if (periodSelect && yearSelect && monthSelect) {
+        periodSelect.addEventListener('change', () => {
+            currentPeriod = periodSelect.value;
+            if (currentPeriod === 'year') {
+                monthSelect.style.display = 'none';
+            } else {
+                monthSelect.style.display = '';
+            }
+            loadAnalyticsData(currentPeriod, yearSelect.value, monthSelect.value);
+        });
 
-    if (btnHistory) {
-        btnHistory.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleHistoryDropdown();
+        yearSelect.addEventListener('change', () => {
+            loadAnalyticsData(periodSelect.value, yearSelect.value, monthSelect.value);
+        });
+
+        monthSelect.addEventListener('change', () => {
+            if (periodSelect.value === 'month') {
+                loadAnalyticsData('month', yearSelect.value, monthSelect.value);
+            }
         });
     }
 
-    // Close dropdown if clicking outside
-    document.addEventListener('click', (e) => {
-        if (historyOpen && historyDropdown && !historyDropdown.contains(e.target) && e.target !== btnHistory) {
-            toggleHistoryDropdown(false);
-        }
-    });
-
-    function buildHistoryDropdown(availableMonths) {
-        if (!historyList) return;
-        historyList.innerHTML = '';
-
-        if (!availableMonths || availableMonths.length === 0) {
-            historyList.innerHTML = `<span style="display:block; padding: 10px 16px; font-size: 0.8rem; color: var(--text-muted);">No history available</span>`;
-            return;
-        }
-
-        availableMonths.forEach(m => {
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.textContent = formatMonthLabel(m);
-            item.setAttribute('data-month', m);
-            item.style.cssText = `
-                display: block; width: 100%; text-align: left; padding: 9px 16px;
-                font-size: 0.85rem; font-weight: 600; border: none; background: transparent;
-                color: var(--text-h); cursor: pointer; transition: background 0.15s;
-                font-family: inherit;
-            `;
-            if (m === currentMonth) {
-                item.style.color = 'var(--up-maroon)';
-                item.style.background = 'rgba(123,17,19,0.07)';
-            }
-            item.addEventListener('mouseenter', () => {
-                item.style.background = 'rgba(123,17,19,0.08)';
-            });
-            item.addEventListener('mouseleave', () => {
-                item.style.background = m === currentMonth ? 'rgba(123,17,19,0.07)' : 'transparent';
-            });
-            item.addEventListener('click', () => {
-                toggleHistoryDropdown(false);
-                loadAnalyticsData(m);
-            });
-            historyList.appendChild(item);
+    function populateYearsDropdown(availableYears, selectedYear) {
+        if (!yearSelect) return;
+        yearSelect.innerHTML = '';
+        const years = availableYears && availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
+        years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (Number(y) === Number(selectedYear)) opt.selected = true;
+            yearSelect.appendChild(opt);
         });
     }
 
@@ -207,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardGrid.style.display = 'grid';
         analyticsContainer.style.display = 'none';
 
-        toggleHistoryDropdown(false);
         refreshMapSize();
     });
 
@@ -230,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardGrid.style.display = 'none';
             analyticsContainer.style.display = 'none';
 
-            toggleHistoryDropdown(false);
             refreshMapSize();
         });
     }
@@ -254,48 +212,58 @@ document.addEventListener('DOMContentLoaded', () => {
         analyticsContainer.style.display = 'block';
 
         // Always load the current month when switching to the analytics view
-        loadAnalyticsData(getCurrentMonthKey());
+        loadAnalyticsData('month', new Date().getFullYear(), new Date().getMonth() + 1);
     });
 
     // ── Data Loading ────────────────────────────────────────────────────────
-    async function loadAnalyticsData(month) {
-        if (!month) month = getCurrentMonthKey();
-        currentMonth = month;
+    async function loadAnalyticsData(period = 'month', year = null, monthNum = null) {
+        if (!year) year = new Date().getFullYear();
+        if (!monthNum) monthNum = new Date().getMonth() + 1;
 
-        const monthNameFormatted = formatMonthLabel(month);
+        currentPeriod = period;
+        currentYear = Number(year);
+        currentMonthNum = Number(monthNum);
 
-        // Update month labels immediately
-        if (monthLabelEl) monthLabelEl.textContent = monthNameFormatted;
-        if (monthlyPeakHoursTitleEl) monthlyPeakHoursTitleEl.textContent = `Peak Usage Hours (${monthNameFormatted})`;
-        if (monthlyPopularStationsTitleEl) monthlyPopularStationsTitleEl.textContent = `Most Popular Stations (${monthNameFormatted})`;
+        if (periodSelect) periodSelect.value = period;
+        if (monthSelect) {
+            monthSelect.value = String(monthNum);
+            monthSelect.style.display = period === 'year' ? 'none' : '';
+        }
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+        const displayLabel = period === 'year' ? `Year ${year}` : `${monthNames[monthNum - 1]} ${year}`;
+
+        if (monthLabelEl) monthLabelEl.textContent = displayLabel;
+        if (periodicTitleEl) periodicTitleEl.textContent = period === 'year' ? 'Yearly Analytics' : 'Monthly Analytics';
+        if (monthlyPeakHoursTitleEl) monthlyPeakHoursTitleEl.textContent = `Peak Usage Hours (${displayLabel})`;
+        if (monthlyPopularStationsTitleEl) monthlyPopularStationsTitleEl.textContent = `Most Popular Stations (${displayLabel})`;
 
         try {
-            const response = await fetch(`/api/analytics?month=${month}`);
+            const url = `/api/analytics?period=${period}&year=${year}&month_num=${monthNum}`;
+            const response = await fetch(url);
             const data = await response.json();
 
             if (data.success) {
-                // 1. Render Overall (All-Time) Section
                 updateOverallStatsBanner(data.overallPeakHours, data.overallPopularStations);
                 renderOverallCharts(data.overallPeakHours, data.overallPopularStations);
 
-                // 2. Render Monthly Section
-                buildHistoryDropdown(data.availableMonths || []);
+                populateYearsDropdown(data.availableYears || [], data.year || year);
 
-                const hasMonthlyData = (data.peakHours && data.peakHours.length > 0) ||
-                                       (data.popularStations && data.popularStations.length > 0);
+                const hasData = (data.peakHours && data.peakHours.length > 0) ||
+                                (data.popularStations && data.popularStations.length > 0);
 
-                if (hasMonthlyData) {
+                if (hasData) {
                     if (noDataEl) noDataEl.style.display = 'none';
                     if (chartHoursCol) chartHoursCol.style.display = '';
                     if (chartStationsCol) chartStationsCol.style.display = '';
                     updateMonthlyStatsBanner(data.peakHours, data.popularStations);
                     renderMonthlyCharts(data.peakHours, data.popularStations);
                 } else {
-                    // No data for this month
                     if (noDataEl) noDataEl.style.display = '';
+                    if (noDataMsgText) noDataMsgText.textContent = `No ride data for ${displayLabel}.`;
                     if (chartHoursCol) chartHoursCol.style.display = 'none';
                     if (chartStationsCol) chartStationsCol.style.display = 'none';
-                    // Reset stats
                     if (monthlyTotalRidesEl) monthlyTotalRidesEl.textContent = '0';
                     if (monthlyPeakHourEl) monthlyPeakHourEl.textContent = '--';
                     if (monthlyTopHubEl) monthlyTopHubEl.textContent = '--';

@@ -262,34 +262,39 @@
 
             <hr style="border-color: var(--border); opacity: 0.15; margin-top: 4rem !important; margin-bottom: 3rem !important;">
 
-            <!-- SECTION 2: MONTHLY SYSTEM ANALYTICS -->
+            <!-- SECTION 2: PERIODIC SYSTEM ANALYTICS -->
             <div>
-                <!-- Analytics Header: Month Label + History Button -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px;">
+                <!-- Analytics Header: Period Label + Timeframe Filter Bar -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 1rem; gap: 12px;">
                     <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px; min-width: 0;">
-                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Monthly Analytics</h3>
+                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;" id="periodic-analytics-title">Periodic Analytics</h3>
                         <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             Showing data for <span id="analytics-month-label" style="color: var(--text-h); font-weight: 700;">--</span>
                         </p>
                     </div>
-                    <!-- History Button + Dropdown -->
-                    <div class="position-relative flex-shrink-0" id="analytics-history-wrapper">
-                        <button id="btn-analytics-history" class="btn btn-sm fw-semibold d-flex align-items-center gap-2"
-                            style="border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 8px 14px; white-space: nowrap; transition: box-shadow 0.2s, background 0.2s;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                            </svg>
-                            History
-                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="currentColor" viewBox="0 0 16 16" id="history-chevron" style="transition: transform 0.2s;">
-                                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-                            </svg>
-                        </button>
-                        <!-- Dropdown -->
-                        <div id="analytics-history-dropdown"
-                            style="display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; max-height: 260px; overflow-y: auto; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; padding: 6px 0;">
-                            <div id="analytics-history-list" style="display: flex; flex-direction: column;"></div>
-                        </div>
+                    <!-- Timeframe Filter Bar -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap" id="analytics-filter-bar">
+                        <select id="analytics-period-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
+                            <option value="month">Monthly View</option>
+                            <option value="year">Yearly View</option>
+                        </select>
+                        <select id="analytics-year-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
+                            <!-- Populated by JS -->
+                        </select>
+                        <select id="analytics-month-select" class="form-select form-select-sm fw-semibold" style="width: auto; border-radius: 8px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-h); padding: 6px 28px 6px 12px;">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
                     </div>
                 </div>
 
@@ -320,8 +325,8 @@
                                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                                 <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
                             </svg>
-                            <p class="fw-semibold mb-0">No ride data for this month.</p>
-                            <p class="small">Try selecting a different month from the History dropdown.</p>
+                            <p class="fw-semibold mb-0" id="no-data-msg-text">No ride data for this period.</p>
+                            <p class="small">Try selecting a different period or year from the filters above.</p>
                         </div>
                     </div>
 

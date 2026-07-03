@@ -4,26 +4,45 @@ const db = require('../db');
 const getAnalytics = async (req, res) => {
     try {
         // Determine target month (default to current month)
-        let targetMonth = req.query.month;
-        let year, month;
+        let period = req.query.period || 'month';
+        let year, month, targetMonth;
 
-        if (targetMonth && /^\d{4}-\d{2}$/.test(targetMonth)) {
-            [year, month] = targetMonth.split('-').map(Number);
+        if (req.query.year && req.query.period === 'year') {
+            year = Number(req.query.year);
+            month = null;
+            period = 'year';
+            targetMonth = `${year}`;
+        } else if (req.query.year && req.query.month_num) {
+            year = Number(req.query.year);
+            month = Number(req.query.month_num);
+            period = 'month';
+            targetMonth = `${year}-${String(month).padStart(2, '0')}`;
+        } else if (req.query.month && /^\d{4}-\d{2}$/.test(req.query.month)) {
+            [year, month] = req.query.month.split('-').map(Number);
+            period = 'month';
+            targetMonth = req.query.month;
+        } else if (req.query.month && /^\d{4}$/.test(req.query.month)) {
+            year = Number(req.query.month);
+            month = null;
+            period = 'year';
+            targetMonth = req.query.month;
         } else {
             const now = new Date();
-            year = now.getFullYear();
-            month = now.getMonth() + 1; // JS months are 0-indexed
+            const phtNow = new Date(now.getTime() + (8 * 3600 * 1000));
+            year = phtNow.getUTCFullYear();
+            month = phtNow.getUTCMonth() + 1;
+            period = 'month';
             targetMonth = `${year}-${String(month).padStart(2, '0')}`;
         }
 
         // --- Overall (All-Time) Queries ---
-        // 1. Peak usage hours (overall)
+        // 1. Peak usage hours (overall, shifted to PHT +8)
         const overallPeakHoursQuery = `
-            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+            SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            GROUP BY HOUR(bh.borrowed_at)
+            GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
             ORDER BY hour ASC
         `;
         const [overallPeakHours] = await db.upbsPool.query(overallPeakHoursQuery);
@@ -40,35 +59,68 @@ const getAnalytics = async (req, res) => {
         `;
         const [overallPopularStations] = await db.upbsPool.query(overallPopularStationsQuery);
 
-        // --- Monthly Queries (Filtered to target month) ---
-        // 3. Peak usage hours (monthly)
-        const peakHoursQuery = `
-            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+        // --- Periodic Queries (Filtered to month or year) ---
+        let peakHoursQuery, popularStationsQuery, queryParams;
+        if (period === 'year') {
+            peakHoursQuery = `
+                SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
+                ORDER BY hour ASC
+            `;
+            popularStationsQuery = `
+                SELECT bh.new_location AS station, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY bh.new_location
+                ORDER BY count DESC
+            `;
+            queryParams = [year];
+        } else {
+            peakHoursQuery = `
+                SELECT HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS hour, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ? AND MONTH(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY HOUR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR))
+                ORDER BY hour ASC
+            `;
+            popularStationsQuery = `
+                SELECT bh.new_location AS station, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ? AND MONTH(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) = ?
+                GROUP BY bh.new_location
+                ORDER BY count DESC
+            `;
+            queryParams = [year, month];
+        }
+        const [peakHours] = await db.upbsPool.query(peakHoursQuery, queryParams);
+        const [popularStations] = await db.upbsPool.query(popularStationsQuery, queryParams);
+
+        // 5. Available years and months
+        const availableYearsQuery = `
+            SELECT DISTINCT YEAR(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR)) AS year
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
-            GROUP BY HOUR(bh.borrowed_at)
-            ORDER BY hour ASC
+            ORDER BY year DESC
         `;
-        const [peakHours] = await db.upbsPool.query(peakHoursQuery, [year, month]);
+        const [availableYearsRows] = await db.upbsPool.query(availableYearsQuery);
+        let availableYears = availableYearsRows.map(r => r.year).filter(Boolean);
+        if (availableYears.length === 0) availableYears = [year];
 
-        // 4. Popular stations (monthly)
-        const popularStationsQuery = `
-            SELECT bh.new_location AS station, COUNT(*) AS count
-            FROM bicycle_history bh
-            JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
-            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
-            GROUP BY bh.new_location
-            ORDER BY count DESC
-        `;
-        const [popularStations] = await db.upbsPool.query(popularStationsQuery, [year, month]);
-
-        // 5. Available months (for dropdown)
         const availableMonthsQuery = `
-            SELECT DISTINCT DATE_FORMAT(bh.borrowed_at, '%Y-%m') AS month
+            SELECT DISTINCT DATE_FORMAT(DATE_ADD(bh.borrowed_at, INTERVAL 8 HOUR), '%Y-%m') AS month
             FROM bicycle_history bh
             JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
             JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
@@ -79,11 +131,15 @@ const getAnalytics = async (req, res) => {
 
         return res.json({
             success: true,
+            period,
+            year,
             month: targetMonth,
+            month_num: month,
             overallPeakHours,
             overallPopularStations,
             peakHours,
             popularStations,
+            availableYears,
             availableMonths
         });
 
