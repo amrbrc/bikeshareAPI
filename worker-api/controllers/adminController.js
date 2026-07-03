@@ -435,6 +435,22 @@ const getMaintenanceQueue = async (req, res) => {
                         ORDER BY bh2.borrowed_at DESC 
                         LIMIT 1
                     )) AS last_user_name,
+                   COALESCE(b.dispute_reported_by, (
+                        SELECT bh4.borrower_phone 
+                        FROM bicycle_history bh4 
+                        WHERE bh4.bicycle_code = b.bicycle_code 
+                        ORDER BY bh4.borrowed_at DESC 
+                        LIMIT 1
+                   )) AS reporter_phone,
+                   (SELECT CONCAT(m2.firstname, ' ', m2.lastname)
+                    FROM members m2
+                    WHERE m2.phone_number = COALESCE(b.dispute_reported_by, (
+                        SELECT bh5.borrower_phone 
+                        FROM bicycle_history bh5 
+                        WHERE bh5.bicycle_code = b.bicycle_code 
+                        ORDER BY bh5.borrowed_at DESC 
+                        LIMIT 1
+                    ))) AS reporter_name,
                    (SELECT MAX(bh3.borrowed_at)
                     FROM bicycle_history bh3
                     WHERE bh3.bicycle_code = b.bicycle_code) AS last_activity

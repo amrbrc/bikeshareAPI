@@ -640,7 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="badge bg-danger" style="font-size: 0.75rem;">${b.condition_status}</span>
                             </div>
                             <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
-                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported User: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : (b.last_user_phone || 'Unknown')}</b></div>
+                            ${(b.reporter_phone && b.last_user_phone && b.reporter_phone !== b.last_user_phone) ? `
+                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
+                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported By (Next User): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
+                            ` : `
+                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported By (Borrower): <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
+                            `}
                             <div class="small mb-2" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
                             
                             ${b.dispute_image_url ? `

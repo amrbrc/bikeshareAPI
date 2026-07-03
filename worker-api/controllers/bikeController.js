@@ -778,8 +778,8 @@ const broken = async (req, res) => {
         if (isImmediateUser) {
             // Immediate user reporting broken (Honesty Policy)
             await upbsConn.query(
-                "UPDATE bicycle_codes SET condition_status = 'Broken', broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?",
-                [bicycleCode]
+                "UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = ?, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?",
+                [smsSender, bicycleCode]
             );
 
             await upbsConn.query(
@@ -1029,8 +1029,8 @@ const delivered = async (req, res) => {
 
         // Update the status to 'Broken' (awaiting admin pickup for repair) and update the location
         await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = NULL WHERE bicycle_code = ?",
-            [deliveryLocation, bicycleCode]
+            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = ? WHERE bicycle_code = ?",
+            [deliveryLocation, smsSender, bicycleCode]
         );
 
         let replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair.`;
