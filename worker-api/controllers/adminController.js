@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const db = require('../db');
 const smsService = require('../services/smsService');
 
@@ -23,14 +24,39 @@ async function getSettingValue(name, defaultValue) {
 const login = async (req, res) => {
     const { username, password } = req.body;
 
-    const envUsername = process.env.ADMIN_USERNAME || 'admin';
-    const envPassword = process.env.ADMIN_PASSWORD || 'upbsadmin2026';
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Username and password are required' });
+    }
 
-    if (username === envUsername && password === envPassword) {
-        const token = jwt.sign({ username }, process.env.JWT_SECRET || 'upbs-super-secret-key-2026', { expiresIn: '24h' });
-        return res.json({ success: true, token });
-    } else {
-        return res.status(401).json({ success: false, error: 'Invalid username or password' });
+    try {
+        const [rows] = await db.upbsPool.query('SELECT * FROM admins WHERE username = ?', [username]);
+
+        if (rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Invalid username or password' });
+        }
+
+        const user = rows[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (isMatch) {
+            const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET || 'upbs-super-secret-key-2026', { expiresIn: '24h' });
+            return res.json({ success: true, token });
+        } else {
+            return res.status(401).json({ success: false, error: 'Invalid username or password' });
+        }
+    } catch (err) {
+        console.error('Error during admin database login, checking env fallback...', err.message);
+        
+        // Fallback to environment variables if the admins table doesn't exist
+        const envUsername = process.env.ADMIN_USERNAME || 'admin';
+        const envPassword = process.env.ADMIN_PASSWORD || 'upbsadmin2026';
+
+        if (username === envUsername && password === envPassword) {
+            const token = jwt.sign({ username }, process.env.JWT_SECRET || 'upbs-super-secret-key-2026', { expiresIn: '24h' });
+            return res.json({ success: true, token });
+        } else {
+            return res.status(401).json({ success: false, error: 'Invalid username or password' });
+        }
     }
 };
 
