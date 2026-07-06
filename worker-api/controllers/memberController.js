@@ -119,7 +119,7 @@ const getStudentDashboard = async (req, res) => {
         );
 
         // 4. Get Last SMS Transaction (from user's inbox only)
-        const phoneSuffix = phone_number.substring(1);
+        const phoneSuffix = phone_number.slice(-10);
         let lastSms = null;
 
         try {
@@ -139,7 +139,7 @@ const getStudentDashboard = async (req, res) => {
                 };
             }
         } catch (e) {
-            // Ignore error if inbox table does not exist in primary db
+            console.error("[Dashboard] Primary inbox query check failed:", e.message);
         }
 
         if (!lastSms) {
@@ -160,7 +160,7 @@ const getStudentDashboard = async (req, res) => {
                     };
                 }
             } catch (e) {
-                // Ignore error if smsd.inbox table does not exist
+                console.error("[Dashboard] smsd.inbox query check failed:", e.message);
             }
         }
 
