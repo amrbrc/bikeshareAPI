@@ -61,9 +61,8 @@ const testNotifications = async (req, res) => {
         const imageUrl = 'https://raw.githubusercontent.com/amrbrc/bikeshareAPI/main/dashboard/icons/icon-192.png';
 
         await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
-        await notificationService.sendEmailNotification(studentName, phoneNumber, bikeCode, imageUrl);
 
-        return res.json({ success: true, message: "Test notifications dispatched to Discord and Email." });
+        return res.json({ success: true, message: "Test notifications dispatched to Discord." });
     } catch (err) {
         console.error("Test notifications failed:", err.message);
         return res.status(500).json({ success: false, error: err.message });
