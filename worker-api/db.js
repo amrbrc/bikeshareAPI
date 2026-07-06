@@ -74,6 +74,19 @@ async function runMigrations() {
     }
     try {
         await upbsPool.query(`
+            CREATE TABLE IF NOT EXISTS user_sms_inbox (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                SenderNumber VARCHAR(20) NOT NULL,
+                TextDecoded TEXT NOT NULL,
+                ReceivingDateTime DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log("[DB] Ensured user_sms_inbox table exists.");
+    } catch(e) {
+        console.error("[DB] Migration error user_sms_inbox:", e.message);
+    }
+    try {
+        await upbsPool.query(`
             INSERT IGNORE INTO system_settings (setting_name, setting_value, description)
             VALUES ('reward_delivered_bike', '5', 'Points rewarded to a user who delivers a broken bike to a maintenance hub.')
         `);

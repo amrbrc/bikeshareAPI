@@ -45,7 +45,7 @@ const login = async (req, res) => {
 };
 
 const checkMember = async (req, res) => {
-    const { phone_number } = req.body;
+    const { phone_number, message_text } = req.body;
 
     if (!phone_number) {
         return res.status(400).json({ error: 'phone_number is required' });
@@ -58,6 +58,16 @@ const checkMember = async (req, res) => {
         );
 
         if (rows.length > 0) {
+            if (message_text) {
+                try {
+                    await db.upbsPool.query(
+                        `INSERT INTO user_sms_inbox (SenderNumber, TextDecoded, ReceivingDateTime) VALUES (?, ?, NOW())`,
+                        [phone_number, message_text]
+                    );
+                } catch (e) {
+                    // Ignore insertion error if table not ready yet
+                }
+            }
             res.json({ registered: true, user: rows[0] });
         } else {
             res.json({ registered: false, user: null });
@@ -122,7 +132,7 @@ const getStudentDashboard = async (req, res) => {
         const phoneSuffix = phone_number.slice(-10);
         let lastSms = null;
 
-        const inboxTables = ['inbox', 'smsd.inbox', 'gammu.inbox', 'upbs_sms.inbox', 'bikeshare.inbox'];
+        const inboxTables = ['user_sms_inbox', 'inbox', 'smsd.inbox', 'gammu.inbox', 'upbs_sms.inbox', 'bikeshare.inbox'];
         for (const table of inboxTables) {
             if (lastSms) break;
             try {
@@ -143,6 +153,29 @@ const getStudentDashboard = async (req, res) => {
                 }
             } catch (e) {
                 // Ignore error if table/schema does not exist in this MySQL instance
+            }
+        }
+
+        // Fallback to Logs table if user_sms_inbox and local smsd tables have no records
+        if (!lastSms) {
+            try {
+                const [logRows] = await db.upbsPool.query(
+                    `SELECT Request as TextDecoded, DateTime as ReceivingDateTime
+                     FROM Logs
+                     WHERE MobileNumber LIKE ? OR SenderNumber LIKE ?
+                     ORDER BY DateTime DESC
+                     LIMIT 1`,
+                    [`%${phoneSuffix}%`, `%${phoneSuffix}%`]
+                );
+
+                if (logRows && logRows.length > 0) {
+                    lastSms = {
+                        user_text: `[Recent Action: ${logRows[0].TextDecoded}]`,
+                        date: logRows[0].ReceivingDateTime
+                    };
+                }
+            } catch (e) {
+                // Ignore error
             }
         }
 

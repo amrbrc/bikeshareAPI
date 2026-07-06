@@ -98,7 +98,8 @@ async function pollInbox() {
             try {
                 // 1. Verify user registration status with the Worker API before proceeding
                 const checkResponse = await workerAPI.post('/api/members/check', {
-                    phone_number: smsSender
+                    phone_number: smsSender,
+                    message_text: rawText.trim()
                 });
 
                 const isRegistered = checkResponse.data.registered;
