@@ -28,6 +28,12 @@ const data = JSON.stringify({
                     type: 'postback',
                     title: '🔄 Start Over',
                     payload: 'RESET'
+                },
+                {
+                    type: 'web_url',
+                    title: '💬 Community Forum',
+                    url: 'https://www.facebook.com/groups/upbikeshare', // Change this to your actual Facebook Group URL
+                    webview_height_ratio: 'full'
                 }
             ]
         }
