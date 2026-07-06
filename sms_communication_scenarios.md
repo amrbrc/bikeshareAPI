@@ -265,6 +265,25 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   * If under repair: > `"Bike [Code] is currently undergoing repairs."`
   * If already missing: > `"Bike [Code] is already reported missing and under investigation."`
 
+### Scenario 3.11: Administrative Dispute Resolution Verdicts & SMS Notifications
+* **Condition:** An administrator reviews an active dispute ticket on the Web Dashboard and issues a verdict (`Guilty`, `Innocent`, or `Neutral`), with an optional **Waive Penalty** checkbox for first-time offenders or unverified claims.
+* **System Actions & SMS Replies by Verdict:**
+  * **Guilty Verdict (Standard Penalty):**
+    * *Outbound SMS to Guilty Borrower:* > `"You have been proven guilty of unreported damage (Hit-and-Run) on a bike. [Penalty] points were deducted from your trust points."`
+    * *Outbound SMS to Honest Reporter:* > `"The dispute you reported has been resolved. The previous user was penalized. You have earned +[Reward] trust points. Thank you for keeping our bikes safe!"`
+  * **Guilty Verdict (With `waive_penalty` Checked):**
+    * *Outbound SMS to Guilty Borrower:* > `"Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time."`
+  * **Innocent Verdict (Standard Penalty on False Reporter):**
+    * *Outbound SMS to Innocent Borrower:* > `"The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account."`
+    * *Outbound SMS to False Reporter:* > `"Your recent missing or damage report was found to be false. A [Penalty]-point penalty has been applied to your trust points."`
+  * **Innocent Verdict (With `waive_penalty` Checked on False Reporter):**
+    * *Outbound SMS to Innocent Borrower:* > `"The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account."`
+    * *Outbound SMS to False Reporter (Waived):* > `"Notice: Your damage report was unverified. Your false report point penalty was waived by admin this time. Please inspect bikes carefully next time."`
+  * **Neutral Verdict (External / Environmental Damage):**
+    * *Outbound SMS to Borrower:* > `"The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account."`
+    * *Outbound SMS to Honest Reporter:* > `"The dispute you reported has been resolved neutrally (external damage). You have earned +[Reward] trust points for accurately reporting the broken bike. Thank you!"`
+
+
 ---
 
 ## 4. Inquiries & Information Commands
@@ -421,7 +440,7 @@ Below is the exhaustive, verified ledger of all **Merit Rewards** and **Penaltie
 | **4. Unreported Damage** | Guilty Verdict in Admin Dispute Review | **Previous Rider** *(who broke & ran)*| `penalty_hit_and_run` | **−30 to −35**<br>*(Configurable)* | **−30 to −35**<br>*(Configurable)* | **Reset to 0** |
 | **5. False Damage Report** | Unfounded Verdict on fake/lying claim | **Reporting Member** | `penalty_false_report` | **−5 to −15**<br>*(Configurable)* | **−5 to −15**<br>*(Configurable)* | **Reset to 0** |
 
-*(Note: For Unreported Damage, administrators have a built-in **Waive Penalty** checkbox in the dashboard to issue a warning to first-time offenders without deducting points).*
+*(Note: For Unreported Damage and False Damage Reports, administrators have a built-in **Waive Penalty** checkbox in the dashboard to bypass point deductions and issue warnings. When waived on a False Damage Report, the reporter receives: "Notice: Your damage report was unverified. Your false report point penalty was waived by admin this time. Please inspect bikes carefully next time.").*
 
 ---
 

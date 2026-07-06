@@ -309,7 +309,7 @@ const resolveDispute = async (req, res) => {
                     );
 
                     // Text the false reporter about the waiver
-                    await sendSMS(reporterPhone, `Notice: Your recent missing or damage report was not verified upon admin review. Your false report point penalty has been waived this time, but please inspect bike conditions carefully next time.`);
+                    await sendSMS(reporterPhone, `Notice: Your damage report was unverified. Your false report point penalty was waived by admin this time. Please inspect bikes carefully next time.`);
                 } else {
                     const penalty = await getSettingValue('penalty_false_report', -5);
                     const absolutePenalty = Math.abs(penalty);
