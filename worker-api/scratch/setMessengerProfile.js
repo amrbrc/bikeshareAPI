@@ -31,8 +31,8 @@ const data = JSON.stringify({
                 },
                 {
                     type: 'web_url',
-                    title: '💬 Community Forum',
-                    url: 'https://www.facebook.com/groups/upbikeshare', // Change this to your actual Facebook Group URL
+                    title: '🌐 Facebook Page',
+                    url: 'https://www.facebook.com/upbikesharing',
                     webview_height_ratio: 'full'
                 }
             ]
