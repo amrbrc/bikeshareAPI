@@ -350,11 +350,11 @@ Background timers continuously monitor active rides, pending handshakes, and rep
   > `"Reminder: You have [HoursLeft] hour(s) left on Bike [Code]. Please return it to a station soon. Remember to text 'done [Code]' when finished."`
 
 ### Scenario 5.3: Overtime Limit Exceeded Penalty Alert
-* **Condition:** A ride exceeds the maximum allowed borrow duration (e.g., > 2 hours or configured limit).
-* **Trigger:** Hourly cron job.
-* **System Action:** Applies dynamic overtime penalty (e.g., **−3 Trust Points**), records timestamp, and warns that deductions will continue hourly until returned.
+* **Condition:** A ride exceeds the maximum allowed borrow duration (e.g., > 6 hours or admin-configured limit).
+* **Trigger:** Hourly cron job (`cronJobs.js`).
+* **System Action:** Applies dynamic overtime penalty (default: **−5 Trust Points / hour**, configured via `penalty_overtime`), records timestamp, and warns that deductions will continue hourly until returned.
 * **System SMS Reply (Automated):**
-  > `"ALERT: You have exceeded the borrow time limit for Bike [Code]. A -3 point penalty has been applied. You will continue to lose 3 points EVERY HOUR until the bike is returned."`
+  > `"ALERT: You have exceeded the borrow time limit for Bike [Code]. A -5 point penalty has been applied. You will continue to lose 5 points EVERY HOUR until the bike is returned."`
 
 ### Scenario 5.4: 5-Minute Handshake Photo Proof Reminder
 * **Condition:** User texted `done`, but 5 minutes have elapsed without sending `good` or `broken` confirmation.
@@ -366,23 +366,73 @@ Background timers continuously monitor active rides, pending handshakes, and rep
 ### Scenario 5.5: Handshake Timeout Auto-Finalize & Penalty
 * **Condition:** A bike remains in `Pending_Status` without confirmation for longer than `handshake_timeout_mins` (default: 30 mins).
 * **Trigger:** Cron job running every 5 minutes.
-* **System Action:** Auto-finalizes trip (`condition_confirmed = 1`, `reported_condition = 'Timeout'`), reverts bike status to `Good`, applies abandoned handshake penalty (default: **−2 Trust Points**), and alerts user.
+* **System Action:** Auto-finalizes trip (`condition_confirmed = 1`, `reported_condition = 'Timeout'`), reverts bike status to `Good`, applies abandoned handshake penalty (default: **−2 Trust Points**, configured via `penalty_abandoned_handshake`), and alerts user.
 * **System SMS Reply (Automated):**
   > `"ALERT: You failed to confirm the condition of Bike [Code] within 30 minutes. Your trip has been auto-completed, and a -2 point penalty has been applied to your account."`
 
 ---
 
-## 6. Summary of Trust Point Adjustments via SMS
-Below is the complete ledger of how SMS actions directly impact a student's Trust Score and Leaderboard standing:
+## 6. Complete Ledger of Trust & Leaderboard Point Adjustments
+Below is the exhaustive, verified ledger of all **Merit Rewards** and **Penalties (Demerits)** supported in the UP Bikeshare System. All point values are dynamic and admin-configurable in real time via the Admin Dashboard (`system_settings` table):
 
-| Action / Event | SMS Command / Trigger | Trust Points | Leaderboard Points | Streak Counter (`consecutive_good_rides`) |
-| :--- | :--- | :---: | :---: | :---: |
-| **Normal Good Return** | `good <code>` | **+1** | **+1** | +1 |
-| **Consistent Rider Bonus** | Every 5th `good <code>` | **+5** (Bonus) | **+5** (Bonus) | Continues counting |
-| **Community Volunteer** | `delivered <code> <loc>` | **+5** | **+5** | Unchanged |
-| **Honest Missing Report** | `missing <code>` (Verified) | **+5** | **+0** | Unchanged |
-| **Reported Broken by Borrower**| `broken <code>` (Handshake) | **−2** | **+0** | **Reset to 0** |
-| **Abandoned Handshake** | *30-Min Cron Timeout* | **−2** | **−2** | Unchanged |
-| **Overtime Ride Penalty** | *Hourly Cron Expiry* | **−3** / hr | **+0** | Unchanged |
-| **Unreported Damage (Dispute)**| `broken <code>` by Next Rider | **−5** | **+0** | **Reset to 0** |
-| **False Emergency Report** | *Admin Audit* | **−5** | **+0** | **Reset to 0** |
+### 🏆 Positive Merit Adjustments & Rewards
+| Action / Event | Trigger / SMS Command | Target Entity | System Setting Key | Trust Points (`trust_points`) | Leaderboard Points (`leaderboard_points`) | Streak Counter (`consecutive_good_rides`) |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: |
+| **Normal Good Return** | `good <code>` confirmation | Active Borrower | *(Standard)* | **+1** | **+1** | **+1** |
+| **1. Honesty Reward** | Next rider confirms `good` or 30-min timeout | **Previous Rider** *(who left bike clean)* | `honesty_reward` | **+1 to +5**<br>*(Configurable)* | **+1 to +5**<br>*(Configurable)* | Unchanged |
+| **2. Consistent Rider Bonus** | Every 5th consecutive clean trip (5, 10, 15...) | **Active Rider** | `consistent_rider_reward` | **+5 to +10**<br>*(Configurable)* | **+5 to +10**<br>*(Configurable)* | Continues counting |
+| **3. Delivered Broken Bike** | `delivered <code> <loc>` or Admin Manual | **Volunteer Rider** *(not the breaker)* | `reward_delivered_bike` | **+5 to +15**<br>*(Configurable)* | **+5 to +15**<br>*(Configurable)* | Unchanged |
+| **4. Honest Dispute Report** | `broken`/`missing` verified by Admin Verdict | **Reporting Member** | `reward_honest_report` | **+5 to +15**<br>*(Configurable)* | **+5 to +15**<br>*(Configurable)* | Unchanged |
+| **5. Community Volunteer**| Admin manual credit for shift / repair work | **Student Volunteer** | `reward_community_volunteer`| **+30**<br>*(Configurable)* | **+30**<br>*(Configurable)* | Unchanged |
+
+*(Note: All positive merit rewards credit BOTH `trust_points` up to the hard ceiling cap of 120, and `leaderboard_points` with no ceiling to boost competitive campus ranking).*
+
+### ⚠️ Negative Penalty Adjustments & Demerits
+| Action / Event | Trigger / SMS Command | Target Entity | System Setting Key | Trust Points (`trust_points`) | Leaderboard Points (`leaderboard_points`) | Streak Counter (`consecutive_good_rides`) |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: |
+| **1. Handshake Timeout** | *30-Min Cron Expiry* without confirmation | **Returning Rider** | `penalty_abandoned_handshake`| **−2**<br>*(Configurable)* | **−2**<br>*(Configurable)* | Unchanged |
+| **2. Overtime Ride Penalty** | *Hourly Cron Expiry* past borrow limit | **Active Rider** | `penalty_overtime` | **−5 / hr**<br>*(Configurable)* | **+0** | Unchanged |
+| **3. Ghost Bike Abandonment**| Admin manual demerit for abandoning checkout | **Active Rider** | *Admin Manual Deduction* | **−20**<br>*(Configurable)* | **−20**<br>*(Configurable)* | **Reset to 0** |
+| **4. Unreported Damage** | Guilty Verdict in Admin Dispute Review | **Previous Rider** *(who broke & ran)*| `penalty_hit_and_run` | **−30 to −35**<br>*(Configurable)* | **−30 to −35**<br>*(Configurable)* | **Reset to 0** |
+| **5. False Damage Report** | Unfounded Verdict on fake/lying claim | **Reporting Member** | `penalty_false_report` | **−5 to −15**<br>*(Configurable)* | **−5 to −15**<br>*(Configurable)* | **Reset to 0** |
+
+*(Note: For Unreported Damage, administrators have a built-in **Waive Penalty** checkbox in the dashboard to issue a warning to first-time offenders without deducting points).*
+
+---
+
+## 7. Facebook Messenger Bot Integration & Persistent Menu Protocol
+To supplement SMS communication and provide rich media capabilities (such as uploading dispute evidence photos), the system integrates with Meta's Facebook Messenger Graph API (`facebookWebhookController.js`).
+
+### 7.1 Dispute Appeal Photo Upload Protocol (`m(.)me/upbikesharebot`)
+When a student's account is frozen due to an ongoing bike dispute (`points_frozen === 1`), SMS commands are restricted. To appeal and restore their account:
+1. **Initiate Appeal:** The student messages the FB bot. The backend matches their Facebook PSID or prompts for their registered phone number, locating their profile in `members`.
+2. **State Transition:** When verified as frozen, the bot sets their session state in `fb_bot_sessions` to `AWAITING_PHOTO` and guides them to upload visual proof of the bicycle's condition and combination lock.
+3. **Image Capture & Linking:** Upon receiving an image attachment, the controller extracts the URL and executes atomic database updates:
+   ```sql
+   UPDATE bicycle_codes SET dispute_image_url = ? WHERE bicycle_code = ?;
+   UPDATE bicycle_history SET dispute_image_url = ? WHERE id = ?;
+   UPDATE fb_bot_sessions SET bot_state = 'COMPLETED' WHERE psid = ?;
+   ```
+4. **Admin Dashboard Review:** The uploaded photo instantly attaches to the active dispute ticket on the Web Dashboard (`admin.js`), allowing administrators to inspect the evidence and issue a verdict (`Guilty`, `Neutral`, or `Waive`).
+
+### 7.2 Vertical Stacked Completion Buttons (`sendFbCompletionButtons`)
+To maintain a clean, non-intrusive chat experience:
+* **Why Not Standard Quick Replies?** Standard quick replies render horizontally as scrolling pills and appear on every message, cluttering standard text conversations. Ice Breakers only appear on brand new chats with zero history and vanish permanently once messaging begins.
+* **Unified Card with Vertical Buttons:** The system utilizes Meta's **Button Template (`template_type: "button"`)** to present stacked vertical options attached directly beneath completion messages (such as after successful photo upload, checking good standing, or completed appeal states):
+  ```json
+  {
+    "type": "template",
+    "payload": {
+      "template_type": "button",
+      "text": "Thank you! Your dispute appeal photo has been successfully uploaded...",
+      "buttons": [
+        { "type": "postback", "title": "🚲 File Appeal", "payload": "RESET" },
+        { "type": "postback", "title": "🔄 Start Over", "payload": "RESET" }
+      ]
+    }
+  }
+  ```
+* **Strict Character Length Control:** Because Facebook Messenger strictly enforces a 20-character limit on button titles (truncating longer text with ellipses `...`), labels are optimized to **`"🚲 File Appeal"`** (14 chars) and **`"🔄 Start Over"`** (13 chars), ensuring crisp, professional presentation without truncation.
+
+### 7.3 Permanent Access via Persistent Menu
+In addition to automated completion buttons, the bot registers a permanent **Messenger Persistent Menu** and **Get Started Button** via `setMessengerProfile.js`. This allows students to reopen the menu, file an appeal, or restart bot navigation at any time with a single tap from the chat header.

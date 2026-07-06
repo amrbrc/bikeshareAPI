@@ -161,6 +161,7 @@ To maintain clean architecture, business logic in `worker-api` is segregated by 
 * `memberController.js`: Student authentication (`/auth/login`), registration verification (`/members/check`), student dashboard aggregate statistics, and leaderboard rankings.
 * `bikeController.js`: Core SMS command execution (`borrow`, `done`, `good`, `broken`, `delivered`, `missing`, `points`, `search`, `locations`, `usage`) and dashboard data feeds (`/bicycles`, `/locations`, `/history/:code`).
 * `adminController.js`: Administrative operations (CRUD members, bicycles, stations, point overrides, dispute resolution, maintenance queue, honesty logs).
+* `facebookWebhookController.js`: Meta Graph API integration for Facebook Messenger. Handles webhook verification (`GET /webhook`), incoming message parsing (`POST /webhook`), session state machine (`fb_bot_sessions`), dispute appeal photo attachments (`dispute_image_url`), and vertical stacked button templates (`sendFbCompletionButtons`).
 * `analyticsController.js`: Aggregates historical ride data, peak hours, station utilization, and trust point distributions for dashboard charts.
 * `helpController.js`: Formulates multi-part help guides and instruction manuals.
 * `fallbackController.js`: Gracefully handles and logs unregistered users and unrecognized syntax commands.
@@ -177,18 +178,44 @@ The relational database layer is powered by **MySQL / MariaDB**, designed with s
 2. **`bicycle_codes` Table:**
    * Fleet inventory: `id`, `bicycle_code` (Primary Key / Unique), `combination_lock`, `is_active`.
    * **State Tracking:** `condition_status` ENUM (`Good`, `Borrowed`, `Pending_Status`, `Broken`, `In_Repair`, `Missing`, `Disputed`).
-   * **Location & Timing:** `current_location`, `new_location`, `broken_reported_at`, `penalty_applied`, `dispute_reported_by`, `reminder_24h_sent`.
+   * **Location & Timing:** `current_location`, `new_location`, `broken_reported_at`, `penalty_applied`, `dispute_reported_by`, `dispute_image_url`, `reminder_24h_sent`.
 3. **`bicycle_history` Table:**
-   * Immutable ride log: `id`, `bicycle_code`, `borrowed_by`, `borrower_phone`, `from_location`, `to_location`, `borrowed_at`, `done_text_received`, `condition_confirmed`, `reported_condition`, `pending_status_time`.
+   * Immutable ride log: `id`, `bicycle_code`, `borrowed_by`, `borrower_phone`, `from_location`, `to_location`, `borrowed_at`, `done_text_received`, `condition_confirmed`, `reported_condition`, `pending_status_time`, `dispute_image_url`.
    * **Automation Flags:** `reminder_1h_sent`, `reminder_4h_sent`, `reminder_pending_sent`, `last_penalty_time`.
 4. **`locations` Table:**
    * Station hubs: `id`, `location_name` (e.g., EEE, ENGG, PALMA_HALL, VINZONS, CHK), `is_active`, `is_disabled`.
-5. **`Logs` Table:**
+5. **`fb_bot_sessions` Table:**
+   * Facebook Messenger bot state machine: `id`, `psid` (Unique Facebook User ID), `phone_number`, `bot_state` (`IDLE`, `AWAITING_PHONE`, `AWAITING_PHOTO`, `COMPLETED`), `last_updated`.
+6. **`Logs` Table:**
    * Complete system audit trail: `id`, `LastName`, `FirstName`, `MobileNumber`, `SenderNumber`, `DateTime`, `Request`, `MessageID`.
-6. **`system_settings` Table:**
-   * Dynamic configuration storage: `setting_key`, `setting_value`, `description` (e.g., `handshake_timeout_mins`, `consistent_rider_reward`, `penalty_abandoned_handshake`, borrow duration limits).
+7. **`system_settings` Table:**
+   * Dynamic real-time configuration storage (`setting_key`, `setting_value`, `description`). Supports 10 core administrative variables:
+     * `honesty_reward`: Points awarded to previous rider when bike condition is confirmed Good (Default: `5`).
+     * `consistent_rider_reward`: Milestone points awarded every 5th consecutive clean ride (Default: `10`).
+     * `reward_honest_report`: Points awarded for reporting a broken/missing bike verified by admin (Default: `15`).
+     * `reward_community_volunteer`: Points awarded for completing a verified hub volunteer shift (Default: `30`).
+     * `reward_delivered_bike`: Points awarded for transporting a broken bike to a repair hub (Default: `5`).
+     * `penalty_abandoned_handshake`: Points deducted for failing to confirm condition within 30 mins (Default: `-2`).
+     * `penalty_overtime`: Points deducted per hour when exceeding the borrow limit (Default: `-5`).
+     * `penalty_hit_and_run`: Points deducted upon Guilty verdict in unreported damage dispute (Default: `-35`).
+     * `penalty_false_report`: Points deducted for submitting a false damage/missing report (Default: `-5`).
+     * `handshake_timeout_mins`: Minutes allowed before pending handshake expires (Default: `30`).
 
-### 5.2 ACID Concurrency Control & Row Locking (`FOR UPDATE`)
+### 5.2 Application-Level Timezone Synchronization (`+08:00`)
+To guarantee accurate timestamp logging across all ride histories, SMS logs, and cron schedules without requiring root-level MySQL server modifications (`SUPER` privileges), the application enforces Philippine Standard Time directly within the Node.js database connection pool (`db.js`):
+```javascript
+const upbsPool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    timezone: '+08:00', // Explicit Philippine Standard Time synchronization
+    waitForConnections: true,
+    connectionLimit: 10
+});
+```
+
+### 5.3 ACID Concurrency Control & Row Locking (`FOR UPDATE`)
 A critical engineering challenge in bikeshare systems is **Race Conditions** (e.g., two students texting `1 eee to vinzons` at the exact same millisecond for the last available bike).
 To prevent duplicate checkouts or corrupted states, all modifying operations in `bikeController.js` use **Explicit MySQL Transactions with Row-Level Locking (`FOR UPDATE`)**:
 
@@ -268,6 +295,19 @@ To elevate the visual experience beyond generic Bootstrap defaults, a custom des
 * `analytics.js`: Fetches aggregate backend metrics and paints dynamic Chart.js canvas graphs.
 * `theme.js`: Handles instant Dark/Light theme toggling via `data-theme` attribute on the HTML root.
 
+### 6.4 Leaderboard & Gamification Architecture
+To maximize student engagement across campus, the dashboard implements a dual-scoring gamification engine:
+* **Trust Points vs. Leaderboard Points:** While `trust_points` track account standing and safety (capped at a maximum of `120`), `leaderboard_points` accumulate indefinitely without a ceiling to rank competitive campus activity.
+* **Curated Rank Badges & Titles:** Students achieve distinct interactive titles displayed on the leaderboard:
+  * 👑 **Oble's Speedster / Campus Champion:** Top overall ranked riders.
+  * 🛡️ **Bike Guardian / Trusted Rider:** Awarded for maintaining a 100% clean record with 0 dispute tickets.
+  * 🌱 **Eco Warrior:** Top riders who have offset the most carbon emissions.
+  * ⚡ **Early Bird / 🦉 Sunset Cruiser:** Awarded based on time-of-day borrowing habits.
+* **Impact Calculations:** Real-time environmental metrics computed per trip:
+  * **CO₂ Emissions Saved:** Estimated at `~200g` of carbon offset per campus trip compared to motorized transit.
+  * **Calories Burned:** Estimated at `~35 kcal` burned per loop around campus academic buildings.
+* **Competitive Filter Tabs:** Supports filtering by **Weekly Sprint** (resets weekly for fair new-rider competition), **All-Time Hall of Fame**, and team competitions (**Inter-College / Department Wars** and **Dormitory Leaderboards**).
+
 ---
 
 ## 7. Automated Background Job Scheduler (`node-cron`)
@@ -278,7 +318,7 @@ Because students may forget to text `done` or confirm condition handshakes, the 
 | :--- | :---: | :---: | :--- | :--- |
 | **1-Hour Ride Reminder** | `0 * * * *` | Hourly | Bike `Borrowed` for >= 1 hour & `reminder_1h_sent = 0` | Dispatches check-in SMS: *"Hope you're enjoying the ride! Remember to text 'done'..."* |
 | **Dynamic Overtime Warning**| `0 * * * *` | Hourly | Bike `Borrowed` approaching max limit hours | Calculates remaining hours and sends warning SMS to return bike soon. |
-| **Overtime Penalty Alert** | `0 * * * *` | Hourly | Bike `Borrowed` exceeding max duration limit | Applies dynamic demerit (e.g., **−3 pts/hr**), logs penalty, sends violation alert SMS. |
+| **Overtime Penalty Alert** | `0 * * * *` | Hourly | Bike `Borrowed` exceeding max duration limit | Applies dynamic demerit (default: **−5 pts/hr**), logs penalty, sends violation alert SMS. |
 | **5-Min Handshake Reminder**| `*/2 * * * *` | Every 2 Mins | Bike in `Pending_Status` for > 5 mins & `reminder_pending_sent = 0` | Sends reminder SMS to confirm condition (`GOOD`/`BROKEN`) and save local photo proof. |
 | **Handshake Timeout Expiry**| `*/5 * * * *` | Every 5 Mins | Bike in `Pending_Status` for > `handshake_timeout_mins` (30 mins) | Auto-finalizes trip as `Good`, applies abandoned handshake penalty (**dynamic via `penalty_abandoned_handshake`, default: −2 pts**), sends alert SMS. |
 *(Note: 24-Hour Repair Warning and 48-Hour Damage Penalty timers were removed/disabled under the organization's community volunteer repair policy).*
@@ -318,6 +358,9 @@ x-api-key: <process.env.GATEWAY_API_KEY>
   Authorization: Bearer <jwt_token>
   ```
   If expired or tampered with, the server returns `401 Unauthorized` and redirects the browser to the login page.
+
+### 8.4 Git Secrets & Environmental Security (`.gitignore`)
+To adhere to zero-trust security standards and prevent automated credential leak detection alerts (such as GitGuardian false alarms), all local environment configuration files (`.env`, `.env.example`, and `.env.production`) are explicitly excluded from version control via `.gitignore`. Sensitive tokens—including `FB_PAGE_ACCESS_TOKEN`, `FB_VERIFY_TOKEN`, `GATEWAY_API_KEY`, `JWT_SECRET`, and MySQL database credentials—are loaded exclusively at runtime from isolated host environments.
 
 ---
 
