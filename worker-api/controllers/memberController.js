@@ -1,6 +1,18 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 
+async function getSettingValue(name, defaultValue) {
+    try {
+        const [rows] = await db.upbsPool.query('SELECT setting_value FROM system_settings WHERE setting_name = ?', [name]);
+        if (rows.length > 0) {
+            return parseInt(rows[0].setting_value, 10);
+        }
+    } catch (err) {
+        console.error(`Failed to fetch setting ${name}:`, err);
+    }
+    return defaultValue;
+}
+
 const login = async (req, res) => {
     const { phone_number } = req.body;
 
@@ -230,6 +242,11 @@ const getStudentDashboard = async (req, res) => {
                 return "09XX-***-XXXX";
             };
 
+            const honestyRewardVal = await getSettingValue('honesty_reward', 2);
+            const brokenRewardVal = await getSettingValue('reward_honest_report', 5);
+            const missingRewardVal = await getSettingValue('reward_missing_report', 10);
+            const deliveredRewardVal = await getSettingValue('reward_delivered_bike', 5);
+
             logRows.forEach(row => {
                 let action = "";
                 let points = "";
@@ -237,16 +254,16 @@ const getStudentDashboard = async (req, res) => {
 
                 if (row.type === 'Broken Report') {
                     action = "Reported a broken bike.";
-                    points = "+5 pts!";
+                    points = `+${brokenRewardVal} pts!`;
                 } else if (row.type === 'Missing Report') {
                     action = "Reported a missing bike.";
-                    points = "+10 pts!";
+                    points = `+${missingRewardVal} pts!`;
                 } else if (row.type === 'Delivered for Repair') {
                     action = "Delivered a bike to the hub for repair.";
-                    points = "Helpful Deed";
+                    points = `+${deliveredRewardVal} pts!`;
                 } else if (row.type === 'Conflict Report Reward' || row.type === 'Neutral Report Reward') {
                     action = "Rewarded for an honest report.";
-                    points = "+5 pts!";
+                    points = `+${brokenRewardVal} pts!`;
                 }
 
                 honors.push({
@@ -262,7 +279,7 @@ const getStudentDashboard = async (req, res) => {
                 honors.push({
                     phone: maskPhone(row.phone),
                     action: `Returned Bike ${row.bike || ''} in good condition.`,
-                    points: "+1 pt!",
+                    points: `+${honestyRewardVal} pts!`,
                     date: row.date,
                     isPositive: true
                 });

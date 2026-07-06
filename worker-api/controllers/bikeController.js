@@ -613,7 +613,7 @@ const done = async (req, res) => {
             const prevUser = historyRecords[1];
             if (prevUser.reported_condition === 'Good' || (prevUser.reported_condition === null && prevUser.condition_confirmed === 1)) {
                 // Reward previous user for being honest (ceiling of 120 points)
-                const honestyReward = await getSettingValue('honesty_reward', 1, upbsConn);
+                const honestyReward = await getSettingValue('honesty_reward', 2, upbsConn);
                 if (prevUser.borrower_phone) {
                     await upbsConn.query(
                         "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",

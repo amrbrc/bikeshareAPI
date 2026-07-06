@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 
 -- Insert default rules and point configurations
 INSERT INTO system_settings (setting_name, setting_value, description) VALUES
-('honesty_reward', '5', 'Points rewarded when a Good condition report is confirmed by the next rider.'),
+('honesty_reward', '2', 'Points rewarded when a Good condition report is confirmed by the next rider.'),
 ('consistent_rider_reward', '10', 'Points rewarded for completing multiple rides without issues.'),
 ('reward_honest_report', '15', 'Points rewarded for reporting a broken/missing bike that was disputed.'),
 ('reward_community_volunteer', '30', 'Points rewarded to a user who completes a verified Community Service shift at a hub.'),
