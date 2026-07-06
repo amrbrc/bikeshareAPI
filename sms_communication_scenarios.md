@@ -435,7 +435,7 @@ Below is the exhaustive, verified ledger of all **Merit Rewards** and **Penaltie
 | Action / Event | Trigger / SMS Command | Target Entity | System Setting Key | Trust Points (`trust_points`) | Leaderboard Points (`leaderboard_points`) | Streak Counter (`consecutive_good_rides`) |
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: |
 | **1. Handshake Timeout** | *30-Min Cron Expiry* without confirmation | **Returning Rider** | `penalty_abandoned_handshake`| **−2**<br>*(Configurable)* | **−2**<br>*(Configurable)* | Unchanged |
-| **2. Overtime Ride Penalty** | *Hourly Cron Expiry* past borrow limit | **Active Rider** | `penalty_overtime` | **−5 / hr**<br>*(Configurable)* | **+0** | Unchanged |
+| **2. Overtime Ride Penalty** | *Hourly Cron Expiry* past borrow limit | **Active Rider** | `penalty_overtime` | **−5 / hr**<br>*(Configurable)* | **−5 / hr**<br>*(Configurable)* | Unchanged |
 | **3. Ghost Bike Abandonment**| Admin manual demerit for abandoning checkout | **Active Rider** | *Admin Manual Deduction* | **−20**<br>*(Configurable)* | **−20**<br>*(Configurable)* | **Reset to 0** |
 | **4. Unreported Damage** | Guilty Verdict in Admin Dispute Review | **Previous Rider** *(who broke & ran)*| `penalty_hit_and_run` | **−30 to −35**<br>*(Configurable)* | **−30 to −35**<br>*(Configurable)* | **Reset to 0** |
 | **5. False Damage Report** | Unfounded Verdict on fake/lying claim | **Reporting Member** | `penalty_false_report` | **−5 to −15**<br>*(Configurable)* | **−5 to −15**<br>*(Configurable)* | **Reset to 0** |

@@ -310,7 +310,7 @@ const getLeaderboards = async (req, res) => {
             lastResetDate = new Date(settingsRows[0].setting_value);
             const now = new Date();
             const diffTime = Math.abs(now - lastResetDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
             if (diffDays >= 14) {
                 // Perform Reset (Base Carryover)
