@@ -49,6 +49,7 @@ router.post('/how', verifyGateway, helpController.how);
 router.get('/gateway/outbound', verifyGateway, gatewayController.getPendingSms);
 router.post('/gateway/outbound/:id/sent', verifyGateway, gatewayController.markSmsSent);
 router.get('/gateway/debug-db', verifyGateway, gatewayController.debugDb);
+router.get('/gateway/test-notifications', verifyGateway, gatewayController.testNotifications);
 
 // Public Auth & Admin Routes
 router.post('/auth/login', memberController.login);

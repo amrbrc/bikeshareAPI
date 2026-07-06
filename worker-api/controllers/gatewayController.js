@@ -48,4 +48,26 @@ const debugDb = async (req, res) => {
     }
 };
 
-module.exports = { getPendingSms, markSmsSent, debugDb };
+/**
+ * GET /api/gateway/test-notifications
+ * Triggers a test notification (Discord & Email) to verify config values live on Render.
+ */
+const testNotifications = async (req, res) => {
+    try {
+        const notificationService = require('../services/notificationService');
+        const studentName = 'Amer Talastasin (Test)';
+        const phoneNumber = '+639615580206';
+        const bikeCode = '99';
+        const imageUrl = 'https://raw.githubusercontent.com/amrbrc/bikeshareAPI/main/dashboard/icons/icon-192.png';
+
+        await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
+        await notificationService.sendEmailNotification(studentName, phoneNumber, bikeCode, imageUrl);
+
+        return res.json({ success: true, message: "Test notifications dispatched to Discord and Email." });
+    } catch (err) {
+        console.error("Test notifications failed:", err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+module.exports = { getPendingSms, markSmsSent, debugDb, testNotifications };
