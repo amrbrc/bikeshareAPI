@@ -109,4 +109,93 @@ async function sendEmailNotification(studentName, phoneNumber, bikeCode, imageUr
     }
 }
 
-module.exports = { sendDiscordNotification, sendEmailNotification };
+/**
+ * Sends a notification when a bike is disputed (before the photo is uploaded).
+ */
+async function sendDisputeCreatedNotification(bikeCode, reporterName, reporterPhone, frozenName, frozenPhone) {
+    // 1. Discord Webhook
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (webhookUrl) {
+        const payload = {
+            embeds: [{
+                title: "⚠️ New Dispute Flagged",
+                color: 16753920, // Orange warning color
+                fields: [
+                    { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true },
+                    { name: "Reported By (Next Rider)", value: `${reporterName} (${reporterPhone})`, inline: true },
+                    { name: "Frozen Account (Prev Rider)", value: `${frozenName ? `${frozenName} (${frozenPhone})` : frozenPhone}`, inline: true }
+                ],
+                description: `Bike #${bikeCode} has been reported broken by the next user. The previous borrower's account has been frozen pending a Messenger appeal photo.`,
+                timestamp: new Date().toISOString()
+            }]
+        };
+        try {
+            const res = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                console.error(`[Notification] Discord warning returned status ${res.status}`);
+            } else {
+                console.log(`[Notification] Discord dispute warning sent for Bike #${bikeCode}`);
+            }
+        } catch (err) {
+            console.error('[Notification] Failed to send Discord warning:', err.message);
+        }
+    }
+
+    // 2. Email Alert
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
+    if (SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_TO) {
+        try {
+            const transporter = nodemailer.createTransport({
+                host: SMTP_HOST,
+                port: Number(SMTP_PORT) || 587,
+                secure: Number(SMTP_PORT) === 465,
+                auth: {
+                    user: SMTP_USER,
+                    pass: SMTP_PASS
+                },
+                connectionTimeout: 5000,
+                greetingTimeout: 5000,
+                socketTimeout: 10000
+            });
+
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #d97706; border-bottom: 2px solid #d97706; padding-bottom: 8px; margin-top: 0;">⚠️ Dispute Created: Bike #${bikeCode}</h2>
+                    <p>Hello Admin Team,</p>
+                    <p>A new dispute has been registered in the system:</p>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                        <tr>
+                            <td style="padding: 6px; font-weight: bold; width: 180px; border-bottom: 1px solid #eee;">Bicycle:</td>
+                            <td style="padding: 6px; border-bottom: 1px solid #eee;">Bike #${bikeCode}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Reported By (Next User):</td>
+                            <td style="padding: 6px; border-bottom: 1px solid #eee;">${reporterName} (${reporterPhone})</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Frozen User (Prev Borrower):</td>
+                            <td style="padding: 6px; border-bottom: 1px solid #eee;">${frozenName || 'Unknown'} (${frozenPhone})</td>
+                        </tr>
+                    </table>
+                    <p>The previous borrower's account has been frozen. The student was notified to send an appeal photo to our Facebook page.</p>
+                </div>
+            `;
+
+            await transporter.sendMail({
+                from: `"UP Bikeshare System" <${SMTP_USER}>`,
+                to: SMTP_TO,
+                subject: `⚠️ Dispute Registered: Bike #${bikeCode}`,
+                html: htmlContent
+            });
+            console.log(`[Notification] Admin email warning sent successfully to ${SMTP_TO}`);
+        } catch (err) {
+            console.error('[Notification] Failed to send email warning:', err.message);
+        }
+    }
+}
+
+module.exports = { sendDiscordNotification, sendEmailNotification, sendDisputeCreatedNotification };

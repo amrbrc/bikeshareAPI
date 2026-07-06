@@ -1,5 +1,6 @@
 const db = require('../db');
 const smsService = require('../services/smsService');
+const notificationService = require('../services/notificationService');
 
 // Helper function to dynamically fetch settings from system_settings
 async function getSettingValue(name, defaultValue, conn = db.upbsPool) {
@@ -851,10 +852,30 @@ const broken = async (req, res) => {
                     await smsService.queueSMS(
                         prevMemberPhone,
                         `ALERT: Bike ${bicycleCode} reported broken! Points frozen. Send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UPBS Admin Hub to appeal.`,
-                        upbsConn
                     );
                 }
             }
+            // Trigger off-dashboard notification (Discord & Email)
+            const reporterName = `${member[0].firstname} ${member[0].lastname}`;
+            const frozenName = (history.length > 0) ? (history[0].borrowed_by || 'Unknown') : 'Unknown';
+            let prevPhone = 'N/A';
+            if (history.length > 0) {
+                prevPhone = history[0].borrower_phone;
+                if (!prevPhone && history[0].borrowed_by) {
+                    const [prevMember] = await upbsConn.query("SELECT phone_number FROM members WHERE CONCAT(firstname, ' ', lastname) = ?", [history[0].borrowed_by]);
+                    if (prevMember.length > 0) {
+                        prevPhone = prevMember[0].phone_number;
+                    }
+                }
+            }
+
+            notificationService.sendDisputeCreatedNotification(
+                bicycleCode,
+                reporterName,
+                smsSender,
+                frozenName,
+                prevPhone
+            ).catch(err => console.error('[Dispute Notifier] Failed:', err.message));
 
             await upbsConn.commit();
             return res.json({ reply: `Thank you for reporting. Bike ${bicycleCode} is marked as Disputed for admin review. You will be rewarded trust points if this is verified.` });
