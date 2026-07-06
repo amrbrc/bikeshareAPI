@@ -169,8 +169,21 @@ const getStudentDashboard = async (req, res) => {
                 );
 
                 if (logRows && logRows.length > 0) {
+                    let text = logRows[0].TextDecoded || '';
+                    const map = {
+                        'How to Borrow': 'how',
+                        'Bikeshare help': 'help',
+                        'Search All': 'search all',
+                        'Borrowing': 'borrow bike',
+                        'Search Bldg Request': 'search location',
+                        'Usage Request': 'usage check',
+                        'Broken Report': 'broken',
+                        'Missing Report': 'missing',
+                        'Delivered for Repair': 'delivered'
+                    };
+                    if (map[text]) text = map[text];
                     lastSms = {
-                        user_text: `[Recent Action: ${logRows[0].TextDecoded}]`,
+                        user_text: text,
                         date: logRows[0].ReceivingDateTime
                     };
                 }
