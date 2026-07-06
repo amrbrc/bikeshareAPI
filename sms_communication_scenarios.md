@@ -16,6 +16,7 @@ This document provides an exhaustive, comprehensive reference ("walang labis, wa
 
 ## 1. System Authentication & Fallbacks
 All incoming SMS messages are intercepted by the Gateway and verified against the registered `members` database before any business logic is executed.
+* **Raw SMS Cloud Bridge (`user_sms_inbox`):** Regardless of command validity or formatting, during every registration verification check (`POST /api/members/check`), the Gateway forwards the raw text string (`message_text`) to the Worker API. The Worker API records this exact text into the cloud MySQL database (`user_sms_inbox`), ensuring real-time display on the Student Dashboard under "Last Text Transaction" without hardcoded labels or mapping.
 
 ### Scenario 1.1: Non-Registered Sender
 * **Condition:** A phone number not registered in the system (or deactivated) texts any command to the Gateway.

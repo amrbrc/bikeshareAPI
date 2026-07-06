@@ -97,12 +97,13 @@ To understand how all system components interact in a live scenario, here is the
                                                                                   ▼
 [Gateway Server] <──(3. Polling: SELECT * FROM inbox)── [MySQL `inbox`] <──(Gammu SMSD Insert)
        │
-       ├──(4. HTTP POST /api/members/check [x-gateway-secret])──> [Worker API Server]
-       │                                                                  │
-       │                                                   (5. Query MySQL `members`)
-       │                                                                  │
-       ▼                                                                  ▼
-[Gateway Server] <──(6. JSON: { registered: true })───────────────────────┘
+       ├──(4. HTTP POST /api/members/check [payload: { phone_number, message_text }])──> [Worker API Server]
+       │                                                                                       │
+       │                                                                        (5. Query `members` & INSERT)
+       │                                                                        (into MySQL `user_sms_inbox`)
+       │                                                                                       │
+       ▼                                                                                       ▼
+[Gateway Server] <──(6. JSON: { registered: true })────────────────────────────────────────────┘
        │
        ├──(7. Regex Parse: /^(\w+)\s+(\w+)\s+to\s+(\w+)$/i)
        │
@@ -188,7 +189,11 @@ The relational database layer is powered by **MySQL / MariaDB**, designed with s
    * Facebook Messenger bot state machine: `id`, `psid` (Unique Facebook User ID), `phone_number`, `bot_state` (`IDLE`, `AWAITING_PHONE`, `AWAITING_PHOTO`, `COMPLETED`), `last_updated`.
 6. **`Logs` Table:**
    * Complete system audit trail: `id`, `LastName`, `FirstName`, `MobileNumber`, `SenderNumber`, `DateTime`, `Request`, `MessageID`.
-7. **`system_settings` Table:**
+7. **`user_sms_inbox` Table:**
+   * Cloud database SMS logging bridge: `id`, `SenderNumber`, `TextDecoded`, `ReceivingDateTime`. Populated dynamically during member verification (`/api/members/check`) when `gateway-server` forwards the raw SMS text, ensuring the student dashboard can retrieve real-time text transactions even when Gammu SMSD runs on an isolated local modem PC.
+8. **`outbound_sms` Table:**
+   * Asynchronous SMS outbox queue: `id`, `phone_number`, `message`, `status`, `created_at`, `sent_at`.
+9. **`system_settings` Table:**
    * Dynamic real-time configuration storage (`setting_key`, `setting_value`, `description`). Supports 10 core administrative variables:
      * `honesty_reward`: Points awarded to previous rider when bike condition is confirmed Good (Default: `5`).
      * `consistent_rider_reward`: Milestone points awarded every 5th consecutive clean ride (Default: `10`).
