@@ -105,7 +105,7 @@ async function sendEmailNotification(studentName, phoneNumber, bikeCode, imageUr
         });
         console.log(`[Notification] Admin email alert sent successfully to ${SMTP_TO}`);
     } catch (err) {
-        console.error('[Notification] Failed to send email alert:', err.message);
+        console.error(`[Notification] Failed to send email alert to ${SMTP_TO} via ${SMTP_HOST}:${SMTP_PORT || 587}:`, err.message);
     }
 }
 
