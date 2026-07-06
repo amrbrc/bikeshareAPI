@@ -122,8 +122,27 @@ const getStudentDashboard = async (req, res) => {
         const phoneSuffix = phone_number.substring(1);
         let lastSms = null;
 
-        const isCloudDB = process.env.DB_HOST && process.env.DB_HOST.includes('aivencloud.com');
-        if (!isCloudDB) {
+        try {
+            const [inboxRows] = await db.upbsPool.query(
+                `SELECT TextDecoded, ReceivingDateTime 
+                 FROM inbox 
+                 WHERE SenderNumber LIKE ? 
+                 ORDER BY ReceivingDateTime DESC 
+                 LIMIT 1`,
+                [`%${phoneSuffix}`]
+            );
+
+            if (inboxRows.length > 0) {
+                lastSms = {
+                    user_text: inboxRows[0].TextDecoded,
+                    date: inboxRows[0].ReceivingDateTime
+                };
+            }
+        } catch (e) {
+            // Ignore error if inbox table does not exist in primary db
+        }
+
+        if (!lastSms) {
             try {
                 const [inboxRows] = await db.upbsPool.query(
                     `SELECT TextDecoded, ReceivingDateTime 
@@ -141,30 +160,7 @@ const getStudentDashboard = async (req, res) => {
                     };
                 }
             } catch (e) {
-                console.error("Error fetching from smsd.inbox:", e.message);
-            }
-        }
-
-        // Fallback to Logs table if on cloud database or if local smsd.inbox has no records
-        if (!lastSms) {
-            try {
-                const [logRows] = await db.upbsPool.query(
-                    `SELECT Request as TextDecoded, DateTime as ReceivingDateTime 
-                     FROM Logs 
-                     WHERE MobileNumber = ? OR SenderNumber = ? 
-                     ORDER BY DateTime DESC 
-                     LIMIT 1`,
-                    [phone_number, phone_number]
-                );
-
-                if (logRows.length > 0) {
-                    lastSms = {
-                        user_text: logRows[0].TextDecoded,
-                        date: logRows[0].ReceivingDateTime
-                    };
-                }
-            } catch (e) {
-                console.error("Error fetching fallback from Logs table:", e.message);
+                // Ignore error if smsd.inbox table does not exist
             }
         }
 
