@@ -118,49 +118,31 @@ const getStudentDashboard = async (req, res) => {
             [phone_number]
         );
 
-        // 4. Get Last SMS Transaction (from user's inbox only)
+        // 4. Get Last SMS Transaction (from user's inbox across all potential Gammu DB schemas)
         const phoneSuffix = phone_number.slice(-10);
         let lastSms = null;
 
-        try {
-            const [inboxRows] = await db.upbsPool.query(
-                `SELECT TextDecoded, ReceivingDateTime 
-                 FROM inbox 
-                 WHERE SenderNumber LIKE ? 
-                 ORDER BY ReceivingDateTime DESC 
-                 LIMIT 1`,
-                [`%${phoneSuffix}`]
-            );
-
-            if (inboxRows.length > 0) {
-                lastSms = {
-                    user_text: inboxRows[0].TextDecoded,
-                    date: inboxRows[0].ReceivingDateTime
-                };
-            }
-        } catch (e) {
-            console.error("[Dashboard] Primary inbox query check failed:", e.message);
-        }
-
-        if (!lastSms) {
+        const inboxTables = ['inbox', 'smsd.inbox', 'gammu.inbox', 'upbs_sms.inbox', 'bikeshare.inbox'];
+        for (const table of inboxTables) {
+            if (lastSms) break;
             try {
                 const [inboxRows] = await db.upbsPool.query(
                     `SELECT TextDecoded, ReceivingDateTime 
-                     FROM smsd.inbox 
+                     FROM ${table} 
                      WHERE SenderNumber LIKE ? 
                      ORDER BY ReceivingDateTime DESC 
                      LIMIT 1`,
-                    [`%${phoneSuffix}`]
+                    [`%${phoneSuffix}%`]
                 );
 
-                if (inboxRows.length > 0) {
+                if (inboxRows && inboxRows.length > 0) {
                     lastSms = {
                         user_text: inboxRows[0].TextDecoded,
                         date: inboxRows[0].ReceivingDateTime
                     };
                 }
             } catch (e) {
-                console.error("[Dashboard] smsd.inbox query check failed:", e.message);
+                // Ignore error if table/schema does not exist in this MySQL instance
             }
         }
 
