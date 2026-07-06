@@ -1,4 +1,5 @@
 const db = require('../db');
+const notificationService = require('../services/notificationService');
 
 // Helper to send messages back to the user via Meta's Send API using built-in fetch
 async function sendFbMessage(recipientPsid, messageText) {
@@ -296,6 +297,17 @@ async function processIncomingMessage(psid, message) {
         // Save image URL to both the bike code and history record
         await db.upbsPool.query('UPDATE bicycle_codes SET dispute_image_url = ? WHERE bicycle_code = ?', [imageUrl, dispute.bicycle_code]);
         await db.upbsPool.query('UPDATE bicycle_history SET dispute_image_url = ? WHERE id = ?', [imageUrl, dispute.history_id]);
+
+        // Trigger off-dashboard admin notifications (Discord Webhook + Email)
+        const studentName = `${member.firstname} ${member.lastname}`;
+        const phoneNumber = session.phone_number;
+        const bikeCode = dispute.bicycle_code;
+
+        notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl)
+            .catch(err => console.error('[FB Bot] Async Discord notification failed:', err.message));
+
+        notificationService.sendEmailNotification(studentName, phoneNumber, bikeCode, imageUrl)
+            .catch(err => console.error('[FB Bot] Async Email notification failed:', err.message));
 
         // Mark session as COMPLETED
         await db.upbsPool.query('UPDATE fb_bot_sessions SET bot_state = ? WHERE psid = ?', ['COMPLETED', psid]);

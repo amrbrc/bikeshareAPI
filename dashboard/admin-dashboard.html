@@ -50,7 +50,8 @@
 
         <div class="sidebar-bottom mt-auto pt-4 border-top">
             <div class="d-flex gap-2 mb-3">
-                <button id="theme-toggle" class="theme-toggle btn flex-fill" title="Toggle Theme"><i class="bi bi-moon-fill"></i></button>
+                <button id="theme-toggle" class="theme-toggle btn flex-fill" title="Toggle Theme"><i
+                        class="bi bi-moon-fill"></i></button>
                 <div class="theme-toggle flex-fill d-flex align-items-center justify-content-center" id="live-time"
                     style="flex: 2; font-size: 0.85rem; font-weight: 600;">--:--:--
                 </div>
@@ -206,8 +207,11 @@
             <div class="mb-4">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
                     <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px;">
-                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Overall System Analytics</h3>
-                        <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted);">Lifetime aggregated metrics</p>
+                        <h3 class="h5 mb-0 fw-bolder"
+                            style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;">Overall
+                            System Analytics</h3>
+                        <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted);">Lifetime
+                            aggregated metrics</p>
                     </div>
                 </div>
 
@@ -216,11 +220,13 @@
                     <div class="col-12">
                         <div class="d-flex gap-3 flex-wrap">
                             <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
-                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Rides (All-Time)</span>
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Total Rides
+                                    (All-Time)</span>
                                 <span class="val h2 fw-bold mb-0" id="analytics-overall-total-rides">--</span>
                             </div>
                             <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
-                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Peak Usage Hour (All-Time)</span>
+                                <span class="lbl text-muted text-uppercase fw-semibold mb-2">Peak Usage Hour
+                                    (All-Time)</span>
                                 <span class="val h2 fw-bold mb-0" id="analytics-overall-peak-hour">--</span>
                             </div>
                             <div class="stat-box card flex-fill border p-3 shadow-sm" style="min-width: 120px;">
@@ -245,13 +251,21 @@
                     <div class="col-lg-6" id="analytics-overall-chart-stations-col">
                         <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
                             <div class="panel-title h6 mb-3 fw-bold">Most Popular Stations (All-Time)</div>
-                            <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
-                                <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
-                                    <canvas id="chart-overall-popular-stations" style="width: 100%; height: 100%;"></canvas>
+                            <div
+                                style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                                <div
+                                    style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
+                                    <canvas id="chart-overall-popular-stations"
+                                        style="width: 100%; height: 100%;"></canvas>
                                     <!-- Center Label -->
-                                    <div style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                                        <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
-                                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-overall-center-val">--</span>
+                                    <div
+                                        style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                        <span
+                                            style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total
+                                            Rides</span>
+                                        <span
+                                            style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;"
+                                            id="doughnut-overall-center-val">--</span>
                                     </div>
                                 </div>
                             </div>
@@ -260,39 +274,52 @@
                 </div>
             </div>
 
-            <hr style="border-color: var(--border); opacity: 0.15; margin-top: 4rem !important; margin-bottom: 3rem !important;">
+            <hr
+                style="border-color: var(--border); opacity: 0.15; margin-top: 4rem !important; margin-bottom: 3rem !important;">
 
             <!-- SECTION 2: PERIODIC SYSTEM ANALYTICS -->
             <div>
                 <!-- Analytics Header: Period Label + Timeframe Filter Bar -->
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 1rem; gap: 12px;">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 1rem; gap: 12px;">
                     <div style="border-left: 4px solid var(--up-maroon); padding-left: 10px; min-width: 0;">
-                        <h3 class="h5 mb-0 fw-bolder" style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;" id="periodic-analytics-title">Periodic Analytics</h3>
-                        <p class="mb-0 fw-semibold" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            Showing data for <span id="analytics-month-label" style="color: var(--text-h); font-weight: 700;">--</span>
+                        <h3 class="h5 mb-0 fw-bolder"
+                            style="color: var(--up-maroon); letter-spacing: -0.02em; text-transform: uppercase;"
+                            id="periodic-analytics-title">Periodic Analytics</h3>
+                        <p class="mb-0 fw-semibold"
+                            style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            Showing data for <span id="analytics-month-label"
+                                style="color: var(--text-h); font-weight: 700;">--</span>
                         </p>
                     </div>
                     <!-- Timeframe Filter Bar -->
-                    <div class="d-flex align-items-center gap-3 flex-wrap" id="analytics-filter-bar" style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <div class="d-flex align-items-center gap-3 flex-wrap" id="analytics-filter-bar"
+                        style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
                         <!-- Mode Indicator & Dropdown -->
                         <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">View:</span>
-                            <select id="analytics-period-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 140px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 12px; cursor: pointer;">
+                            <span class="text-muted fw-bold small text-uppercase"
+                                style="letter-spacing: 0.5px; font-size: 0.75rem;">View:</span>
+                            <select id="analytics-period-select" class="form-select form-select-sm fw-semibold"
+                                style="width: auto; min-width: 140px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 12px; cursor: pointer;">
                                 <option value="month">Monthly View</option>
                                 <option value="year">Yearly View</option>
                             </select>
                         </div>
                         <!-- Year Indicator & Dropdown -->
                         <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Year:</span>
-                            <select id="analytics-year-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 110px; max-height: 250px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
+                            <span class="text-muted fw-bold small text-uppercase"
+                                style="letter-spacing: 0.5px; font-size: 0.75rem;">Year:</span>
+                            <select id="analytics-year-select" class="form-select form-select-sm fw-semibold"
+                                style="width: auto; min-width: 110px; max-height: 250px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
                                 <!-- Populated by JS -->
                             </select>
                         </div>
                         <!-- Month Indicator & Dropdown -->
                         <div class="d-flex align-items-center gap-2" id="analytics-month-wrapper">
-                            <span class="text-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Month:</span>
-                            <select id="analytics-month-select" class="form-select form-select-sm fw-semibold" style="width: auto; min-width: 130px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
+                            <span class="text-muted fw-bold small text-uppercase"
+                                style="letter-spacing: 0.5px; font-size: 0.75rem;">Month:</span>
+                            <select id="analytics-month-select" class="form-select form-select-sm fw-semibold"
+                                style="width: auto; min-width: 130px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
                                 <option value="1">January</option>
                                 <option value="2">February</option>
                                 <option value="3">March</option>
@@ -333,9 +360,12 @@
                     <!-- No Data Message -->
                     <div class="col-12" id="analytics-no-data" style="display: none;">
                         <div class="text-center py-5" style="color: var(--text-muted);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.3; margin-bottom: 12px; display: block; margin-inline: auto;">
-                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor"
+                                viewBox="0 0 16 16"
+                                style="opacity: 0.3; margin-bottom: 12px; display: block; margin-inline: auto;">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                <path
+                                    d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
                             </svg>
                             <p class="fw-semibold mb-0" id="no-data-msg-text">No ride data for this period.</p>
                             <p class="small">Try selecting a different period or year from the filters above.</p>
@@ -345,7 +375,8 @@
                     <!-- Peak Hours Line Chart -->
                     <div class="col-lg-6" id="analytics-chart-hours-col">
                         <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
-                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-peak-hours-title">Peak Usage Hours</div>
+                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-peak-hours-title">Peak Usage Hours
+                            </div>
                             <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
                                 <canvas id="chart-peak-hours" style="width: 100%; height: 100%;"></canvas>
                             </div>
@@ -355,14 +386,22 @@
                     <!-- Popular Stations Doughnut Chart -->
                     <div class="col-lg-6" id="analytics-chart-stations-col">
                         <div class="panel card border p-4 shadow-sm d-flex flex-column" style="height: 380px;">
-                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-popular-stations-title">Most Popular Stations</div>
-                            <div style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
-                                <div style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
+                            <div class="panel-title h6 mb-3 fw-bold" id="monthly-popular-stations-title">Most Popular
+                                Stations</div>
+                            <div
+                                style="flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 0;">
+                                <div
+                                    style="width: 260px; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;">
                                     <canvas id="chart-popular-stations" style="width: 100%; height: 100%;"></canvas>
                                     <!-- Center Label -->
-                                    <div style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                                        <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total Rides</span>
-                                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;" id="doughnut-center-val">--</span>
+                                    <div
+                                        style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                        <span
+                                            style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Total
+                                            Rides</span>
+                                        <span
+                                            style="font-size: 1.5rem; font-weight: 800; color: var(--text-h); display: block;"
+                                            id="doughnut-center-val">--</span>
                                     </div>
                                 </div>
                             </div>
@@ -433,8 +472,11 @@
                         <div class="d-flex flex-column gap-3 mt-auto">
                             <div class="settings-input-group d-flex flex-column gap-2">
                                 <label class="form-label settings-label fw-bold text-muted text-uppercase mb-0"
-                                    style="font-size: 0.7rem; letter-spacing: 0.05em;">Pin Location (Drag Pin or Click Map)</label>
-                                <div id="add-station-map" style="height: 180px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1;"></div>
+                                    style="font-size: 0.7rem; letter-spacing: 0.05em;">Pin Location (Drag Pin or Click
+                                    Map)</label>
+                                <div id="add-station-map"
+                                    style="height: 180px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1;">
+                                </div>
                             </div>
                             <div class="settings-input-group d-flex flex-column gap-2">
                                 <label class="form-label settings-label fw-bold text-muted text-uppercase mb-0"
