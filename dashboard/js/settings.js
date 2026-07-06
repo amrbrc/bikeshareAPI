@@ -1721,12 +1721,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchMemberOverride && btnSearchMemberOverride) {
         const executeMemberSearch = () => {
             const query = searchMemberOverride.value.trim().toLowerCase();
+            const queryCore = query.replace(/[\s\-\(\)]/g, '').replace(/^(\+63|63|0)(?=9)/, '');
             const items = document.querySelectorAll('.member-item');
 
             items.forEach(item => {
                 const phone = (item.dataset.phone || '').toLowerCase();
+                const phoneCore = phone.replace(/[\s\-\(\)]/g, '').replace(/^(\+63|63|0)(?=9)/, '');
                 const name = (item.dataset.name || '').toLowerCase();
-                if (query === '' || phone.includes(query) || name.includes(query)) {
+                if (query === '' || phone.includes(query) || (queryCore && phoneCore.includes(queryCore)) || name.includes(query)) {
                     item.classList.remove('d-none');
                 } else {
                     item.classList.add('d-none');

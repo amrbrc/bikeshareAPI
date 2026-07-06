@@ -372,10 +372,12 @@ const searchBicycles = async (req, res) => {
 // GET /api/admin/search/members
 const searchMembers = async (req, res) => {
     const query = req.query.q || '';
+    const cleanQuery = query.trim().replace(/[\s\-\(\)]/g, '');
+    const phoneQuery = cleanQuery.replace(/^(\+63|63|0)(?=9)/, '');
     try {
         const [rows] = await db.upbsPool.query(
-            "SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE (phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 50",
-            [`%${query}%`, `%${query}%`, `%${query}%`]
+            "SELECT firstname, lastname, phone_number, trust_points, points_frozen FROM members WHERE (phone_number LIKE ? OR phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 50",
+            [`%${query.trim()}%`, `%${phoneQuery}%`, `%${query.trim()}%`, `%${query.trim()}%`]
         );
         return res.json({ success: true, data: rows });
     } catch (err) {
@@ -581,12 +583,17 @@ const searchMember = async (req, res) => {
     }
 
     try {
+        const cleanQuery = query.trim().replace(/[\s\-\(\)]/g, '');
+        const phoneQuery = cleanQuery.replace(/^(\+63|63|0)(?=9)/, '');
         const sql = `
-            SELECT firstname, lastname, phone_number, trust_points, points_frozen, is_active \n            FROM members \n            WHERE (phone_number LIKE ? OR lastname LIKE ?) ORDER BY is_active DESC
+            SELECT firstname, lastname, phone_number, trust_points, points_frozen, is_active 
+            FROM members 
+            WHERE (phone_number LIKE ? OR phone_number LIKE ? OR firstname LIKE ? OR lastname LIKE ?) ORDER BY is_active DESC
             LIMIT 20
         `;
-        const wildcard = `%${query}%`;
-        const [rows] = await db.upbsPool.query(sql, [wildcard, wildcard]);
+        const qTrim = `%${query.trim()}%`;
+        const qPhone = `%${phoneQuery}%`;
+        const [rows] = await db.upbsPool.query(sql, [qTrim, qPhone, qTrim, qTrim]);
 
         return res.json({ success: true, data: rows });
     } catch (err) {

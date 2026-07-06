@@ -30,10 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="small fw-semibold text-muted">Lock Code:</span>
                     <span class="small fw-bold text-dark font-monospace">${bike.lock_code}</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="small fw-semibold text-muted">Condition Status:</span>
-                    <span class="small fw-semibold text-dark">${bike.status}</span>
-                </div>
             </div>
         </div>
     `;
