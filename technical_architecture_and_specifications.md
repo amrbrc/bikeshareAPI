@@ -195,7 +195,7 @@ The relational database layer is powered by **MySQL / MariaDB**, designed with s
    * Asynchronous SMS outbox queue: `id`, `phone_number`, `message`, `status`, `created_at`, `sent_at`.
 9. **`system_settings` Table:**
    * Dynamic real-time configuration storage (`setting_key`, `setting_value`, `description`). Supports 10 core administrative variables:
-     * `honesty_reward`: Points awarded to previous rider when bike condition is confirmed Good (Default: `5`).
+     * `honesty_reward`: Points awarded to the previous rider when the next borrower completes their trip (`done`) without reporting issues, confirming the bike was left clean (Default: `5`).
      * `consistent_rider_reward`: Milestone points awarded every 5th consecutive clean ride (Default: `10`).
      * `reward_honest_report`: Points awarded for reporting a broken/missing bike verified by admin (Default: `15`).
      * `reward_community_volunteer`: Points awarded for completing a verified hub volunteer shift (Default: `30`).

@@ -52,7 +52,7 @@ Amer is responsible for all database migrations, backend endpoints, scheduled ti
 
 ### 5. Dispute "Waive" Checkbox Backend handler
 * [x] **Waiver Logic**: Update `POST /api/admin/resolve-dispute` to accept `waive_penalty` in the payload.
-* [x] **Point Bypass**: If verdict is guilty and `waive_penalty` is true, resolve the dispute (unfreeze user, mark bike as broken), but skip the point deduction query. Send a custom SMS explaining that the points deduction was waived.
+* [x] **Point Bypass**: If verdict is guilty (or innocent on a false report) and `waive_penalty` is true, resolve the dispute without deducting points from the guilty borrower (or false reporter). Send a custom SMS explaining that the points deduction was waived.
 
 
 ### 6. Authentication API Endpoints

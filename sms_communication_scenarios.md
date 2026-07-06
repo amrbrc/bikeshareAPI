@@ -52,6 +52,29 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
 ## 2. Core Ride Lifecycle (Borrow ➔ Done ➔ Handshake)
 This section outlines the primary workflow when checking out a bike, riding it, and returning it.
 
+### 2.0 Core Lifecycle Flow & Honesty Protocol
+```
+[Student Registration] ➔ [SMS Borrow Request] ➔ [SMS Return (done)] ➔ [30-Min Handshake (good/broken)]
+                                                                               │
+                                                                   [Next Rider Checkouts Bike]
+                                                                               │
+                                                        ┌──────────────────────┴──────────────────────┐
+                                                        ▼                                             ▼
+                                          [Next Rider Completes Trip]                     [Next Rider Reports Broken]
+                                             (`done <code>` SMS)                            (`broken <code>` SMS)
+                                                        │                                             │
+                                                        ▼                                             ▼
+                                           [Honesty Reward Awarded]                      [Dispute Protocol Triggered]
+                                           (+5 Points to Prev Rider)                     (Prev Rider Account Frozen)
+                                                                                                      │
+                                                                                                      ▼
+                                                                                           [FB Chatbot Appeal System]
+                                                                                           (Submit Photo Proof)
+                                                                                                      │
+                                                                                                      ▼
+                                                                                           [Admin Review & Verdict]
+```
+
 ### Scenario 2.1: Successful Bike Checkout (`borrow`)
 * **Condition:** Active member with good standing borrows an available bike from a valid station to another valid station.
 * **User SMS Pattern:** `<code> <from> to <to>` (e.g., `1 eee to vinzons`)
@@ -98,7 +121,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 ### Scenario 2.6: Ending Trip Successfully (`done`)
 * **Condition:** Active borrower texts `done` to end their trip and lock the bike.
 * **User SMS Pattern:** `done <code>` or `<code> done` (e.g., `done 1` / `1 done`)
-* **System Action:** Marks `done_text_received = 1`, records timestamp, updates bike status to `Pending_Status`, and prompts the mandatory return condition check.
+* **System Action:** Marks `done_text_received = 1`, records timestamp, updates bike status to `Pending_Status`, and prompts the mandatory return condition check. Furthermore, if this bicycle was previously ridden by another student who reported its condition as Good, **the system awards the Honesty Reward (`honesty_reward`, default +5 points) to that previous rider at this exact moment**, since the next rider successfully completing their trip (`done`) serves as indisputable proof that they used the bicycle without encountering damage.
 * **System SMS Reply (<160 chars Single SMS):**
   > `"Trip ended for Bike [Code]. Reply 'GOOD [Code]' or 'BROKEN [Code]'. Save a photo on your phone as local proof (do not send)."`
 
@@ -178,6 +201,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   > `"Thank you for reporting. Bike [Code] is marked as Disputed for admin review. You will be rewarded trust points if this is verified."`
 * **Outbound Alert SMS (To Previous Borrower):**
   > `"ALERT: Bike [Code] reported broken! Points frozen. Send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UPBS Admin Hub to appeal."`
+  *(Note on Checkout Grace Period: If a student has already checked out the bicycle (`borrow`), they have an admin-configurable **15-minute grace period (`abort_trip_grace_period_mins`)** to report `broken <code>`. Reporting within 15 minutes aborts their trip without penalty and triggers this Dispute Protocol against the previous rider. Reporting after 15 minutes is treated as self-reported damage caused by the current rider during their trip).*
 
 ### Scenario 3.3: Reporting Broken on an Already Disputed or Under-Repair Bike
 * **Condition:** User texts `broken` for a bike that is already undergoing maintenance or admin dispute review.
@@ -380,7 +404,7 @@ Below is the exhaustive, verified ledger of all **Merit Rewards** and **Penaltie
 | Action / Event | Trigger / SMS Command | Target Entity | System Setting Key | Trust Points (`trust_points`) | Leaderboard Points (`leaderboard_points`) | Streak Counter (`consecutive_good_rides`) |
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: |
 | **Normal Good Return** | `good <code>` confirmation | Active Borrower | *(Standard)* | **+1** | **+1** | **+1** |
-| **1. Honesty Reward** | Next rider confirms `good` or 30-min timeout | **Previous Rider** *(who left bike clean)* | `honesty_reward` | **+1 to +5**<br>*(Configurable)* | **+1 to +5**<br>*(Configurable)* | Unchanged |
+| **1. Honesty Reward** | Next rider completes trip (`done <code>`) without reporting issues | **Previous Rider** *(who left bike clean)* | `honesty_reward` | **+1 to +5**<br>*(Configurable)* | **+1 to +5**<br>*(Configurable)* | Unchanged |
 | **2. Consistent Rider Bonus** | Every 5th consecutive clean trip (5, 10, 15...) | **Active Rider** | `consistent_rider_reward` | **+5 to +10**<br>*(Configurable)* | **+5 to +10**<br>*(Configurable)* | Continues counting |
 | **3. Delivered Broken Bike** | `delivered <code> <loc>` or Admin Manual | **Volunteer Rider** *(not the breaker)* | `reward_delivered_bike` | **+5 to +15**<br>*(Configurable)* | **+5 to +15**<br>*(Configurable)* | Unchanged |
 | **4. Honest Dispute Report** | `broken`/`missing` verified by Admin Verdict | **Reporting Member** | `reward_honest_report` | **+5 to +15**<br>*(Configurable)* | **+5 to +15**<br>*(Configurable)* | Unchanged |

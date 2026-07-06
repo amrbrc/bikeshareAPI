@@ -298,19 +298,33 @@ const resolveDispute = async (req, res) => {
             await sendSMS(phone_number, `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`);
 
             if (reporterPhone) {
-                const penalty = await getSettingValue('penalty_false_report', -5);
-                const absolutePenalty = Math.abs(penalty);
-                // Penalize the false reporter (adding a negative number) and reset consecutive good rides
-                await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
+                if (waive_penalty === true || waive_penalty === 'true') {
+                    // Reset consecutive good rides but do NOT deduct penalty points from the false reporter
+                    await db.upbsPool.query("UPDATE members SET consecutive_good_rides = 0 WHERE phone_number = ?", [reporterPhone]);
 
-                // Log the false report penalty
-                await db.upbsPool.query(
-                    "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
-                    [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'False Report Penalty']
-                );
+                    // Log the false report waiver
+                    await db.upbsPool.query(
+                        "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                        [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'False Report Waived']
+                    );
 
-                // Text the false reporter about their points deduction
-                await sendSMS(reporterPhone, `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`);
+                    // Text the false reporter about the waiver
+                    await sendSMS(reporterPhone, `Notice: Your recent missing or damage report was not verified upon admin review. Your false report point penalty has been waived this time, but please inspect bike conditions carefully next time.`);
+                } else {
+                    const penalty = await getSettingValue('penalty_false_report', -5);
+                    const absolutePenalty = Math.abs(penalty);
+                    // Penalize the false reporter (adding a negative number) and reset consecutive good rides
+                    await db.upbsPool.query("UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?), consecutive_good_rides = 0 WHERE phone_number = ?", [penalty, penalty, reporterPhone]);
+
+                    // Log the false report penalty
+                    await db.upbsPool.query(
+                        "INSERT INTO Logs (LastName, FirstName, MobileNumber, SenderNumber, DateTime, Request) VALUES (?, ?, ?, ?, NOW(), ?)",
+                        [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'False Report Penalty']
+                    );
+
+                    // Text the false reporter about their points deduction
+                    await sendSMS(reporterPhone, `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`);
+                }
             }
         } else if (verdict === 'neutral') {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
