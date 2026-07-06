@@ -1,5 +1,3 @@
-const nodemailer = require('nodemailer');
-
 /**
  * Sends a rich embed notification to a Discord channel via webhook.
  */
@@ -42,70 +40,71 @@ async function sendDiscordNotification(studentName, phoneNumber, bikeCode, image
 }
 
 /**
- * Sends an HTML email alert to the admin inbox via SMTP.
+ * Sends an HTML email alert to the admin inbox via Resend HTTPS API.
  */
 async function sendEmailNotification(studentName, phoneNumber, bikeCode, imageUrl) {
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const smtpTo = process.env.SMTP_TO;
 
-    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_TO) {
-        console.log('[Notification] SMTP credentials are not fully configured. Skipping email alert.');
+    if (!resendApiKey || !smtpTo) {
+        console.log('[Notification] RESEND_API_KEY or SMTP_TO is not configured. Skipping email alert.');
         return;
     }
 
-    try {
-        const transporter = nodemailer.createTransport({
-            host: SMTP_HOST,
-            port: Number(SMTP_PORT) || 587,
-            secure: Number(SMTP_PORT) === 465,
-            auth: {
-                user: SMTP_USER,
-                pass: SMTP_PASS
-            },
-            connectionTimeout: 5000,
-            greetingTimeout: 5000,
-            socketTimeout: 10000
-        });
-
-        const htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2 style="color: #7b1113; border-bottom: 2px solid #7b1113; padding-bottom: 8px; margin-top: 0;">🔔 Dispute Appeal Submitted</h2>
-                <p>Hello Admin Team,</p>
-                <p>A new dispute appeal has been submitted for audit review:</p>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                    <tr>
-                        <td style="padding: 6px; font-weight: bold; width: 140px; border-bottom: 1px solid #eee;">Student Name:</td>
-                        <td style="padding: 6px; border-bottom: 1px solid #eee;">${studentName}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Phone Number:</td>
-                        <td style="padding: 6px; border-bottom: 1px solid #eee;">${phoneNumber}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Bicycle:</td>
-                        <td style="padding: 6px; border-bottom: 1px solid #eee;">Bike #${bikeCode}</td>
-                    </tr>
-                </table>
-                <p><strong>Appeal Photo:</strong></p>
-                <div style="margin-bottom: 20px;">
-                    <a href="${imageUrl}" target="_blank">
-                        <img src="${imageUrl}" style="max-width: 100%; max-height: 250px; border: 1px solid #ccc; border-radius: 6px; object-fit: cover;" alt="Appeal proof" />
-                    </a>
-                </div>
-                <p style="margin-top: 20px;">
-                    <a href="https://upbs-worker.onrender.com/admin-dashboard.html" style="background-color: #7b1113; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Open Admin Dashboard</a>
-                </p>
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #7b1113; border-bottom: 2px solid #7b1113; padding-bottom: 8px; margin-top: 0;">🔔 Dispute Appeal Submitted</h2>
+            <p>Hello Admin Team,</p>
+            <p>A new dispute appeal has been submitted for audit review:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; width: 140px; border-bottom: 1px solid #eee;">Student Name:</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #eee;">${studentName}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Phone Number:</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #eee;">${phoneNumber}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Bicycle:</td>
+                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Bike #${bikeCode}</td>
+                </tr>
+            </table>
+            <p><strong>Appeal Photo:</strong></p>
+            <div style="margin-bottom: 20px;">
+                <a href="${imageUrl}" target="_blank">
+                    <img src="${imageUrl}" style="max-width: 100%; max-height: 250px; border: 1px solid #ccc; border-radius: 6px; object-fit: cover;" alt="Appeal proof" />
+                </a>
             </div>
-        `;
+            <p style="margin-top: 20px;">
+                <a href="https://upbs-worker.onrender.com/admin-dashboard.html" style="background-color: #7b1113; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Open Admin Dashboard</a>
+            </p>
+        </div>
+    `;
 
-        await transporter.sendMail({
-            from: `"UP Bikeshare System" <${SMTP_USER}>`,
-            to: SMTP_TO,
-            subject: `🔔 New Dispute Appeal: Bike #${bikeCode} by ${studentName}`,
-            html: htmlContent
+    try {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: 'UP Bikeshare System <onboarding@resend.dev>',
+                to: smtpTo,
+                subject: `🔔 New Dispute Appeal: Bike #${bikeCode} by ${studentName}`,
+                html: htmlContent
+            })
         });
-        console.log(`[Notification] Admin email alert sent successfully to ${SMTP_TO}`);
+
+        const data = await response.json();
+        if (response.ok) {
+            console.log(`[Notification] Resend email alert sent successfully to ${smtpTo} (ID: ${data.id})`);
+        } else {
+            console.error('[Notification] Resend API returned an error:', data);
+        }
     } catch (err) {
-        console.error(`[Notification] Failed to send email alert to ${SMTP_TO} via ${SMTP_HOST}:${SMTP_PORT || 587}:`, err.message);
+        console.error('[Notification] Failed to send email alert via Resend:', err.message);
     }
 }
 
@@ -145,55 +144,57 @@ async function sendDisputeCreatedNotification(bikeCode, reporterName, reporterPh
         }
     }
 
-    // 2. Email Alert
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
-    if (SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_TO) {
+    // 2. Resend Email Alert
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const smtpTo = process.env.SMTP_TO;
+
+    if (resendApiKey && smtpTo) {
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #d97706; border-bottom: 2px solid #d97706; padding-bottom: 8px; margin-top: 0;">⚠️ Dispute Flagged: Bike #${bikeCode}</h2>
+                <p>Hello Admin Team,</p>
+                <p>A new dispute has been registered in the system:</p>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <tr>
+                        <td style="padding: 6px; font-weight: bold; width: 180px; border-bottom: 1px solid #eee;">Bicycle:</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #eee;">Bike #${bikeCode}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Reported By (Next User):</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #eee;">${reporterName} (${reporterPhone})</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Frozen User (Prev Borrower):</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #eee;">${frozenName || 'Unknown'} (${frozenPhone})</td>
+                    </tr>
+                </table>
+                <p>The previous borrower's account has been frozen. The student was notified to send an appeal photo to our Facebook page.</p>
+            </div>
+        `;
+
         try {
-            const transporter = nodemailer.createTransport({
-                host: SMTP_HOST,
-                port: Number(SMTP_PORT) || 587,
-                secure: Number(SMTP_PORT) === 465,
-                auth: {
-                    user: SMTP_USER,
-                    pass: SMTP_PASS
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json'
                 },
-                connectionTimeout: 5000,
-                greetingTimeout: 5000,
-                socketTimeout: 10000
+                body: JSON.stringify({
+                    from: 'UP Bikeshare System <onboarding@resend.dev>',
+                    to: smtpTo,
+                    subject: `⚠️ Dispute Registered: Bike #${bikeCode}`,
+                    html: htmlContent
+                })
             });
 
-            const htmlContent = `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px;">
-                    <h2 style="color: #d97706; border-bottom: 2px solid #d97706; padding-bottom: 8px; margin-top: 0;">⚠️ Dispute Created: Bike #${bikeCode}</h2>
-                    <p>Hello Admin Team,</p>
-                    <p>A new dispute has been registered in the system:</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                        <tr>
-                            <td style="padding: 6px; font-weight: bold; width: 180px; border-bottom: 1px solid #eee;">Bicycle:</td>
-                            <td style="padding: 6px; border-bottom: 1px solid #eee;">Bike #${bikeCode}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Reported By (Next User):</td>
-                            <td style="padding: 6px; border-bottom: 1px solid #eee;">${reporterName} (${reporterPhone})</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">Frozen User (Prev Borrower):</td>
-                            <td style="padding: 6px; border-bottom: 1px solid #eee;">${frozenName || 'Unknown'} (${frozenPhone})</td>
-                        </tr>
-                    </table>
-                    <p>The previous borrower's account has been frozen. The student was notified to send an appeal photo to our Facebook page.</p>
-                </div>
-            `;
-
-            await transporter.sendMail({
-                from: `"UP Bikeshare System" <${SMTP_USER}>`,
-                to: SMTP_TO,
-                subject: `⚠️ Dispute Registered: Bike #${bikeCode}`,
-                html: htmlContent
-            });
-            console.log(`[Notification] Admin email warning sent successfully to ${SMTP_TO}`);
+            const data = await response.json();
+            if (response.ok) {
+                console.log(`[Notification] Resend dispute warning sent successfully to ${smtpTo} (ID: ${data.id})`);
+            } else {
+                console.error('[Notification] Resend API returned an error:', data);
+            }
         } catch (err) {
-            console.error('[Notification] Failed to send email warning:', err.message);
+            console.error('[Notification] Failed to send email warning via Resend:', err.message);
         }
     }
 }
