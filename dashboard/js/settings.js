@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let addStationMarker = null;
 
     const stationToggleList = document.getElementById('station-toggle-list');
+    let cachedMembers = [];
 
     // Register Member elements
     const newMemberFirstname = document.getElementById('new-member-firstname');
@@ -454,16 +455,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
-                // Populate Admin Alert Contacts inputs
-                const adminName1Input = document.getElementById('admin-alert-name-1');
-                const adminPhone1Input = document.getElementById('admin-alert-phone-1');
-                const adminName2Input = document.getElementById('admin-alert-name-2');
-                const adminPhone2Input = document.getElementById('admin-alert-phone-2');
+                // Populate Admin Alert Contacts displays and save in global state
+                const adminName1 = settingsObj['admin_alert_name_1'] || '';
+                const adminPhone1 = settingsObj['admin_alert_phone_1'] || '';
+                const adminName2 = settingsObj['admin_alert_name_2'] || '';
+                const adminPhone2 = settingsObj['admin_alert_phone_2'] || '';
 
-                if (adminName1Input) adminName1Input.value = settingsObj['admin_alert_name_1'] || '';
-                if (adminPhone1Input) adminPhone1Input.value = settingsObj['admin_alert_phone_1'] || '';
-                if (adminName2Input) adminName2Input.value = settingsObj['admin_alert_name_2'] || '';
-                if (adminPhone2Input) adminPhone2Input.value = settingsObj['admin_alert_phone_2'] || '';
+                window.currentAdminName1 = adminName1;
+                window.currentAdminPhone1 = adminPhone1;
+                window.currentAdminName2 = adminName2;
+                window.currentAdminPhone2 = adminPhone2;
+
+                const displayName1 = document.getElementById('admin-display-name-1');
+                const displayPhone1 = document.getElementById('admin-display-phone-1');
+                const displayName2 = document.getElementById('admin-display-name-2');
+                const displayPhone2 = document.getElementById('admin-display-phone-2');
+
+                if (displayName1) displayName1.textContent = adminName1 || 'Not Configured';
+                if (displayPhone1) displayPhone1.textContent = adminPhone1 || '-';
+                if (displayName2) displayName2.textContent = adminName2 || 'Not Configured';
+                if (displayPhone2) displayPhone2.textContent = adminPhone2 || '-';
 
                 const descriptions = {
                     reward_honest_report: "Rewarded for reporting a broken/missing bike that was disputed.",
@@ -1404,7 +1415,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: getAdminHeaders()
             });
             const data = await res.json();
-            if (data.success) members = data.data;
+            if (data.success) {
+                members = data.data;
+                cachedMembers = data.data;
+            }
         } catch (e) {
             console.error('[settings.js] Failed to fetch members list:', e);
         }
@@ -1714,79 +1728,99 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Save Admin SMS Alert Contacts
-    const btnSaveAdminAlerts = document.getElementById('btn-save-admin-alerts');
-    if (btnSaveAdminAlerts) {
-        btnSaveAdminAlerts.addEventListener('click', async () => {
-            const name1 = document.getElementById('admin-alert-name-1').value.trim();
-            const phone1 = document.getElementById('admin-alert-phone-1').value.trim();
-            const name2 = document.getElementById('admin-alert-name-2').value.trim();
-            const phone2 = document.getElementById('admin-alert-phone-2').value.trim();
+    // Window functions for inline Admin Alerts Editing
+    window.startAdminEdit = function (index) {
+        const container = document.getElementById(`admin-container-${index}`);
+        if (!container) return;
 
-            const formatPhone = (p) => {
-                if (!p) return '';
-                let formatted = p.replace(/\s+/g, ''); // strip spaces and tabs
-                if (formatted.startsWith('09') && formatted.length === 11) {
-                    formatted = '+63' + formatted.substring(1);
-                } else if (formatted.startsWith('9') && formatted.length === 10) {
-                    formatted = '+63' + formatted;
-                } else if (formatted.startsWith('639') && formatted.length === 12) {
-                    formatted = '+' + formatted;
-                }
-                return formatted;
-            };
-
-            const cleanPhone1 = formatPhone(phone1);
-            const cleanPhone2 = formatPhone(phone2);
-
-            const phPhoneRegex = /^\+639\d{9}$/;
-            if (cleanPhone1 && !phPhoneRegex.test(cleanPhone1)) {
-                alert('Invalid phone number format for Primary Admin. Must be like +639171234567 or 09171234567.');
-                return;
-            }
-            if (cleanPhone2 && !phPhoneRegex.test(cleanPhone2)) {
-                alert('Invalid phone number format for Secondary Admin. Must be like +639171234567 or 09171234567.');
-                return;
-            }
-
-            const saveMsg = document.getElementById('admin-alerts-save-msg');
-            if (saveMsg) saveMsg.style.display = 'none';
-
-            try {
-                btnSaveAdminAlerts.disabled = true;
-                btnSaveAdminAlerts.textContent = 'Saving...';
-
-                const res = await fetch('/api/admin/settings', {
-                    method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: JSON.stringify({
-                        settings: [
-                            { setting_name: 'admin_alert_name_1', setting_value: name1 },
-                            { setting_name: 'admin_alert_phone_1', setting_value: cleanPhone1 },
-                            { setting_name: 'admin_alert_name_2', setting_value: name2 },
-                            { setting_name: 'admin_alert_phone_2', setting_value: cleanPhone2 }
-                        ]
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    if (saveMsg) {
-                        saveMsg.textContent = 'Saved successfully!';
-                        saveMsg.style.display = 'inline';
-                        setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
-                    }
-                    loadPointsSettings();
-                } else {
-                    alert(data.error || 'Failed to save admin contacts.');
-                }
-            } catch (err) {
-                alert('Error saving admin contacts.');
-            } finally {
-                btnSaveAdminAlerts.disabled = false;
-                btnSaveAdminAlerts.textContent = 'Save Admin Contacts';
-            }
+        // Render selector populated from cachedMembers
+        let optionsHtml = '<option value="">-- Choose Registered Member --</option>';
+        cachedMembers.forEach(mem => {
+            const fullName = `${mem.firstname} ${mem.lastname}`;
+            const selected = (mem.phone_number === (index === 1 ? window.currentAdminPhone1 : window.currentAdminPhone2)) ? 'selected' : '';
+            optionsHtml += `<option value="${mem.phone_number}" data-name="${fullName}" ${selected}>${fullName} (${mem.phone_number})</option>`;
         });
-    }
+
+        container.innerHTML = `
+            <div class="w-100 p-2" style="background-color: var(--bg-main); border-radius: 6px;">
+                <div class="fw-bold text-muted mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Select ${index === 1 ? 'Primary' : 'Secondary'} Admin</div>
+                <select id="admin-select-${index}" class="form-select form-select-sm my-2 text-dark" style="font-size: 0.8rem; background-color: var(--bg-panel); border: 1px solid var(--border); padding: 8px 10px; width: 100%; border-radius: 6px;">
+                    ${optionsHtml}
+                </select>
+                <div class="d-flex gap-2 justify-content-end mt-2">
+                    <button class="btn btn-sm btn-success fw-bold px-3 py-1" onclick="window.saveAdminSelection(${index})" style="font-size: 0.75rem; border-radius: 4px; background-color: var(--up-green); border: none; color: white;">Save</button>
+                    <button class="btn btn-sm btn-secondary fw-bold px-3 py-1" onclick="window.cancelAdminEdit(${index})" style="font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted);">Cancel</button>
+                </div>
+            </div>
+        `;
+    };
+
+    window.cancelAdminEdit = function (index) {
+        const container = document.getElementById(`admin-container-${index}`);
+        if (!container) return;
+
+        const name = index === 1 ? window.currentAdminName1 : window.currentAdminName2;
+        const phone = index === 1 ? window.currentAdminPhone1 : window.currentAdminPhone2;
+
+        container.innerHTML = `
+            <div>
+                <div class="fw-bold text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">${index === 1 ? 'Primary Admin (Admin 1)' : 'Secondary Admin (Admin 2)'}</div>
+                <div id="admin-display-name-${index}" class="fw-bold text-dark mt-1" style="font-size: 0.95rem;">${name || 'Not Configured'}</div>
+                <div id="admin-display-phone-${index}" class="small text-muted font-monospace mt-0.5">${phone || '-'}</div>
+            </div>
+            <button id="btn-edit-admin-${index}" class="btn btn-sm btn-outline-primary fw-bold" onclick="window.startAdminEdit(${index})" style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit Admin</button>
+        `;
+    };
+
+    window.saveAdminSelection = async function (index) {
+        const select = document.getElementById(`admin-select-${index}`);
+        if (!select) return;
+
+        const selectedOption = select.options[select.selectedIndex];
+        const phone = select.value;
+        const name = selectedOption ? selectedOption.getAttribute('data-name') || '' : '';
+
+        const saveMsg = document.getElementById('admin-alerts-save-msg');
+        if (saveMsg) saveMsg.style.display = 'none';
+
+        try {
+            const keyName = `admin_alert_name_${index}`;
+            const keyPhone = `admin_alert_phone_${index}`;
+
+            const res = await fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: getAdminHeaders(),
+                body: JSON.stringify({
+                    settings: [
+                        { setting_name: keyName, setting_value: name },
+                        { setting_name: keyPhone, setting_value: phone }
+                    ]
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (saveMsg) {
+                    saveMsg.textContent = 'Saved successfully!';
+                    saveMsg.style.display = 'block';
+                    setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
+                }
+                
+                // Update global state and reload row view
+                if (index === 1) {
+                    window.currentAdminName1 = name;
+                    window.currentAdminPhone1 = phone;
+                } else {
+                    window.currentAdminName2 = name;
+                    window.currentAdminPhone2 = phone;
+                }
+                window.cancelAdminEdit(index);
+            } else {
+                alert(data.error || 'Failed to save admin contacts.');
+            }
+        } catch (err) {
+            alert('Error saving admin contacts.');
+        }
+    };
 
     // Quick Bike Override Search Filter
     const searchBikeOverride = document.getElementById('search-bike-override');

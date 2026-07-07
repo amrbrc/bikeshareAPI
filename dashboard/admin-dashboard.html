@@ -806,39 +806,35 @@
                                     <span class="text-muted small">Configure contacts for real-time alerts</span>
                                 </div>
                                 <div class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1" style="padding-right: 8px;">
-                                    <p class="small text-muted mb-0">Enter the names and phone numbers of administrators who should receive real-time SMS notifications for dispute flags and appeal uploads.</p>
-                                    <div class="row g-3">
-                                        <div class="col-sm-6">
-                                            <div class="p-3 border rounded" style="background-color: var(--bg-panel); border-color: var(--border) !important;">
-                                                <div class="fw-bold text-dark mb-2" style="font-size: 0.85rem; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Primary Admin</div>
-                                                <div class="mb-2">
-                                                    <label class="form-label small text-muted mb-1">Name</label>
-                                                    <input type="text" id="admin-alert-name-1" class="form-control form-control-sm text-dark" placeholder="Name" style="font-size: 0.75rem; background-color: var(--bg-main); border: 1px solid var(--border); padding: 8px 10px;">
-                                                </div>
+                                    <p class="small text-muted mb-0">Select which administrators receive real-time SMS notifications for dispute flags and appeal uploads.</p>
+                                    
+                                    <div class="card p-3 border rounded shadow-sm mb-3" style="background-color: var(--bg-panel); border-color: var(--border) !important;">
+                                        <div class="d-flex flex-column gap-4">
+                                            
+                                            <!-- Admin 1 -->
+                                            <div id="admin-container-1" class="d-flex align-items-center justify-content-between border-bottom pb-3" style="border-color: var(--border) !important;">
                                                 <div>
-                                                    <label class="form-label small text-muted mb-1">Phone Number</label>
-                                                    <input type="text" id="admin-alert-phone-1" class="form-control form-control-sm text-dark font-monospace" placeholder="Phone (e.g. +639171234567 or 09171234567)" style="font-size: 0.75rem; background-color: var(--bg-main); border: 1px solid var(--border); padding: 8px 10px;">
+                                                    <div class="fw-bold text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Primary Admin (Admin 1)</div>
+                                                    <div id="admin-display-name-1" class="fw-bold text-dark mt-1" style="font-size: 0.95rem;">Not Configured</div>
+                                                    <div id="admin-display-phone-1" class="small text-muted font-monospace mt-0.5">-</div>
                                                 </div>
+                                                <button id="btn-edit-admin-1" class="btn btn-sm btn-outline-primary fw-bold" onclick="window.startAdminEdit(1)" style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit Admin</button>
                                             </div>
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <div class="p-3 border rounded" style="background-color: var(--bg-panel); border-color: var(--border) !important;">
-                                                <div class="fw-bold text-dark mb-2" style="font-size: 0.85rem; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Secondary Admin</div>
-                                                <div class="mb-2">
-                                                    <label class="form-label small text-muted mb-1">Name</label>
-                                                    <input type="text" id="admin-alert-name-2" class="form-control form-control-sm text-dark" placeholder="Name" style="font-size: 0.75rem; background-color: var(--bg-main); border: 1px solid var(--border); padding: 8px 10px;">
-                                                </div>
+                                            
+                                            <!-- Admin 2 -->
+                                            <div id="admin-container-2" class="d-flex align-items-center justify-content-between pb-1">
                                                 <div>
-                                                    <label class="form-label small text-muted mb-1">Phone Number</label>
-                                                    <input type="text" id="admin-alert-phone-2" class="form-control form-control-sm text-dark font-monospace" placeholder="Phone (e.g. +639171234567 or 09171234567)" style="font-size: 0.75rem; background-color: var(--bg-main); border: 1px solid var(--border); padding: 8px 10px;">
+                                                    <div class="fw-bold text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Secondary Admin (Admin 2)</div>
+                                                    <div id="admin-display-name-2" class="fw-bold text-dark mt-1" style="font-size: 0.95rem;">Not Configured</div>
+                                                    <div id="admin-display-phone-2" class="small text-muted font-monospace mt-0.5">-</div>
                                                 </div>
+                                                <button id="btn-edit-admin-2" class="btn btn-sm btn-outline-primary fw-bold" onclick="window.startAdminEdit(2)" style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit Admin</button>
                                             </div>
+                                            
                                         </div>
                                     </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-3 flex-shrink-0" style="border-top: 1px dashed var(--border) !important;">
-                                    <span id="admin-alerts-save-msg" class="small text-success fw-semibold" style="display: none; font-size: 0.75rem;">Saved successfully!</span>
-                                    <button id="btn-save-admin-alerts" class="btn btn-sm btn-primary fw-bold px-4 ms-auto" style="background-color: var(--up-maroon); border: none; font-size: 0.8rem; border-radius: 6px; padding: 10px 18px;">Save Admin Contacts</button>
+                                    
+                                    <span id="admin-alerts-save-msg" class="small text-success fw-semibold text-center" style="display: none; font-size: 0.75rem;">Saved successfully!</span>
                                 </div>
                             </div>
 
