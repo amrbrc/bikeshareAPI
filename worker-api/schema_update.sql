@@ -61,7 +61,11 @@ INSERT INTO system_settings (setting_name, setting_value, description) VALUES
 ('penalty_hit_and_run', '-35', 'Points deducted from a user found guilty of unreported damage (Hit-and-Run).'),
 ('penalty_false_report', '-5', 'Points deducted from a user who submits a false damage/missing report.'),
 ('penalty_overtime', '-5', 'Points deducted per hour from a user who borrows a bike past the 6-hour limit.'),
-('suspension_limit', '50', 'Trust score threshold below which a member account is automatically suspended.')
+('suspension_limit', '50', 'Trust score threshold below which a member account is automatically suspended.'),
+('admin_alert_name_1', '', 'Name of Primary Admin contact for SMS notifications.'),
+('admin_alert_phone_1', '', 'Phone number of Primary Admin contact for SMS notifications.'),
+('admin_alert_name_2', '', 'Name of Secondary Admin contact for SMS notifications.'),
+('admin_alert_phone_2', '', 'Phone number of Secondary Admin contact for SMS notifications.')
 ON DUPLICATE KEY UPDATE 
     setting_value = VALUES(setting_value),
     description = VALUES(description);

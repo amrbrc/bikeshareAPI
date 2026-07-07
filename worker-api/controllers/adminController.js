@@ -73,7 +73,7 @@ const getMembers = async (req, res) => {
 
 // POST /api/admin/members
 const addMember = async (req, res) => {
-    const { firstname, lastname, phone_number } = req.body;
+    const { firstname, lastname, phone_number, role } = req.body;
 
     if (!firstname || !lastname || !phone_number) {
         return res.status(400).json({ success: false, error: 'firstname, lastname, and phone_number are required' });
@@ -82,14 +82,21 @@ const addMember = async (req, res) => {
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM members WHERE phone_number = ?', [phone_number]);
         const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
+        const memberRole = role || 'student';
 
         if (existing.length > 0) {
             const member = existing[0];
             if (member.is_active === 0 || member.is_active === false) {
                 await db.upbsPool.query(
-                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, trust_points = 100, leaderboard_points = 100, points_frozen = 0 WHERE phone_number = ?',
-                    [firstname, lastname, phone_number]
+                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, role = ?, trust_points = 100, leaderboard_points = 100, points_frozen = 0 WHERE phone_number = ?',
+                    [firstname, lastname, memberRole, phone_number]
                 );
+
+                if (memberRole === 'admin') {
+                    await sendSMS(phone_number, `You are now registered as an administrator in the UP Bikeshare System (UPBS).`);
+                } else {
+                    await sendSMS(phone_number, `Welcome back to UP Bike Share! Your account has been reactivated.`);
+                }
 
                 return res.json({ success: true, message: 'User account re-activated and updated successfully!' });
             }
@@ -97,11 +104,15 @@ const addMember = async (req, res) => {
         }
 
         await db.upbsPool.query(
-            'INSERT INTO members (firstname, lastname, phone_number) VALUES (?, ?, ?)',
-            [firstname, lastname, phone_number]
+            'INSERT INTO members (firstname, lastname, phone_number, role) VALUES (?, ?, ?, ?)',
+            [firstname, lastname, phone_number, memberRole]
         );
 
-        await sendSMS(phone_number, `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`);
+        if (memberRole === 'admin') {
+            await sendSMS(phone_number, `You are now registered as an administrator in the UP Bikeshare System (UPBS).`);
+        } else {
+            await sendSMS(phone_number, `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`);
+        }
 
         return res.json({ success: true, message: 'User registered successfully!' });
     } catch (err) {

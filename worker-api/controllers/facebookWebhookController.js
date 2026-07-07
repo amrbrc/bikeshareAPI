@@ -306,6 +306,9 @@ async function processIncomingMessage(psid, message) {
         notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl)
             .catch(err => console.error('[FB Bot] Async Discord notification failed:', err.message));
 
+        notificationService.sendAdminSmsAlert(`UPBS ALERT: Dispute appeal photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`)
+            .catch(err => console.error('[FB Bot] Async Admin SMS alert failed:', err.message));
+
         // Mark session as COMPLETED
         await db.upbsPool.query('UPDATE fb_bot_sessions SET bot_state = ? WHERE psid = ?', ['COMPLETED', psid]);
 

@@ -61,8 +61,9 @@ const testNotifications = async (req, res) => {
         const imageUrl = 'https://raw.githubusercontent.com/amrbrc/bikeshareAPI/main/dashboard/icons/icon-192.png';
 
         await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
+        await notificationService.sendAdminSmsAlert("UPBS: This is a diagnostic test of the Admin SMS alert system.");
 
-        return res.json({ success: true, message: "Test notifications dispatched to Discord." });
+        return res.json({ success: true, message: "Test notifications dispatched to Discord and Admin SMS." });
     } catch (err) {
         console.error("Test notifications failed:", err.message);
         return res.status(500).json({ success: false, error: err.message });

@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newMemberPhone = document.getElementById('new-member-phone');
     const btnAddMember = document.getElementById('btn-add-member');
     const addMemberMsg = document.getElementById('add-member-msg');
+    const newMemberRole = document.getElementById('new-member-role');
     const membersList = document.getElementById('members-list');
 
     // Generic confirmation modal logic
@@ -149,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const role = newMemberRole ? newMemberRole.value : 'student';
         confirmAction('Register Member', `Are you sure you want to register ${firstname} ${lastname}?`, async () => {
             btnAddMember.disabled = true;
             btnAddMember.textContent = 'Registering...';
@@ -159,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         firstname,
                         lastname,
-                        phone_number: phone
+                        phone_number: phone,
+                        role
                     })
                 });
                 const data = await res.json();
@@ -450,6 +453,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         settingsObj[row.setting_name] = row.setting_value;
                     });
                 }
+                
+                // Populate Admin Alert Contacts inputs
+                const adminName1Input = document.getElementById('admin-alert-name-1');
+                const adminPhone1Input = document.getElementById('admin-alert-phone-1');
+                const adminName2Input = document.getElementById('admin-alert-name-2');
+                const adminPhone2Input = document.getElementById('admin-alert-phone-2');
+
+                if (adminName1Input) adminName1Input.value = settingsObj['admin_alert_name_1'] || '';
+                if (adminPhone1Input) adminPhone1Input.value = settingsObj['admin_alert_phone_1'] || '';
+                if (adminName2Input) adminName2Input.value = settingsObj['admin_alert_name_2'] || '';
+                if (adminPhone2Input) adminPhone2Input.value = settingsObj['admin_alert_phone_2'] || '';
 
                 const descriptions = {
                     reward_honest_report: "Rewarded for reporting a broken/missing bike that was disputed.",
@@ -473,8 +487,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const thresholds = [];
 
                 for (const [key, val] of Object.entries(settingsObj)) {
-                    // Ignore deprecated or removed settings
+                    // Ignore deprecated or removed settings, and admin alert settings
                     if (key === 'reward_good_samaritan') continue;
+                    if (key.startsWith('admin_alert_')) continue;
 
                     const item = { key, val, description: descriptions[key] || "System policy setting." };
                     if (key.startsWith('reward') || key.startsWith('honesty') || key.startsWith('consistent')) {
@@ -1688,6 +1703,64 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    // Trigger loading settings when tab-members is opened
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.dataset.target;
+            if (targetId === 'tab-members') {
+                loadPointsSettings();
+            }
+        });
+    });
+
+    // Save Admin SMS Alert Contacts
+    const btnSaveAdminAlerts = document.getElementById('btn-save-admin-alerts');
+    if (btnSaveAdminAlerts) {
+        btnSaveAdminAlerts.addEventListener('click', async () => {
+            const name1 = document.getElementById('admin-alert-name-1').value.trim();
+            const phone1 = document.getElementById('admin-alert-phone-1').value.trim();
+            const name2 = document.getElementById('admin-alert-name-2').value.trim();
+            const phone2 = document.getElementById('admin-alert-phone-2').value.trim();
+
+            const saveMsg = document.getElementById('admin-alerts-save-msg');
+            if (saveMsg) saveMsg.style.display = 'none';
+
+            try {
+                btnSaveAdminAlerts.disabled = true;
+                btnSaveAdminAlerts.textContent = 'Saving...';
+
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: getAdminHeaders(),
+                    body: JSON.stringify({
+                        settings: [
+                            { setting_name: 'admin_alert_name_1', setting_value: name1 },
+                            { setting_name: 'admin_alert_phone_1', setting_value: phone1 },
+                            { setting_name: 'admin_alert_name_2', setting_value: name2 },
+                            { setting_name: 'admin_alert_phone_2', setting_value: phone2 }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (saveMsg) {
+                        saveMsg.textContent = 'Saved!';
+                        saveMsg.style.display = 'inline';
+                        setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
+                    }
+                    loadPointsSettings();
+                } else {
+                    alert(data.error || 'Failed to save admin contacts.');
+                }
+            } catch (err) {
+                alert('Error saving admin contacts.');
+            } finally {
+                btnSaveAdminAlerts.disabled = false;
+                btnSaveAdminAlerts.textContent = 'Save Admin Contacts';
+            }
+        });
+    }
 
     // Quick Bike Override Search Filter
     const searchBikeOverride = document.getElementById('search-bike-override');

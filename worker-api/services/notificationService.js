@@ -1,3 +1,26 @@
+const db = require('../db');
+const smsService = require('./smsService');
+
+/**
+ * Queues an SMS alert to all configured admin phone numbers.
+ */
+async function sendAdminSmsAlert(message) {
+    try {
+        const [rows] = await db.upbsPool.query(
+            "SELECT setting_name, setting_value FROM system_settings WHERE setting_name IN ('admin_alert_phone_1', 'admin_alert_phone_2')"
+        );
+        for (const row of rows) {
+            const phone = row.setting_value ? row.setting_value.trim() : '';
+            if (phone) {
+                console.log(`[Notification] Queueing Admin SMS Alert to ${phone}: "${message}"`);
+                await smsService.queueSMS(phone, message);
+            }
+        }
+    } catch (err) {
+        console.error('[Notification] Failed to send Admin SMS Alert:', err.message);
+    }
+}
+
 /**
  * Sends a rich embed notification to a Discord channel via webhook.
  */
@@ -44,39 +67,41 @@ async function sendDiscordNotification(studentName, phoneNumber, bikeCode, image
  */
 async function sendDisputeCreatedNotification(bikeCode, reporterName, reporterPhone, frozenName, frozenPhone) {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    if (!webhookUrl) {
-        console.log('[Notification] DISCORD_WEBHOOK_URL not configured. Skipping Discord warning.');
-        return;
-    }
+    
+    // Asynchronously send SMS alerts to admin contacts
+    sendAdminSmsAlert(`UPBS ALERT: Bike ${bikeCode} reported broken by next user. Prev borrower ${frozenName || 'Unknown'} (${frozenPhone}) points frozen. Review in dashboard.`)
+        .catch(err => console.error('[Notification] Failed to trigger admin SMS alert:', err.message));
 
-    const payload = {
-        embeds: [{
-            title: "⚠️ New Dispute Flagged",
-            color: 16753920, // Orange warning color
-            fields: [
-                { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true },
-                { name: "Reported By (Next Rider)", value: `${reporterName} (${reporterPhone})`, inline: true },
-                { name: "Frozen Account (Prev Rider)", value: `${frozenName ? `${frozenName} (${frozenPhone})` : frozenPhone}`, inline: true }
-            ],
-            description: `Bike #${bikeCode} has been reported broken by the next user. The previous borrower's account has been frozen pending a Messenger appeal photo.`,
-            timestamp: new Date().toISOString()
-        }]
-    };
+    if (webhookUrl) {
+        const payload = {
+            embeds: [{
+                title: "⚠️ New Dispute Flagged",
+                color: 16753920, // Orange warning color
+                fields: [
+                    { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true },
+                    { name: "Reported By (Next Rider)", value: `${reporterName} (${reporterPhone})`, inline: true },
+                    { name: "Frozen Account (Prev Rider)", value: `${frozenName ? `${frozenName} (${frozenPhone})` : frozenPhone}`, inline: true }
+                ],
+                description: `Bike #${bikeCode} has been reported broken by the next user. The previous borrower's account has been frozen pending a Messenger appeal photo.`,
+                timestamp: new Date().toISOString()
+            }]
+        };
 
-    try {
-        const res = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
-            console.error(`[Notification] Discord warning returned status ${res.status}`);
-        } else {
-            console.log(`[Notification] Discord dispute warning sent for Bike #${bikeCode}`);
+        try {
+            const res = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                console.error(`[Notification] Discord warning returned status ${res.status}`);
+            } else {
+                console.log(`[Notification] Discord dispute warning sent for Bike #${bikeCode}`);
+            }
+        } catch (err) {
+            console.error('[Notification] Failed to send Discord warning:', err.message);
         }
-    } catch (err) {
-        console.error('[Notification] Failed to send Discord warning:', err.message);
     }
 }
 
-module.exports = { sendDiscordNotification, sendDisputeCreatedNotification };
+module.exports = { sendDiscordNotification, sendDisputeCreatedNotification, sendAdminSmsAlert };

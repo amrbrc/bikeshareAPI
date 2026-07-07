@@ -598,6 +598,15 @@
                                 <small class="text-muted mt-1" style="font-size: 0.75rem; font-weight: 500;">This number
                                     will be used for SMS notifications and overrides.</small>
                             </div>
+                            <div class="settings-input-group d-flex flex-column gap-2">
+                                <label class="form-label settings-label fw-bold text-muted text-uppercase mb-0"
+                                    style="font-size: 0.7rem; letter-spacing: 0.05em;">Role</label>
+                                <select id="new-member-role" class="form-select border-0 shadow-sm"
+                                    style="background-color: var(--bg-main); padding: 14px 16px; border-radius: 8px; color: var(--text-h); font-weight: 500;">
+                                    <option value="student">Student Rider</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
                         </div>
                         <button id="btn-add-member" class="btn w-100 fw-bold py-2 mt-auto"
                             style="height: 52px; border-radius: 8px; background: linear-gradient(135deg, var(--up-maroon) 0%, #5a0c0e 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(123, 17, 19, 0.25);">
@@ -773,8 +782,33 @@
                                 </div>
                                 <div id="members-list"
                                     class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1"
-                                    style="padding-right: 8px;">
+                                    style="padding-right: 8px; max-height: 200px;">
                                     <!-- Dynamically populated -->
+                                </div>
+
+                                <!-- Admin SMS Alert Contacts -->
+                                <div class="border-top pt-3 mt-auto flex-shrink-0" style="border-top: 1px dashed var(--border) !important;">
+                                    <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">Admin SMS Alert Contacts</h6>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <div class="p-2 border rounded" style="background-color: var(--bg-main); border-color: var(--border) !important;">
+                                                <div class="fw-bold text-muted mb-1" style="font-size: 0.65rem; text-transform: uppercase;">Primary Admin</div>
+                                                <input type="text" id="admin-alert-name-1" class="form-control form-control-sm mb-1 text-dark" placeholder="Name" style="font-size: 0.75rem; background-color: var(--bg-panel); border: 1px solid var(--border);">
+                                                <input type="text" id="admin-alert-phone-1" class="form-control form-control-sm text-dark font-monospace" placeholder="Phone (e.g. +639171234567)" style="font-size: 0.75rem; background-color: var(--bg-panel); border: 1px solid var(--border);">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-2 border rounded" style="background-color: var(--bg-main); border-color: var(--border) !important;">
+                                                <div class="fw-bold text-muted mb-1" style="font-size: 0.65rem; text-transform: uppercase;">Secondary Admin</div>
+                                                <input type="text" id="admin-alert-name-2" class="form-control form-control-sm mb-1 text-dark" placeholder="Name" style="font-size: 0.75rem; background-color: var(--bg-panel); border: 1px solid var(--border);">
+                                                <input type="text" id="admin-alert-phone-2" class="form-control form-control-sm text-dark font-monospace" placeholder="Phone (e.g. +639171234567)" style="font-size: 0.75rem; background-color: var(--bg-panel); border: 1px solid var(--border);">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span id="admin-alerts-save-msg" class="small text-success fw-semibold" style="display: none; font-size: 0.75rem;">Saved!</span>
+                                        <button id="btn-save-admin-alerts" class="btn btn-sm btn-primary fw-bold px-3 ms-auto" style="background-color: var(--up-maroon); border: none; font-size: 0.75rem; border-radius: 6px;">Save Admin Contacts</button>
+                                    </div>
                                 </div>
                             </div>
 

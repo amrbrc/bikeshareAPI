@@ -88,11 +88,16 @@ async function runMigrations() {
     try {
         await upbsPool.query(`
             INSERT IGNORE INTO system_settings (setting_name, setting_value, description)
-            VALUES ('reward_delivered_bike', '5', 'Points rewarded to a user who delivers a broken bike to a maintenance hub.')
+            VALUES 
+            ('reward_delivered_bike', '5', 'Points rewarded to a user who delivers a broken bike to a maintenance hub.'),
+            ('admin_alert_name_1', '', 'Name of Primary Admin contact for SMS notifications.'),
+            ('admin_alert_phone_1', '', 'Phone number of Primary Admin contact for SMS notifications.'),
+            ('admin_alert_name_2', '', 'Name of Secondary Admin contact for SMS notifications.'),
+            ('admin_alert_phone_2', '', 'Phone number of Secondary Admin contact for SMS notifications.')
         `);
-        console.log("[DB] Ensured reward_delivered_bike setting exists.");
+        console.log("[DB] Ensured reward_delivered_bike and admin alert settings exist.");
     } catch(e) {
-        console.error("[DB] Migration error reward_delivered_bike setting:", e.message);
+        console.error("[DB] Migration error reward_delivered_bike or admin alert settings:", e.message);
     }
     try {
         await upbsPool.query("ALTER TABLE bicycle_codes ADD COLUMN dispute_image_url VARCHAR(512) DEFAULT NULL");
