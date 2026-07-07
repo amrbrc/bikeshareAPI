@@ -931,17 +931,21 @@ body {
         visibility: visible;
     }
 
-    /* Main wrapper fits full screen width and offsets fixed mobile header */
+    /* Main wrapper fits full screen width and scrolls internally below fixed header */
     .main-wrapper {
         width: 100% !important;
-        height: 100% !important;
-        padding-top: 58px !important;
-        overflow: hidden !important;
+        height: calc(100vh - 58px) !important;
+        max-height: calc(100vh - 58px) !important;
+        margin-top: 58px !important;
+        padding-top: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         display: flex !important;
         flex-direction: column !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    /* All dashboard data tabs scroll inside fixed-height containers below header */
+    /* All dashboard data tabs flow naturally inside the scrolling main-wrapper */
     #dashboard-container,
     #analytics-container,
     #registration-container,
@@ -951,15 +955,14 @@ body {
     #community-container,
     #leaderboards-container,
     .data-container {
-        flex: 1 1 auto !important;
-        height: calc(100vh - 58px) !important;
-        max-height: calc(100vh - 58px) !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
         padding-bottom: 4rem !important;
-        -webkit-overflow-scrolling: touch !important;
     }
-    #dashboard-container {
+    #dashboard-container:not([style*="display: none"]),
+    .data-container:not([style*="display: none"]) {
         display: block !important;
     }
     #dashboard-container .container-fluid {
