@@ -133,11 +133,24 @@ function initMap() {
     // Plot all known stations
     plotStationMarkers();
 
-    // Force Leaflet to recalculate its size after a brief delay
-    // This fixes the issue where the map tiles leave an empty black space at the bottom
+    // Force Leaflet to recalculate its size automatically whenever the map div resizes
+    if (window.ResizeObserver && mapEl) {
+        const resizeObserver = new ResizeObserver(() => {
+            if (leafletMap) {
+                leafletMap.invalidateSize();
+            }
+        });
+        resizeObserver.observe(mapEl);
+    }
+    window.addEventListener('resize', () => {
+        if (leafletMap) leafletMap.invalidateSize();
+    });
     setTimeout(() => {
         if (leafletMap) leafletMap.invalidateSize();
     }, 500);
+    setTimeout(() => {
+        if (leafletMap) leafletMap.invalidateSize();
+    }, 1500);
 }
 
 

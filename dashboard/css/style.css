@@ -996,8 +996,19 @@ body {
     .hero-map-section {
         height: 320px !important;
         width: 100% !important;
+        max-width: 100% !important;
+        align-self: stretch !important;
         position: relative !important;
         flex-shrink: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    #station-map {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     /* Map legend overrides for mobile */
