@@ -893,7 +893,7 @@ body {
         left: 0 !important;
         width: 100% !important;
         height: 58px !important;
-        z-index: 99999 !important;
+        z-index: 1030 !important;
     }
 
     /* Sidebar transforms into offcanvas drawer */
