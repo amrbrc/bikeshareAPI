@@ -969,6 +969,24 @@ const missing = async (req, res) => {
                     upbsConn
                 );
             }
+
+            // Trigger admin/Discord notifications for the missing bike report
+            try {
+                const prevMemberName = history[0].borrowed_by || 'Unknown';
+                const reporterName = currentUserName;
+                const reporterPhone = smsSender;
+
+                const notificationService = require('../services/notificationService');
+                await notificationService.sendMissingCreatedNotification(
+                    bicycleCode,
+                    reporterName,
+                    reporterPhone,
+                    prevMemberName,
+                    prevMemberPhone || 'N/A'
+                );
+            } catch (notifyErr) {
+                console.error('[Missing Alert] Failed to dispatch admin notifications:', notifyErr.message);
+            }
         }
 
         await upbsConn.commit();

@@ -251,12 +251,12 @@ async function processIncomingMessage(psid, message) {
             return;
         }
 
-        // Find the disputed bicycle code and the last trip of this member
+        // Find the disputed/missing bicycle code and the last trip of this member
         const [disputes] = await db.upbsPool.query(
-            `SELECT bc.bicycle_code, bh.id AS history_id
+            `SELECT bc.bicycle_code, bc.condition_status, bh.id AS history_id
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
-             WHERE bc.condition_status = 'Disputed' 
+             WHERE bc.condition_status IN ('Disputed', 'Missing') 
                AND (bh.borrower_phone = ? OR bh.borrowed_by = ?)
              ORDER BY bh.borrowed_at DESC LIMIT 1`,
             [normalizedPhone, `${member.firstname} ${member.lastname}`]
@@ -278,10 +278,14 @@ async function processIncomingMessage(psid, message) {
             [normalizedPhone, 'AWAITING_PHOTO', psid]
         );
 
-        await sendFbMessage(
-            psid,
-            `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending dispute on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo of the bike showing its condition and lock to support your appeal. (Or if you prefer, you may also visit the UP Bikeshare Admin Hub to settle in person.)`
-        );
+        let greetingMsg = `Account verified: ${member.firstname} ${member.lastname}.\n\n`;
+        if (dispute.condition_status === 'Missing') {
+            greetingMsg += `We found a pending missing report on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo showing that you actually returned the bike at the hub to support your appeal. (Or if you prefer, you may also visit the UP Bikeshare Admin Hub to settle in person.)`;
+        } else {
+            greetingMsg += `We found a pending dispute on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo of the bike showing its condition and lock to support your appeal. (Or if you prefer, you may also visit the UP Bikeshare Admin Hub to settle in person.)`;
+        }
+
+        await sendFbMessage(psid, greetingMsg);
 
     } else if (session.bot_state === 'WAITING_DELIVERY_PHOTO') {
         let imageUrl = null;
@@ -404,10 +408,10 @@ async function processIncomingMessage(psid, message) {
         const member = members[0];
 
         const [disputes] = await db.upbsPool.query(
-            `SELECT bc.bicycle_code, bh.id AS history_id
+            `SELECT bc.bicycle_code, bc.condition_status, bh.id AS history_id
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
-             WHERE bc.condition_status = 'Disputed' 
+             WHERE bc.condition_status IN ('Disputed', 'Missing') 
                AND (bh.borrower_phone = ? OR bh.borrowed_by = ?)
              ORDER BY bh.borrowed_at DESC LIMIT 1`,
             [session.phone_number, `${member.firstname} ${member.lastname}`]
@@ -428,11 +432,16 @@ async function processIncomingMessage(psid, message) {
         const studentName = `${member.firstname} ${member.lastname}`;
         const phoneNumber = session.phone_number;
         const bikeCode = dispute.bicycle_code;
+        const bikeStatus = dispute.condition_status;
 
-        notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl)
+        notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl, bikeStatus)
             .catch(err => console.error('[FB Bot] Async Discord notification failed:', err.message));
 
-        notificationService.sendAdminSmsAlert(`UPBS ALERT: Dispute appeal photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`)
+        const alertText = bikeStatus === 'Missing'
+            ? `UPBS ALERT: Missing bike appeal photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`
+            : `UPBS ALERT: Dispute appeal photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`;
+
+        notificationService.sendAdminSmsAlert(alertText)
             .catch(err => console.error('[FB Bot] Async Admin SMS alert failed:', err.message));
 
         // Mark session as COMPLETED

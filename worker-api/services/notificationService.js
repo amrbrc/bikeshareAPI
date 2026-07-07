@@ -24,16 +24,21 @@ async function sendAdminSmsAlert(message) {
 /**
  * Sends a rich embed notification to a Discord channel via webhook.
  */
-async function sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl) {
+async function sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl, status = 'Disputed') {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
     if (!webhookUrl) {
         console.log('[Notification] DISCORD_WEBHOOK_URL not configured. Skipping Discord alert.');
         return;
     }
 
+    const title = status === 'Missing' ? "🔔 New Missing Bike Appeal Submitted" : "🔔 New Dispute Appeal Submitted";
+    const description = status === 'Missing'
+        ? `A student has submitted an appeal photo showing they returned Bike #${bikeCode} (reported missing). Please review and resolve this report in the UP Bikeshare Admin Dashboard.`
+        : `A student has submitted an appeal photo for their frozen account. Please review and resolve this dispute in the UP Bikeshare Admin Dashboard.`;
+
     const payload = {
         embeds: [{
-            title: "🔔 New Dispute Appeal Submitted",
+            title,
             color: 8065299, // Crimson/maroon tone
             fields: [
                 { name: "Student Name", value: studentName, inline: true },
@@ -41,7 +46,7 @@ async function sendDiscordNotification(studentName, phoneNumber, bikeCode, image
                 { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true }
             ],
             image: { url: imageUrl },
-            description: `A student has submitted an appeal photo for their frozen account. Please review and resolve this dispute in the UP Bikeshare Admin Dashboard.`,
+            description,
             timestamp: new Date().toISOString()
         }]
     };
@@ -105,6 +110,46 @@ async function sendDisputeCreatedNotification(bikeCode, reporterName, reporterPh
 }
 
 /**
+ * Sends a notification when a bike is reported missing (before the photo is uploaded).
+ */
+async function sendMissingCreatedNotification(bikeCode, reporterName, reporterPhone, frozenName, frozenPhone) {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    
+    // Asynchronously send SMS alerts to admin contacts
+    sendAdminSmsAlert(`UPBS ALERT: Bike ${bikeCode} reported MISSING by ${reporterName} (${reporterPhone}). Prev borrower ${frozenName || 'Unknown'} (${frozenPhone}) points frozen.`)
+        .catch(err => console.error('[Notification] Failed to trigger admin SMS alert:', err.message));
+
+    if (webhookUrl) {
+        const payload = {
+            embeds: [{
+                title: "🚨 Bike Reported Missing",
+                color: 16515840, // Red warning color
+                fields: [
+                    { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true },
+                    { name: "Reported By (Reporter)", value: `${reporterName} (${reporterPhone})`, inline: true },
+                    { name: "Frozen Account (Prev Rider)", value: `${frozenName ? `${frozenName} (${frozenPhone})` : frozenPhone}`, inline: true }
+                ],
+                description: `Bike #${bikeCode} has been reported missing. The previous borrower's account has been frozen pending investigation / Messenger photo appeal.`,
+                timestamp: new Date().toISOString()
+            }]
+        };
+
+        try {
+            const res = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                console.error(`[Notification] Discord webhook returned status ${res.status}`);
+            }
+        } catch (err) {
+            console.error('[Notification] Failed to send Discord webhook:', err.message);
+        }
+    }
+}
+
+/**
  * Checks if a member's trust score has dropped below the suspension limit, and if so, sends an alert to administrators.
  */
 async function checkAndAlertSuspension(phoneNumber, conn = null) {
@@ -132,4 +177,4 @@ async function checkAndAlertSuspension(phoneNumber, conn = null) {
     }
 }
 
-module.exports = { sendDiscordNotification, sendDisputeCreatedNotification, sendAdminSmsAlert, checkAndAlertSuspension };
+module.exports = { sendDiscordNotification, sendDisputeCreatedNotification, sendMissingCreatedNotification, sendAdminSmsAlert, checkAndAlertSuspension };
