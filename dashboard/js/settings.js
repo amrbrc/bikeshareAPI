@@ -679,20 +679,36 @@ document.addEventListener('DOMContentLoaded', () => {
                             `;
                         }
                     } else if (b.dispute_image_url) {
-                        actionHtml = `
-                            <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
-                                <div class="d-flex gap-2" style="max-width: 260px;">
-                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                    <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                        if (b.condition_status === 'Missing') {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
+                                    <div class="d-flex gap-2" style="max-width: 180px;">
+                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
+                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Not</button>
+                                    </div>
+                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
+                                        Waive standard point penalty
+                                    </label>
                                 </div>
-                                <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                    <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
-                                    Waive standard point penalty
-                                </label>
-                            </div>
-                        `;
+                            `;
+                        } else {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
+                                    <div class="d-flex gap-2" style="max-width: 260px;">
+                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                                    </div>
+                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
+                                        Waive standard point penalty
+                                    </label>
+                                </div>
+                            `;
+                        }
                     }
 
                     const photoLabel = b.condition_status === 'Pending_Delivery' ? 'Delivery Photo:' : 'Dispute Appeal Photo:';
@@ -732,6 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.addEventListener('click', async (e) => {
                         const verdict = btn.getAttribute('data-verdict');
                         const bikeCode = btn.getAttribute('data-bike');
+                        const status = btn.getAttribute('data-status');
                         const card = btn.closest('.maintenance-card');
                         const waiveCheckbox = card ? card.querySelector('.waive-penalty-checkbox-mq') : null;
                         const phoneNumber = btn.getAttribute('data-phone') || '';
@@ -740,7 +757,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             return alert("Error: Reported user's phone number is missing!");
                         }
 
-                        confirmAction('Resolve Dispute', `Mark user (${phoneNumber}) as ${verdict.toUpperCase()} for bike #${bikeCode}?`, async () => {
+                        let confirmTitle = 'Resolve Dispute';
+                        let confirmText = `Mark user (${phoneNumber}) as ${verdict.toUpperCase()} for bike #${bikeCode}?`;
+
+                        if (status === 'Missing') {
+                            confirmTitle = verdict === 'guilty' ? 'Approve Missing Report' : 'Reject Missing Report';
+                            confirmText = verdict === 'guilty'
+                                ? `Are you sure you want to APPROVE this missing report? The previous borrower (${phoneNumber}) will be penalized for losing the bike.`
+                                : `Are you sure you want to REJECT this missing report? The reporter will receive a false report penalty.`;
+                        }
+
+                        confirmAction(confirmTitle, confirmText, async () => {
                             try {
                                 const res = await fetch('/api/admin/resolve-dispute', {
                                     method: 'POST',
