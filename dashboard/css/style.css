@@ -959,6 +959,15 @@ body {
         padding-bottom: 4rem !important;
         -webkit-overflow-scrolling: touch !important;
     }
+    #dashboard-container {
+        display: block !important;
+    }
+    #dashboard-container .container-fluid {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        padding-bottom: 3rem !important;
+    }
     #logs-container .row {
         height: auto !important;
         overflow: visible !important;
@@ -980,9 +989,12 @@ body {
         flex-grow: 0 !important;
     }
 
-    /* Map section height */
+    /* Map section height and scrolling */
     .hero-map-section {
-        height: 350px !important;
+        height: 320px !important;
+        width: 100% !important;
+        position: relative !important;
+        flex-shrink: 0 !important;
     }
 
     /* Map legend overrides for mobile */
@@ -1044,7 +1056,8 @@ body {
     }
 
     .col-left .panel, .col-right .panel {
-        height: 350px !important;
+        height: auto !important;
+        min-height: 350px !important;
     }
 
     /* Stretch rows and center cards on mobile views */
@@ -1176,11 +1189,14 @@ body {
     }
 
     #analytics-container .col-lg-6 {
-        height: 320px !important;
-        margin-bottom: 1rem;
+        height: auto !important;
+        min-height: 380px !important;
+        margin-bottom: 1.5rem !important;
     }
 
     #analytics-container .panel.card {
+        height: auto !important;
+        min-height: 380px !important;
         padding: 1rem !important;
     }
 
