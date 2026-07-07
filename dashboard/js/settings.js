@@ -1704,11 +1704,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Trigger loading settings when tab-members is opened
+    // Trigger loading settings when tab-admin-alerts is opened
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const targetId = btn.dataset.target;
-            if (targetId === 'tab-members') {
+            if (targetId === 'tab-admin-alerts') {
                 loadPointsSettings();
             }
         });
@@ -1723,6 +1723,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const name2 = document.getElementById('admin-alert-name-2').value.trim();
             const phone2 = document.getElementById('admin-alert-phone-2').value.trim();
 
+            const formatPhone = (p) => {
+                if (!p) return '';
+                let formatted = p.replace(/\s+/g, ''); // strip spaces and tabs
+                if (formatted.startsWith('09') && formatted.length === 11) {
+                    formatted = '+63' + formatted.substring(1);
+                } else if (formatted.startsWith('9') && formatted.length === 10) {
+                    formatted = '+63' + formatted;
+                } else if (formatted.startsWith('639') && formatted.length === 12) {
+                    formatted = '+' + formatted;
+                }
+                return formatted;
+            };
+
+            const cleanPhone1 = formatPhone(phone1);
+            const cleanPhone2 = formatPhone(phone2);
+
+            const phPhoneRegex = /^\+639\d{9}$/;
+            if (cleanPhone1 && !phPhoneRegex.test(cleanPhone1)) {
+                alert('Invalid phone number format for Primary Admin. Must be like +639171234567 or 09171234567.');
+                return;
+            }
+            if (cleanPhone2 && !phPhoneRegex.test(cleanPhone2)) {
+                alert('Invalid phone number format for Secondary Admin. Must be like +639171234567 or 09171234567.');
+                return;
+            }
+
             const saveMsg = document.getElementById('admin-alerts-save-msg');
             if (saveMsg) saveMsg.style.display = 'none';
 
@@ -1736,16 +1762,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         settings: [
                             { setting_name: 'admin_alert_name_1', setting_value: name1 },
-                            { setting_name: 'admin_alert_phone_1', setting_value: phone1 },
+                            { setting_name: 'admin_alert_phone_1', setting_value: cleanPhone1 },
                             { setting_name: 'admin_alert_name_2', setting_value: name2 },
-                            { setting_name: 'admin_alert_phone_2', setting_value: phone2 }
+                            { setting_name: 'admin_alert_phone_2', setting_value: cleanPhone2 }
                         ]
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
                     if (saveMsg) {
-                        saveMsg.textContent = 'Saved!';
+                        saveMsg.textContent = 'Saved successfully!';
                         saveMsg.style.display = 'inline';
                         setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
                     }
