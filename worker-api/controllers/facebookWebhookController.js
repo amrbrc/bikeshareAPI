@@ -198,7 +198,7 @@ async function processIncomingMessage(psid, message) {
 
         // Validate member exists and is active
         const [members] = await db.upbsPool.query(
-            'SELECT firstname, lastname, phone_number, points_frozen FROM members WHERE phone_number = ? AND is_active = 1',
+            'SELECT firstname, lastname, phone_number, points_frozen, trust_points FROM members WHERE phone_number = ? AND is_active = 1',
             [normalizedPhone]
         );
 
@@ -208,6 +208,21 @@ async function processIncomingMessage(psid, message) {
         }
 
         const member = members[0];
+
+        // Fetch suspension limit setting
+        const [settingRows] = await db.upbsPool.query(
+            "SELECT setting_value FROM system_settings WHERE setting_name = 'suspension_limit'"
+        );
+        const suspensionLimit = settingRows.length > 0 ? parseInt(settingRows[0].setting_value, 10) : 50;
+
+        // Check if the user is suspended due to low trust points
+        if (member.trust_points < suspensionLimit) {
+            await sendFbCompletionButtons(
+                psid,
+                `Hello ${member.firstname}! Your account (associated with ${normalizedPhone}) is currently SUSPENDED because your trust score has dropped to ${member.trust_points} points (below the ${suspensionLimit} limit).\n\nTo lift your suspension, you can earn trust points by performing Community Service shifts at any hub or delivering broken bikes.`
+            );
+            return;
+        }
 
         if (member.points_frozen !== 1) {
             await sendFbCompletionButtons(

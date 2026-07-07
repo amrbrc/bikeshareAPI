@@ -152,8 +152,11 @@ const startSixHourPenaltyJob = () => {
                     [row.id]
                 );
 
-                const text = `ALERT: You have exceeded the borrow time limit for Bike ${row.bicycle_code}. A -${absolutePenalty} point penalty has been applied. You will continue to lose ${absolutePenalty} points EVERY HOUR until the bike is returned.`;
+                const text = `ALERT: You have exceeded the borrow time limit for Bike ${row.bicycle_code}. A -${absolutePenalty} point demerit has been applied. You will continue to lose ${absolutePenalty} demerits EVERY HOUR until the bike is returned.`;
                 await sendSMS(row.phone_number, text);
+
+                const notificationService = require('./notificationService');
+                await notificationService.checkAndAlertSuspension(row.phone_number);
             }
         } catch (err) {
             console.error('[Cron] Error in dynamic timeout penalty job:', err);
@@ -240,6 +243,9 @@ const startUnrepairedDamageJob = () => {
 
                     const text = `ALERT: The 48-hour grace period to repair Bike ${bike.bicycle_code} has expired. A -10 demerit has been applied to your account.`;
                     await sendSMS(member.phone_number, text);
+
+                    const notificationService = require('./notificationService');
+                    await notificationService.checkAndAlertSuspension(member.phone_number);
                 }
             }
         } catch (err) {

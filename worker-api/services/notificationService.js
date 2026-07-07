@@ -104,4 +104,32 @@ async function sendDisputeCreatedNotification(bikeCode, reporterName, reporterPh
     }
 }
 
-module.exports = { sendDiscordNotification, sendDisputeCreatedNotification, sendAdminSmsAlert };
+/**
+ * Checks if a member's trust score has dropped below the suspension limit, and if so, sends an alert to administrators.
+ */
+async function checkAndAlertSuspension(phoneNumber, conn = null) {
+    try {
+        const pool = conn || db.upbsPool;
+        const [memberRows] = await pool.query(
+            "SELECT firstname, lastname, trust_points FROM members WHERE phone_number = ? AND is_active = 1",
+            [phoneNumber]
+        );
+        if (memberRows.length === 0) return;
+        const member = memberRows[0];
+
+        const [settingRows] = await pool.query(
+            "SELECT setting_value FROM system_settings WHERE setting_name = 'suspension_limit'"
+        );
+        const suspensionLimit = settingRows.length > 0 ? parseInt(settingRows[0].setting_value, 10) : 50;
+
+        if (member.trust_points < suspensionLimit) {
+            const alertMsg = `UPBS ALERT: Account suspended for ${member.firstname} ${member.lastname} (${phoneNumber}). Trust score is ${member.trust_points} points (limit is ${suspensionLimit}).`;
+            console.log(`[Suspension Sync] Account suspended. Sending alert: ${alertMsg}`);
+            await sendAdminSmsAlert(alertMsg);
+        }
+    } catch (err) {
+        console.error('[Notification] Failed to check and alert suspension:', err.message);
+    }
+}
+
+module.exports = { sendDiscordNotification, sendDisputeCreatedNotification, sendAdminSmsAlert, checkAndAlertSuspension };

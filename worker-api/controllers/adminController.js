@@ -248,6 +248,9 @@ const resolveDispute = async (req, res) => {
                     "UPDATE members SET points_frozen = 0, consecutive_good_rides = 0, trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)), leaderboard_points = GREATEST(0, CAST(leaderboard_points AS SIGNED) + ?) WHERE phone_number = ?",
                     [hitAndRunPenalty, hitAndRunPenalty, phone_number]
                 );
+
+                const notificationService = require('../services/notificationService');
+                await notificationService.checkAndAlertSuspension(phone_number);
             }
 
             if (conditionStatus === 'Missing') {
@@ -325,6 +328,9 @@ const resolveDispute = async (req, res) => {
 
                     // Text the false reporter about their points deduction
                     await sendSMS(reporterPhone, `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`);
+
+                    const notificationService = require('../services/notificationService');
+                    await notificationService.checkAndAlertSuspension(reporterPhone);
                 }
             }
         } else if (verdict === 'neutral') {
@@ -634,6 +640,9 @@ const overridePoints = async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, error: 'Member not found or is inactive' });
         }
+
+        const notificationService = require('../services/notificationService');
+        await notificationService.checkAndAlertSuspension(phone_number);
 
         return res.json({ success: true, message: 'Trust points updated successfully!' });
     } catch (err) {
