@@ -1048,21 +1048,32 @@ const delivered = async (req, res) => {
         );
         const isBorrowerWhoBrokeIt = (activeTrip.length > 0) || (lastHistory.length > 0 && lastHistory[0].borrowed_by === currentUserName && lastHistory[0].reported_condition === 'Broken');
 
-        // Update the status to 'Broken' (awaiting admin pickup for repair) and update the location
-        await upbsConn.query(
-            "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = ?, broken_reported_at = COALESCE(broken_reported_at, NOW()) WHERE bicycle_code = ?",
-            [deliveryLocation, smsSender, bicycleCode]
-        );
+        let replyMessage = '';
 
-        let replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair.`;
-
-        if (!isBorrowerWhoBrokeIt) {
+        if (isBorrowerWhoBrokeIt) {
+            // Update the status to 'Broken' (awaiting admin pickup for repair) and update the location
+            await upbsConn.query(
+                "UPDATE bicycle_codes SET condition_status = 'Broken', new_location = ?, dispute_reported_by = ?, broken_reported_at = COALESCE(broken_reported_at, NOW()) WHERE bicycle_code = ?",
+                [deliveryLocation, smsSender, bicycleCode]
+            );
+            replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. An admin will collect it for repair.`;
+        } else {
+            // Volunteer delivery - set to 'Pending_Delivery', do NOT reward points yet, ask for photo proof
             const reward = await getSettingValue('reward_delivered_bike', 5, upbsConn);
             await upbsConn.query(
-                "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
-                [reward, reward, smsSender]
+                "UPDATE bicycle_codes SET condition_status = 'Pending_Delivery', new_location = ?, dispute_reported_by = ?, dispute_image_url = NULL, broken_reported_at = COALESCE(broken_reported_at, NOW()) WHERE bicycle_code = ?",
+                [deliveryLocation, smsSender, bicycleCode]
             );
-            replyMessage = `Thank you! Bike ${bicycleCode} has been delivered to ${deliveryLocation.toUpperCase()} and marked as Broken. As a volunteer transport, you have been rewarded +${reward} trust points!`;
+            replyMessage = `Thank you! Bike ${bicycleCode} has been reported as delivered to ${deliveryLocation.toUpperCase()}. To confirm your +${reward} trust points, please take a clear picture of the bike at the hub and upload it to our Facebook Messenger bot.`;
+
+            // Alert admins
+            try {
+                const notificationService = require('../services/notificationService');
+                const fullName = `${member[0].firstname} ${member[0].lastname}`;
+                await notificationService.sendAdminSmsAlert(`UPBS ALERT: Bike ${bicycleCode} reported delivered to ${deliveryLocation.toUpperCase()} by volunteer ${fullName} (${smsSender}). Photo upload pending.`);
+            } catch (err) {
+                console.error('[Delivered Alert] Failed to send admin alert:', err.message);
+            }
         }
 
         await upbsConn.query(

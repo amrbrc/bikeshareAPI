@@ -514,7 +514,7 @@ const getMaintenanceQueue = async (req, res) => {
                         WHERE bh3.bicycle_code = b.bicycle_code
                     )) AS last_activity
             FROM bicycle_codes b
-            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair') 
+            WHERE b.condition_status IN ('Broken', 'Missing', 'Disputed', 'In_Repair', 'Pending_Delivery') 
               AND (b.is_active = 1 OR b.is_active IS NULL)
             ORDER BY last_activity DESC, b.bicycle_code ASC
         `;
@@ -1115,8 +1115,79 @@ const updateSettings = async (req, res) => {
     }
 };
 
+const resolveDelivery = async (req, res) => {
+    const { bicycle_code, verdict } = req.body;
+    if (!bicycle_code || !verdict) {
+        return res.status(400).json({ success: false, error: 'bicycle_code and verdict are required' });
+    }
+
+    const conn = await db.upbsPool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // Fetch the bike details
+        const [bike] = await conn.query(
+            "SELECT dispute_reported_by, new_location FROM bicycle_codes WHERE bicycle_code = ? FOR UPDATE",
+            [bicycle_code]
+        );
+
+        if (bike.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ success: false, error: 'Bike not found' });
+        }
+
+        const volunteerPhone = bike[0].dispute_reported_by;
+
+        if (verdict === 'approve') {
+            const reward = await getSettingValue('reward_delivered_bike', 5, conn);
+            
+            // Update bike to 'Broken' (awaiting admin maintenance) and clear delivery request
+            await conn.query(
+                "UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW() WHERE bicycle_code = ?",
+                [bicycle_code]
+            );
+
+            if (volunteerPhone) {
+                // Reward volunteer
+                await conn.query(
+                    "UPDATE members SET trust_points = LEAST(120, CAST(trust_points AS SIGNED) + ?), leaderboard_points = CAST(leaderboard_points AS SIGNED) + ? WHERE phone_number = ?",
+                    [reward, reward, volunteerPhone]
+                );
+
+                // Send SMS confirmation to volunteer
+                await sendSMS(volunteerPhone, `Your delivery proof for Bike ${bicycle_code} has been approved by admin! You have been rewarded +${reward} trust points. Thank you for volunteering!`);
+            }
+
+            await conn.commit();
+            return res.json({ success: true, message: 'Delivery approved and volunteer rewarded successfully!' });
+
+        } else {
+            // Reject delivery - revert back to Broken (or Missing) and clear request
+            await conn.query(
+                "UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?",
+                [bicycle_code]
+            );
+
+            if (volunteerPhone) {
+                await sendSMS(volunteerPhone, `Your delivery report for Bike ${bicycle_code} was unverified/rejected by admin. Point reward was not issued.`);
+            }
+
+            await conn.commit();
+            return res.json({ success: true, message: 'Delivery rejected and cleared.' });
+        }
+
+    } catch (err) {
+        await conn.rollback();
+        console.error('Error in resolveDelivery controller:', err);
+        return res.status(500).json({ success: false, error: 'Database error resolving delivery' });
+    } finally {
+        conn.release();
+    }
+};
+
 module.exports = {
     login,
+    resolveDelivery,
     toggleBike,
     getMembers,
     addMember,

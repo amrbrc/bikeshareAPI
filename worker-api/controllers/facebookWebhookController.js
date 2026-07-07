@@ -224,6 +224,25 @@ async function processIncomingMessage(psid, message) {
             return;
         }
 
+        // Check if there is a pending delivery for this volunteer phone number
+        const [pendingDeliveries] = await db.upbsPool.query(
+            "SELECT bicycle_code, new_location FROM bicycle_codes WHERE condition_status = 'Pending_Delivery' AND dispute_reported_by = ?",
+            [normalizedPhone]
+        );
+
+        if (pendingDeliveries.length > 0) {
+            const delivery = pendingDeliveries[0];
+            await db.upbsPool.query(
+                'UPDATE fb_bot_sessions SET phone_number = ?, bot_state = ? WHERE psid = ?',
+                [normalizedPhone, 'WAITING_DELIVERY_PHOTO', psid]
+            );
+            await sendFbMessage(
+                psid,
+                `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending volunteer delivery report for Bike #${delivery.bicycle_code} at ${delivery.new_location.toUpperCase()}.\n\nPlease upload/send a clear photo of the bike at the hub now to request admin confirmation and claim your +5 points!`
+            );
+            return;
+        }
+
         if (member.points_frozen !== 1) {
             await sendFbCompletionButtons(
                 psid,
@@ -262,6 +281,98 @@ async function processIncomingMessage(psid, message) {
         await sendFbMessage(
             psid,
             `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending dispute on Bike #${dispute.bicycle_code}.\n\nPlease upload/send a clear photo of the bike showing its condition and lock to support your appeal. (Or if you prefer, you may also visit the UP Bikeshare Admin Hub to settle in person.)`
+        );
+
+    } else if (session.bot_state === 'WAITING_DELIVERY_PHOTO') {
+        let imageUrl = null;
+        if (message.attachments && message.attachments.length > 0) {
+            const imageAttachment = message.attachments.find(att => att.type === 'image');
+            if (imageAttachment && imageAttachment.payload && imageAttachment.payload.url) {
+                imageUrl = imageAttachment.payload.url;
+            }
+        }
+
+        if (!imageUrl) {
+            await sendFbMessage(psid, 'Please upload/send a photo of the delivered bike. Note: If you want to restart verification, reply with "RESET".');
+            return;
+        }
+
+        // Look up member
+        const [members] = await db.upbsPool.query(
+            'SELECT firstname, lastname FROM members WHERE phone_number = ? AND is_active = 1',
+            [session.phone_number]
+        );
+
+        if (members.length === 0) {
+            await sendFbMessage(psid, 'Session error: Member record not found. Please reply "RESET" to verify again.');
+            return;
+        }
+
+        const member = members[0];
+
+        // Retrieve the pending delivery bike
+        const [deliveries] = await db.upbsPool.query(
+            "SELECT bicycle_code, new_location FROM bicycle_codes WHERE condition_status = 'Pending_Delivery' AND dispute_reported_by = ?",
+            [session.phone_number]
+        );
+
+        if (deliveries.length === 0) {
+            await sendFbCompletionButtons(psid, 'We could not find a pending delivery report for your account anymore. It might have already been confirmed. Select an option below to continue.');
+            return;
+        }
+
+        const delivery = deliveries[0];
+        const bikeCode = delivery.bicycle_code;
+
+        // Save delivery image URL to the bike record
+        await db.upbsPool.query(
+            'UPDATE bicycle_codes SET dispute_image_url = ? WHERE bicycle_code = ?',
+            [imageUrl, bikeCode]
+        );
+
+        // Trigger off-dashboard admin notifications
+        const studentName = `${member.firstname} ${member.lastname}`;
+        const phoneNumber = session.phone_number;
+
+        // Custom Discord webhook message for volunteer deliveries
+        try {
+            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            if (webhookUrl) {
+                const payload = {
+                    embeds: [{
+                        title: "🔔 New Volunteer Delivery Proof Submitted",
+                        color: 8065299,
+                        fields: [
+                            { name: "Volunteer Name", value: studentName, inline: true },
+                            { name: "Phone Number", value: phoneNumber, inline: true },
+                            { name: "Bicycle Code", value: `Bike #${bikeCode}`, inline: true },
+                            { name: "Delivered To Hub", value: delivery.new_location.toUpperCase(), inline: true }
+                        ],
+                        image: { url: imageUrl },
+                        description: `A student has submitted delivery proof photos for volunteer transport. Please review and confirm this delivery in the UP Bikeshare Admin Dashboard to award their trust points.`,
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+        } catch (discordErr) {
+            console.error('[FB Bot] Failed to send Discord delivery notification:', discordErr.message);
+        }
+
+        // Send SMS to admins
+        notificationService.sendAdminSmsAlert(`UPBS ALERT: Volunteer delivery photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`)
+            .catch(err => console.error('[FB Bot] Async Admin SMS alert failed:', err.message));
+
+        // Mark session as COMPLETED
+        await db.upbsPool.query('UPDATE fb_bot_sessions SET bot_state = ? WHERE psid = ?', ['COMPLETED', psid]);
+
+        await sendFbCompletionButtons(
+            psid,
+            `Thank you! Your delivery proof photo has been successfully uploaded for Bike #${bikeCode}.\n\nOur administrators will verify the delivery details soon. You will receive an SMS notification once your volunteer reward (+5 points) is approved!`
         );
 
     } else if (session.bot_state === 'AWAITING_PHOTO') {

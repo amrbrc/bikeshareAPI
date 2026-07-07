@@ -95,6 +95,7 @@ router.get('/admin/search/members', authMiddleware, adminController.searchMember
 router.post('/admin/bicycles/override', authMiddleware, adminController.overrideBicycle);
 router.delete('/admin/locations/:name', authMiddleware, adminController.deleteLocation);
 router.get('/admin/maintenance', authMiddleware, adminController.getMaintenanceQueue);
+router.post('/admin/resolve-delivery', authMiddleware, adminController.resolveDelivery);
 router.get('/admin/honesty', authMiddleware, adminController.getHonestyLogs);
 
 // Facebook Webhook Routes (Publicly accessible by Meta servers)
