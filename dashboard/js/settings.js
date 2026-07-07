@@ -1733,26 +1733,86 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById(`admin-container-${index}`);
         if (!container) return;
 
-        // Render selector populated from cachedMembers
-        let optionsHtml = '<option value="">-- Choose Registered Member --</option>';
-        cachedMembers.forEach(mem => {
-            const fullName = `${mem.firstname} ${mem.lastname}`;
-            const selected = (mem.phone_number === (index === 1 ? window.currentAdminPhone1 : window.currentAdminPhone2)) ? 'selected' : '';
-            optionsHtml += `<option value="${mem.phone_number}" data-name="${fullName}" ${selected}>${fullName} (${mem.phone_number})</option>`;
-        });
-
+        // Render search field and a results container
         container.innerHTML = `
             <div class="w-100 p-2" style="background-color: var(--bg-main); border-radius: 6px;">
-                <div class="fw-bold text-muted mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Select ${index === 1 ? 'Primary' : 'Secondary'} Admin</div>
-                <select id="admin-select-${index}" class="form-select form-select-sm my-2 text-dark" style="font-size: 0.8rem; background-color: var(--bg-panel); border: 1px solid var(--border); padding: 8px 10px; width: 100%; border-radius: 6px;">
-                    ${optionsHtml}
-                </select>
-                <div class="d-flex gap-2 justify-content-end mt-2">
-                    <button class="btn btn-sm btn-success fw-bold px-3 py-1" onclick="window.saveAdminSelection(${index})" style="font-size: 0.75rem; border-radius: 4px; background-color: var(--up-green); border: none; color: white;">Save</button>
+                <div class="fw-bold text-muted mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Search Member for Admin ${index}</div>
+                <input type="text" id="admin-search-input-${index}" class="form-control form-control-sm my-2 text-dark" placeholder="Type name or phone number..." style="font-size: 0.75rem; background-color: var(--bg-panel); border: 1px solid var(--border); padding: 8px 10px; width: 100%; border-radius: 6px;">
+                
+                <div id="admin-search-results-${index}" class="custom-scroll border rounded bg-panel p-1 overflow-auto" style="max-height: 140px; border-color: var(--border) !important; font-size: 0.75rem; display: flex; flex-direction: column; gap: 2px;">
+                    <!-- results dynamically populated -->
+                </div>
+                
+                <div class="d-flex justify-content-end mt-2">
                     <button class="btn btn-sm btn-secondary fw-bold px-3 py-1" onclick="window.cancelAdminEdit(${index})" style="font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted);">Cancel</button>
                 </div>
             </div>
         `;
+
+        // Attach input listener to search input
+        const input = document.getElementById(`admin-search-input-${index}`);
+        if (input) {
+            input.addEventListener('input', () => {
+                window.filterAdminSearch(index, input.value.trim().toLowerCase());
+            });
+        }
+
+        // Initially show all members
+        window.filterAdminSearch(index, '');
+    };
+
+    window.filterAdminSearch = function (index, query) {
+        const resultsBox = document.getElementById(`admin-search-results-${index}`);
+        if (!resultsBox) return;
+
+        resultsBox.innerHTML = '';
+
+        // Add the "None" option at the top of the search results
+        const noneDiv = document.createElement('div');
+        noneDiv.className = 'admin-search-item';
+        noneDiv.style.cssText = 'padding: 6px 10px; cursor: pointer; border-radius: 4px; color: #ef4444; font-weight: 600; display: flex; align-items: center; gap: 6px;';
+        noneDiv.innerHTML = `🚫 Set to None (Disable Alert)`;
+        
+        // Add hover effects inline
+        noneDiv.addEventListener('mouseenter', () => noneDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.08)');
+        noneDiv.addEventListener('mouseleave', () => noneDiv.style.backgroundColor = 'transparent');
+        noneDiv.addEventListener('click', () => {
+            window.saveAdminSelectionDirect(index, '', '');
+        });
+        resultsBox.appendChild(noneDiv);
+
+        // Filter and display members
+        let count = 0;
+        cachedMembers.forEach(mem => {
+            const fullName = `${mem.firstname} ${mem.lastname}`;
+            const phone = mem.phone_number || '';
+            const matchName = fullName.toLowerCase().includes(query);
+            const matchPhone = phone.includes(query);
+
+            if (query === '' || matchName || matchPhone) {
+                count++;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'admin-search-item';
+                itemDiv.style.cssText = 'padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text-h); display: flex; justify-content: space-between; align-items: center;';
+                itemDiv.innerHTML = `
+                    <span>${fullName}</span>
+                    <span class="font-monospace text-muted" style="font-size: 0.7rem;">${phone}</span>
+                `;
+                itemDiv.addEventListener('mouseenter', () => itemDiv.style.backgroundColor = 'var(--border)');
+                itemDiv.addEventListener('mouseleave', () => itemDiv.style.backgroundColor = 'transparent');
+                itemDiv.addEventListener('click', () => {
+                    window.saveAdminSelectionDirect(index, fullName, phone);
+                });
+                resultsBox.appendChild(itemDiv);
+            }
+        });
+
+        if (count === 0 && query !== '') {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.style.cssText = 'padding: 10px; text-align: center; color: var(--text-muted); font-size: 0.75rem;';
+            emptyDiv.textContent = 'No matching members found.';
+            resultsBox.appendChild(emptyDiv);
+        }
     };
 
     window.cancelAdminEdit = function (index) {
@@ -1772,14 +1832,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
-    window.saveAdminSelection = async function (index) {
-        const select = document.getElementById(`admin-select-${index}`);
-        if (!select) return;
-
-        const selectedOption = select.options[select.selectedIndex];
-        const phone = select.value;
-        const name = selectedOption ? selectedOption.getAttribute('data-name') || '' : '';
-
+    window.saveAdminSelectionDirect = async function (index, name, phone) {
         const saveMsg = document.getElementById('admin-alerts-save-msg');
         if (saveMsg) saveMsg.style.display = 'none';
 
@@ -1800,7 +1853,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 if (saveMsg) {
-                    saveMsg.textContent = 'Saved successfully!';
+                    saveMsg.textContent = name ? `Saved ${name} successfully!` : 'Cleared contact successfully!';
                     saveMsg.style.display = 'block';
                     setTimeout(() => { saveMsg.style.display = 'none'; }, 3000);
                 }
@@ -1815,10 +1868,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 window.cancelAdminEdit(index);
             } else {
-                alert(data.error || 'Failed to save admin contacts.');
+                alert(data.error || 'Failed to save admin contact.');
             }
         } catch (err) {
-            alert('Error saving admin contacts.');
+            alert('Error saving admin contact.');
         }
     };
 
