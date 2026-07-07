@@ -79,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const newMemberPhone = document.getElementById('new-member-phone');
     const btnAddMember = document.getElementById('btn-add-member');
     const addMemberMsg = document.getElementById('add-member-msg');
-    const newMemberRole = document.getElementById('new-member-role');
     const membersList = document.getElementById('members-list');
 
     // Generic confirmation modal logic
@@ -151,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const role = newMemberRole ? newMemberRole.value : 'student';
         confirmAction('Register Member', `Are you sure you want to register ${firstname} ${lastname}?`, async () => {
             btnAddMember.disabled = true;
             btnAddMember.textContent = 'Registering...';
@@ -162,8 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         firstname,
                         lastname,
-                        phone_number: phone,
-                        role
+                        phone_number: phone
                     })
                 });
                 const data = await res.json();

@@ -46,7 +46,7 @@ const login = async (req, res) => {
         }
     } catch (err) {
         console.error('Error during admin database login, checking env fallback...', err.message);
-        
+
         // Fallback to environment variables if the admins table doesn't exist
         const envUsername = process.env.ADMIN_USERNAME || 'admin';
         const envPassword = process.env.ADMIN_PASSWORD || 'upbsadmin2026';
@@ -73,7 +73,7 @@ const getMembers = async (req, res) => {
 
 // POST /api/admin/members
 const addMember = async (req, res) => {
-    const { firstname, lastname, phone_number, role } = req.body;
+    const { firstname, lastname, phone_number } = req.body;
 
     if (!firstname || !lastname || !phone_number) {
         return res.status(400).json({ success: false, error: 'firstname, lastname, and phone_number are required' });
@@ -81,22 +81,16 @@ const addMember = async (req, res) => {
 
     try {
         const [existing] = await db.upbsPool.query('SELECT * FROM members WHERE phone_number = ?', [phone_number]);
-        const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:3000';
-        const memberRole = role || 'student';
 
         if (existing.length > 0) {
             const member = existing[0];
             if (member.is_active === 0 || member.is_active === false) {
                 await db.upbsPool.query(
-                    'UPDATE members SET firstname = ?, lastname = ?, is_active = 1, role = ?, trust_points = 100, leaderboard_points = 100, points_frozen = 0 WHERE phone_number = ?',
-                    [firstname, lastname, memberRole, phone_number]
+                    "UPDATE members SET firstname = ?, lastname = ?, is_active = 1, role = 'student', trust_points = 100, leaderboard_points = 100, points_frozen = 0 WHERE phone_number = ?",
+                    [firstname, lastname, phone_number]
                 );
 
-                if (memberRole === 'admin') {
-                    await sendSMS(phone_number, `You are now registered as an administrator in the UP Bikeshare System (UPBS).`);
-                } else {
-                    await sendSMS(phone_number, `Welcome back to UP Bike Share! Your account has been reactivated.`);
-                }
+                await sendSMS(phone_number, `Welcome back to UP Bike Share! Your account has been reactivated.`);
 
                 return res.json({ success: true, message: 'User account re-activated and updated successfully!' });
             }
@@ -104,15 +98,11 @@ const addMember = async (req, res) => {
         }
 
         await db.upbsPool.query(
-            'INSERT INTO members (firstname, lastname, phone_number, role) VALUES (?, ?, ?, ?)',
-            [firstname, lastname, phone_number, memberRole]
+            "INSERT INTO members (firstname, lastname, phone_number, role) VALUES (?, ?, ?, 'student')",
+            [firstname, lastname, phone_number]
         );
 
-        if (memberRole === 'admin') {
-            await sendSMS(phone_number, `You are now registered as an administrator in the UP Bikeshare System (UPBS).`);
-        } else {
-            await sendSMS(phone_number, `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`);
-        }
+        await sendSMS(phone_number, `Welcome to UP Bike Share! You are now registered and can start borrowing bikes.`);
 
         return res.json({ success: true, message: 'User registered successfully!' });
     } catch (err) {
@@ -426,9 +416,9 @@ const overrideBicycle = async (req, res) => {
         let updateQuery = "UPDATE bicycle_codes SET ";
         let params = [];
         if (combination_lock) { updateQuery += "combination_lock = ?, "; params.push(combination_lock); }
-        if (condition_status) { 
-            updateQuery += "condition_status = ?, "; 
-            params.push(condition_status); 
+        if (condition_status) {
+            updateQuery += "condition_status = ?, ";
+            params.push(condition_status);
             if (condition_status === 'Good') {
                 updateQuery += "broken_reported_at = NULL, ";
             } else if (condition_status === 'Broken' || condition_status === 'Disputed' || condition_status === 'Missing') {
@@ -1055,16 +1045,58 @@ const updateSettings = async (req, res) => {
     try {
         await conn.beginTransaction();
 
+        // 1. Fetch current admin alert numbers before update
+        const [oldSettings] = await conn.query(
+            "SELECT setting_name, setting_value FROM system_settings WHERE setting_name IN ('admin_alert_phone_1', 'admin_alert_phone_2')"
+        );
+        const oldPhones = {};
+        oldSettings.forEach(s => { oldPhones[s.setting_name] = s.setting_value; });
+
+        // 2. Perform setting updates
         for (const update of updates) {
-            // Update the setting
             await conn.query(
                 'UPDATE system_settings SET setting_value = ? WHERE setting_name = ?',
                 [String(update.setting_value), update.setting_name]
             );
         }
 
+        // 3. Fetch new admin alert numbers after update
+        const [newSettings] = await conn.query(
+            "SELECT setting_name, setting_value FROM system_settings WHERE setting_name IN ('admin_alert_phone_1', 'admin_alert_phone_2')"
+        );
+        const newPhones = {};
+        newSettings.forEach(s => { newPhones[s.setting_name] = s.setting_value; });
+
+        // 4. Compare changes and update member roles in transaction
+        const oldPhonesSet = new Set(Object.values(oldPhones).filter(p => p && p.trim() !== ''));
+        const newPhonesSet = new Set(Object.values(newPhones).filter(p => p && p.trim() !== ''));
+
+        // Demote removed phone numbers to 'student'
+        for (const oldPhone of oldPhonesSet) {
+            if (!newPhonesSet.has(oldPhone)) {
+                console.log(`[Role Sync] Demoting ${oldPhone} back to student role.`);
+                await conn.query("UPDATE members SET role = 'student' WHERE phone_number = ?", [oldPhone]);
+            }
+        }
+
+        // Promote added phone numbers to 'admin'
+        for (const newPhone of newPhonesSet) {
+            if (!oldPhonesSet.has(newPhone)) {
+                console.log(`[Role Sync] Promoting ${newPhone} to admin role.`);
+                
+                // Get member details to check if they exist before promoting
+                const [memRows] = await conn.query("SELECT role FROM members WHERE phone_number = ?", [newPhone]);
+                if (memRows.length > 0) {
+                    await conn.query("UPDATE members SET role = 'admin' WHERE phone_number = ?", [newPhone]);
+                    if (memRows[0].role !== 'admin') {
+                        await sendSMS(newPhone, `You are now registered as an administrator in the UP Bikeshare System (UPBS).`);
+                    }
+                }
+            }
+        }
+
         await conn.commit();
-        return res.json({ success: true, message: 'System settings updated successfully' });
+        return res.json({ success: true, message: 'System settings updated successfully and admin roles synchronized.' });
     } catch (err) {
         await conn.rollback();
         console.error('Error in updateSettings controller:', err);
