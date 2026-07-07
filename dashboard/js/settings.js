@@ -1172,13 +1172,26 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('[settings.js] Failed to fetch locations for dropdown:', e);
         }
 
+        let addedCount = 0;
         locations.forEach(loc => {
-            const opt = document.createElement('option');
-            opt.value = loc.location_name;
-            const displayName = loc.location_name.toUpperCase();
-            opt.textContent = displayName;
-            newBikeLocation.appendChild(opt);
+            const isDisabled = loc.is_disabled === 1 || loc.is_disabled === true || String(loc.is_disabled).toLowerCase() === 'true';
+            if (!isDisabled) {
+                const opt = document.createElement('option');
+                opt.value = loc.location_name;
+                const displayName = loc.location_name.toUpperCase();
+                opt.textContent = displayName;
+                newBikeLocation.appendChild(opt);
+                addedCount++;
+            }
         });
+        if (addedCount === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'NO ACTIVE STATIONS';
+            opt.disabled = true;
+            opt.selected = true;
+            newBikeLocation.appendChild(opt);
+        }
         console.log(`[settings.js] populateLocationDropdowns populated ${locations.length} options`);
     }
 
@@ -1247,6 +1260,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.success) {
                             div.remove();
                             if (window.initDashboard) await window.initDashboard();
+                            await populateLocationDropdowns();
+                            await renderBikeOverrides();
                         } else {
                             alert('Failed to delete station.');
                         }
@@ -1287,6 +1302,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (window.initDashboard) {
                             await window.initDashboard();
                         }
+                        await populateLocationDropdowns();
+                        await renderBikeOverrides();
                     } else {
                         alert(data.error || 'Failed to toggle station status.');
                         checkbox.checked = !checkbox.checked;
@@ -1308,12 +1325,21 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = '';
 
         let bikes = [];
+        let locations = window.allLocations || [];
         try {
-            const res = await fetch('/api/bicycles', { cache: 'no-store' });
-            const data = await res.json();
-            if (data.success) bikes = data.data;
+            const [resBikes, resLocs] = await Promise.all([
+                fetch('/api/bicycles', { cache: 'no-store' }),
+                fetch('/api/locations', { cache: 'no-store' })
+            ]);
+            const dataBikes = await resBikes.json();
+            const dataLocs = await resLocs.json();
+            if (dataBikes.success) bikes = dataBikes.data;
+            if (dataLocs.success) {
+                locations = dataLocs.data;
+                window.allLocations = locations;
+            }
         } catch (e) {
-            console.error('[settings.js] Error fetching bikes:', e);
+            console.error('[settings.js] Error fetching bikes/locations:', e);
             list.innerHTML = '<div class="text-danger small">Failed to load bicycles.</div>';
             return;
         }
@@ -1327,17 +1353,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const code = bike.bicycle_code;
             const isDisabled = bike.is_disabled === 1;
 
-            const locations = window.allLocations || [];
             let locationOptionsHtml = '';
+            let addedCount = 0;
             locations.forEach(loc => {
-                const isSelected = bike.new_location === loc.location_name ? 'selected' : '';
-                locationOptionsHtml += `<option value="${loc.location_name}" ${isSelected}>${loc.location_name.toUpperCase()}</option>`;
+                const isLocDisabled = loc.is_disabled === 1 || loc.is_disabled === true || String(loc.is_disabled).toLowerCase() === 'true';
+                const isSelected = bike.new_location === loc.location_name;
+                if (!isLocDisabled || isSelected) {
+                    const label = loc.location_name.toUpperCase() + (isLocDisabled ? ' (OFFLINE)' : '');
+                    const disabledAttr = isLocDisabled && !isSelected ? 'disabled' : '';
+                    locationOptionsHtml += `<option value="${loc.location_name}" ${isSelected ? 'selected' : ''} ${disabledAttr}>${label}</option>`;
+                    addedCount++;
+                }
             });
+            if (addedCount === 0) {
+                locationOptionsHtml = `<option value="${bike.new_location || ''}" selected>${(bike.new_location || 'UNKNOWN').toUpperCase()}</option>`;
+            }
 
             const div = document.createElement('div');
             div.className = 'd-flex flex-column gap-2 p-3 border rounded mb-2 bike-override-item';
             div.style.background = 'var(--bg-main)';
             div.dataset.bikeCode = code;
+            div.dataset.origStatus = bike.condition_status || 'Good';
+            div.dataset.origLocation = bike.new_location || '';
 
             div.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-2">
@@ -1427,8 +1464,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSave.addEventListener('click', async () => {
                 const payload = {};
                 if (lockInput.value.trim() !== '') payload.combination_lock = lockInput.value.trim();
-                if (statusSelect.value !== bike.condition_status) payload.condition_status = statusSelect.value;
-                if (locationSelect.value !== bike.new_location) payload.new_location = locationSelect.value;
+                if (statusSelect.value !== div.dataset.origStatus) payload.condition_status = statusSelect.value;
+                if (locationSelect.value !== div.dataset.origLocation) payload.new_location = locationSelect.value;
 
                 if (Object.keys(payload).length === 0) return alert('No changes to save.');
 
@@ -1446,6 +1483,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             lockInput.value = '';
                             bike.condition_status = statusSelect.value; // update local state
                             bike.new_location = locationSelect.value; // update local state
+                            div.dataset.origStatus = statusSelect.value;
+                            div.dataset.origLocation = locationSelect.value;
                             if (window.initDashboard) await window.initDashboard();
                         } else {
                             alert(data.error || 'Failed to update bike.');
@@ -1982,6 +2021,81 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSearchBikeOverride.addEventListener('click', executeSearch);
         searchBikeOverride.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') executeSearch();
+        });
+    }
+
+    // Handle Save All Bicycle Edits
+    const btnSaveAllBikes = document.getElementById('btn-save-all-bikes');
+    if (btnSaveAllBikes) {
+        btnSaveAllBikes.addEventListener('click', async () => {
+            const items = document.querySelectorAll('.bike-override-item');
+            const updates = [];
+
+            items.forEach(div => {
+                const code = div.dataset.bikeCode;
+                const origStatus = div.dataset.origStatus;
+                const origLocation = div.dataset.origLocation;
+                const lockInput = div.querySelector('.bike-lock-input');
+                const statusSelect = div.querySelector('.bike-status-select');
+                const locationSelect = div.querySelector('.bike-location-select');
+                const btnSave = div.querySelector('.btn-save-bike');
+
+                const payload = {};
+                if (lockInput && lockInput.value.trim() !== '') payload.combination_lock = lockInput.value.trim();
+                if (statusSelect && statusSelect.value !== origStatus) payload.condition_status = statusSelect.value;
+                if (locationSelect && locationSelect.value !== origLocation) payload.new_location = locationSelect.value;
+
+                if (Object.keys(payload).length > 0) {
+                    updates.push({ code, payload, div, lockInput, statusSelect, locationSelect, btnSave });
+                }
+            });
+
+            if (updates.length === 0) {
+                return alert('No changes detected across any bicycles.');
+            }
+
+            confirmAction('Save All Bicycle Edits', `Are you sure you want to save modifications for ${updates.length} bicycle(s)?`, async () => {
+                const originalText = btnSaveAllBikes.textContent;
+                btnSaveAllBikes.disabled = true;
+                btnSaveAllBikes.textContent = 'Saving All...';
+
+                updates.forEach(u => {
+                    if (u.btnSave) {
+                        u.btnSave.disabled = true;
+                        u.btnSave.textContent = '...';
+                    }
+                });
+
+                try {
+                    const results = await Promise.all(updates.map(u => 
+                        fetch('/api/admin/bicycles/override', {
+                            method: 'POST',
+                            headers: getAdminHeaders(),
+                            body: JSON.stringify({ bicycle_code: u.code, ...u.payload })
+                        }).then(r => r.json()).catch(() => ({ success: false, error: 'Network error' }))
+                    ));
+
+                    const failed = results.filter(r => !r.success);
+                    if (failed.length === 0) {
+                        alert(`Successfully updated all ${updates.length} bicycle(s)!`);
+                        updates.forEach(u => {
+                            if (u.lockInput) u.lockInput.value = '';
+                        });
+                        if (window.initDashboard) await window.initDashboard();
+                        await renderBikeOverrides();
+                    } else {
+                        alert(`Updated ${updates.length - failed.length} bicycle(s), but ${failed.length} failed. First error: ${failed[0].error || 'Unknown error'}`);
+                        if (window.initDashboard) await window.initDashboard();
+                        await renderBikeOverrides();
+                    }
+                } catch (e) {
+                    console.error('[settings.js] Error in Save All:', e);
+                    alert('An error occurred while saving bicycles.');
+                } finally {
+                    btnSaveAllBikes.disabled = false;
+                    btnSaveAllBikes.textContent = originalText;
+                }
+            });
         });
     }
 

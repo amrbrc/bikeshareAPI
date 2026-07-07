@@ -139,7 +139,7 @@ function renderBikes() {
         card.innerHTML = `
             <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; ${borderStyle} border-radius: var(--radius-md); padding: 8px;">
                 <span class="bike-icon" style="display: none;"></span>
-                <div class="bike-num" style="${isDisabled ? 'color: #6c757d; text-decoration: line-through;' : ''}">${bike.bicycle_code}</div>
+                <div class="bike-num" style="${isDisabled ? 'color: #6c757d;' : ''}">${bike.bicycle_code}</div>
                 <div class="bike-loc-wrap">
                     <div class="bike-loc">${bike.new_location || 'Unknown'}</div>
                 </div>
@@ -200,8 +200,8 @@ function renderLocations() {
 
         row.innerHTML = `
             <div class="station-dot" style="background-color: ${dotColor}; box-shadow: 0 0 6px ${dotColor};"></div>
-            <span class="station-name" style="${isDisabled ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">
-                ${stationKey} ${isDisabled ? '<span style="font-size:0.65rem; color:#ef4444; font-weight:600; margin-left:4px;">(Offline)</span>' : ''}
+            <span class="station-name" style="${isDisabled ? 'color: var(--text-muted);' : ''}">
+                ${stationKey} ${isDisabled ? '<span style="font-size:0.62rem; color:#f87171; background:rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); padding:1px 6px; border-radius:10px; font-weight:700; margin-left:6px; letter-spacing:0.5px; text-transform:uppercase;">Offline</span>' : ''}
             </span>
             <span style="margin-left:auto; font-size:0.75rem; color:#8892a4; font-weight:600; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:12px;">
                 ${count} ${count === 1 ? 'bike' : 'bikes'}
