@@ -55,15 +55,24 @@ const debugDb = async (req, res) => {
 const testNotifications = async (req, res) => {
     try {
         const notificationService = require('../services/notificationService');
-        const studentName = 'Amer Talastasin (Test)';
-        const phoneNumber = '+639615580206';
-        const bikeCode = '99';
-        const imageUrl = 'https://raw.githubusercontent.com/amrbrc/bikeshareAPI/main/dashboard/icons/icon-192.png';
+        const type = req.query.type || 'test';
+        const bikeCode = req.query.bike || '99';
+        const studentName = req.query.student || 'Amer Talastasin';
+        const phoneNumber = req.query.phone || '+639615580206';
+        const imageUrl = req.query.image || 'https://raw.githubusercontent.com/amrbrc/bikeshareAPI/main/dashboard/icons/icon-192.png';
 
-        await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
-        await notificationService.sendAdminSmsAlert("UPBS: This is a diagnostic test of the Admin SMS alert system.");
-
-        return res.json({ success: true, message: "Test notifications dispatched to Discord and Admin SMS." });
+        if (type === 'dispute') {
+            await notificationService.sendDisputeCreatedNotification(bikeCode, 'Carl Dizon', '+639161687653', studentName, phoneNumber);
+            return res.json({ success: true, message: `Simulated Dispute warning triggered successfully for Bike #${bikeCode}!` });
+        } else if (type === 'appeal') {
+            await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
+            await notificationService.sendAdminSmsAlert(`UPBS ALERT: Dispute appeal photo uploaded for Bike ${bikeCode} by ${studentName}. Review in dashboard.`);
+            return res.json({ success: true, message: `Simulated Appeal photo upload notifications triggered successfully for Bike #${bikeCode}!` });
+        } else {
+            await notificationService.sendDiscordNotification(studentName, phoneNumber, bikeCode, imageUrl);
+            await notificationService.sendAdminSmsAlert("UPBS: This is a diagnostic test of the Admin SMS alert system.");
+            return res.json({ success: true, message: "General diagnostic notifications dispatched to Discord and Admin SMS." });
+        }
     } catch (err) {
         console.error("Test notifications failed:", err.message);
         return res.status(500).json({ success: false, error: err.message });
