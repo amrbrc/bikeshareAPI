@@ -85,36 +85,37 @@
 
 
 
+    <!-- MOBILE HEADER -->
+    <header
+        class="mobile-header d-flex d-lg-none align-items-center justify-content-between px-3 py-2 border-bottom shadow-sm"
+        style="background: var(--bg-sidebar); z-index: 99; flex-shrink: 0; transition: background 0.3s var(--ease);">
+        <div class="d-flex align-items-center gap-3">
+            <button id="mobile-menu-toggle"
+                class="btn btn-link p-0 border-0 d-flex align-items-center justify-content-center"
+                style="width: 38px; height: 38px; border-radius: 8px; font-size: 1.35rem; text-decoration: none; color: var(--text-h) !important; background: var(--border);">☰</button>
+            <div class="brand-icon d-flex justify-content-center align-items-center shadow-sm"
+                style="width: 32px; height: 32px; border-radius: 8px; font-size: 1rem; box-shadow: 0 4px 10px rgba(123, 17, 19, 0.2) !important;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18.5" cy="17.5" r="3.5" />
+                    <circle cx="5.5" cy="17.5" r="3.5" />
+                    <circle cx="15" cy="5" r="1" />
+                    <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+                </svg>
+            </div>
+            <div class="d-flex flex-column">
+                <h1 class="h6 mb-0 fw-bold text-dark"
+                    style="color: var(--text-h) !important; font-size: 0.9rem; letter-spacing: -0.01em; line-height: 1.2;">
+                    UP Bikeshare</h1>
+                <span class="text-muted"
+                    style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">User
+                    Console</span>
+            </div>
+        </div>
+    </header>
+
     <!-- MAIN CONTENT -->
     <main class="main-wrapper flex-grow-1 d-flex flex-column">
-        <!-- MOBILE HEADER -->
-        <header
-            class="mobile-header d-flex d-lg-none align-items-center justify-content-between px-3 py-2 border-bottom shadow-sm"
-            style="background: var(--bg-sidebar); z-index: 99; flex-shrink: 0; transition: background 0.3s var(--ease);">
-            <div class="d-flex align-items-center gap-3">
-                <button id="mobile-menu-toggle"
-                    class="btn btn-link p-0 border-0 d-flex align-items-center justify-content-center"
-                    style="width: 38px; height: 38px; border-radius: 8px; font-size: 1.35rem; text-decoration: none; color: var(--text-h) !important; background: var(--border);">☰</button>
-                <div class="brand-icon d-flex justify-content-center align-items-center shadow-sm"
-                    style="width: 32px; height: 32px; border-radius: 8px; font-size: 1rem; box-shadow: 0 4px 10px rgba(123, 17, 19, 0.2) !important;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="18.5" cy="17.5" r="3.5" />
-                        <circle cx="5.5" cy="17.5" r="3.5" />
-                        <circle cx="15" cy="5" r="1" />
-                        <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
-                    </svg>
-                </div>
-                <div class="d-flex flex-column">
-                    <h1 class="h6 mb-0 fw-bold text-dark"
-                        style="color: var(--text-h) !important; font-size: 0.9rem; letter-spacing: -0.01em; line-height: 1.2;">
-                        UP Bikeshare</h1>
-                    <span class="text-muted"
-                        style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">User
-                        Console</span>
-                </div>
-            </div>
-        </header>
 
         <!-- DASHBOARD CONTAINER (Map & Grids) -->
         <div id="dashboard-container" class="d-flex flex-column" style="display: flex; height: 100%; width: 100%;">
