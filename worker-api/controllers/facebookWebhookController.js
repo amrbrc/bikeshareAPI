@@ -78,6 +78,53 @@ async function sendFbCompletionButtons(recipientPsid, textMessage = "Select an o
     }
 }
 
+// Helper to send buttons specifically for suspended users to request Community Service
+async function sendFbSuspendedButtons(recipientPsid, textMessage = "Select an option below to continue:") {
+    const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN;
+    if (!pageAccessToken) return;
+
+    try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipient: { id: recipientPsid },
+                message: {
+                    attachment: {
+                        type: "template",
+                        payload: {
+                            template_type: "button",
+                            text: textMessage,
+                            buttons: [
+                                {
+                                    type: "postback",
+                                    title: "🤝 Req Comm Service",
+                                    payload: "SIGNUP_COMMUNITY_SERVICE"
+                                },
+                                {
+                                    type: "postback",
+                                    title: "🔄 Start Over",
+                                    payload: "RESET"
+                                }
+                            ]
+                        }
+                    }
+                }
+            })
+        });
+        const result = await response.json();
+        if (result.error) {
+            console.error('[FB Bot] Suspended buttons Send API error:', result.error);
+        } else {
+            console.log(`[FB Bot] Vertical suspended buttons sent to PSID ${recipientPsid}`);
+        }
+    } catch (err) {
+        console.error('[FB Bot] Error sending suspended buttons:', err);
+    }
+}
+
 // GET /api/webhook/facebook - Webhook verification
 const verifyWebhook = (req, res) => {
     const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'upbs_secure_webhook_2026';
@@ -161,6 +208,63 @@ async function processIncomingMessage(psid, message) {
         return;
     }
 
+    // Handle Community Service Request
+    if (upperText === 'SIGNUP_COMMUNITY_SERVICE' || upperText === 'COMMUNITY SERVICE' || upperText === 'COMMUNITY_SERVICE') {
+        const [sessions] = await db.upbsPool.query('SELECT * FROM fb_bot_sessions WHERE psid = ?', [psid]);
+        const session = sessions.length > 0 ? sessions[0] : null;
+
+        if (!session || !session.phone_number) {
+            await sendFbMessage(psid, 'Please reply with your registered phone number first so we can schedule your Community Service shift.');
+            return;
+        }
+
+        const [members] = await db.upbsPool.query(
+            'SELECT firstname, lastname, phone_number, trust_points FROM members WHERE phone_number = ?',
+            [session.phone_number]
+        );
+        const member = members.length > 0 ? members[0] : { firstname: 'Student', lastname: '', trust_points: 0 };
+        const studentName = `${member.firstname} ${member.lastname}`.trim();
+
+        await sendFbMessage(
+            psid,
+            `Thank you for volunteering for UP Bikeshare Community Service! 🚲🤝\n\nWe have logged your request for ${studentName} (${session.phone_number}). Our Student Committee / Hub Coordinator will reach out to you directly via Facebook Messenger or SMS within 24 hours to schedule your volunteer station shift.\n\nOnce completed, an admin will award points to restore your account standing!`
+        );
+
+        // Notify Admins via SMS
+        notificationService.sendAdminSmsAlert(`UPBS ALERT: Suspended member ${studentName} (${session.phone_number}) requested Community Service shift via FB Messenger.`)
+            .catch(err => console.error('[FB Bot] Async Admin SMS alert failed:', err.message));
+
+        // Notify Admins via Discord Webhook
+        try {
+            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            if (webhookUrl) {
+                const payload = {
+                    embeds: [{
+                        title: "🤝 New Community Service Volunteer Request",
+                        color: 3066993,
+                        fields: [
+                            { name: "Volunteer Name", value: studentName, inline: true },
+                            { name: "Phone Number", value: session.phone_number, inline: true },
+                            { name: "Current Trust Score", value: `${member.trust_points} pts`, inline: true }
+                        ],
+                        description: `A suspended student requested to schedule a Community Service shift via FB Messenger to restore their account standing.`,
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+        } catch (discordErr) {
+            console.error('[FB Bot] Failed to send Discord comm service notification:', discordErr.message);
+        }
+
+        await db.upbsPool.query('UPDATE fb_bot_sessions SET bot_state = ? WHERE psid = ?', ['COMPLETED', psid]);
+        return;
+    }
+
     // 2. Fetch or initialize the user's session
     const [sessions] = await db.upbsPool.query('SELECT * FROM fb_bot_sessions WHERE psid = ?', [psid]);
     
@@ -215,16 +319,7 @@ async function processIncomingMessage(psid, message) {
         );
         const suspensionLimit = settingRows.length > 0 ? parseInt(settingRows[0].setting_value, 10) : 50;
 
-        // Check if the user is suspended due to low trust points
-        if (member.trust_points < suspensionLimit) {
-            await sendFbCompletionButtons(
-                psid,
-                `Hello ${member.firstname}! Your account (associated with ${normalizedPhone}) is currently SUSPENDED because your trust score has dropped to ${member.trust_points} points (below the ${suspensionLimit} limit).\n\nTo lift your suspension, you can earn trust points by performing Community Service shifts at any hub or delivering broken bikes.`
-            );
-            return;
-        }
-
-        // Check if there is a pending delivery for this volunteer phone number
+        // 1. First check if there is a pending delivery for this volunteer phone number (even if suspended, delivering earns +5 pts!)
         const [pendingDeliveries] = await db.upbsPool.query(
             "SELECT bicycle_code, new_location FROM bicycle_codes WHERE condition_status = 'Pending_Delivery' AND dispute_reported_by = ?",
             [normalizedPhone]
@@ -239,6 +334,19 @@ async function processIncomingMessage(psid, message) {
             await sendFbMessage(
                 psid,
                 `Account verified: ${member.firstname} ${member.lastname}.\n\nWe found a pending volunteer delivery report for Bike #${delivery.bicycle_code} at ${delivery.new_location.toUpperCase()}.\n\nPlease upload/send a clear photo of the bike at the hub now to request admin confirmation and claim your +5 points!`
+            );
+            return;
+        }
+
+        if (member.trust_points < suspensionLimit) {
+            // Save phone number and bot state
+            await db.upbsPool.query(
+                'UPDATE fb_bot_sessions SET phone_number = ? WHERE psid = ?',
+                [normalizedPhone, psid]
+            );
+            await sendFbSuspendedButtons(
+                psid,
+                `Hello ${member.firstname}! Your account (${normalizedPhone}) is currently SUSPENDED due to low trust score (${member.trust_points} pts, below limit ${suspensionLimit}).\n\nTap '🤝 Req Comm Service' below to request a volunteer station shift, or deliver missing/broken bikes to a hub (+5 pts)!`
             );
             return;
         }

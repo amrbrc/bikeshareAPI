@@ -378,7 +378,7 @@ const borrow = async (req, res) => {
         const suspensionLimit = await getSettingValue('suspension_limit', 50, upbsConn);
         if (user.trust_points < suspensionLimit) {
             await upbsConn.rollback();
-            return res.json({ reply: "Account suspended." });
+            return res.json({ reply: `Account suspended due to low trust score (${user.trust_points} pts). To lift suspension: find & deliver missing/broken bikes to hubs, or request community service via FB Messenger (m.me/upbikesharebot) or visit UPBS Admin.` });
         }
 
         if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {

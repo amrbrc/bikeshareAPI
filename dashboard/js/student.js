@@ -432,9 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (score >= 60) {
                     circle.style.stroke = '#eab308'; // Yellow
                     msg.textContent = 'Great standing! You can borrow bikes anytime.';
-                } else {
+                } else if (score < 50) {
                     circle.style.stroke = '#ef4444'; // Red
-                    msg.textContent = 'Warning: Trust score is too low.';
+                    msg.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-slash-circle-fill"></i> ACCOUNT SUSPENDED (LOW TRUST SCORE)</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">How to earn points & restore standing:<br>1) <strong>Volunteer Delivery:</strong> Find & deliver missing or broken bikes to repair hubs (text <code>delivered &lt;code&gt; &lt;hub&gt;</code>) for <strong>+5 pts</strong>.<br>2) <strong>Community Service:</strong> Visit UP Bikeshare Admin Hub to volunteer for station shifts.</small>';
+                } else {
+                    circle.style.stroke = '#f97316'; // Orange
+                    msg.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-circle-fill"></i> LOW TRUST SCORE WARNING</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">Your trust score is getting low. Complete clean rides (every 5th ride gives +5 pts) or volunteer to deliver missing/broken bikes to hubs (+5 pts).</small>';
                 }
             }
         }, 300);

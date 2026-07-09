@@ -26,19 +26,21 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
   > `"Sorry, you are not registered with UP Bike Share."`
   *(Note: This identical reply is also returned if a non-registered user attempts specific commands like `/borrow`, `/done`, `/points`, etc.)*
 
-### Scenario 1.2: Registered Member Sending Invalid / Unrecognized Command
+### Scenario 1.2: Registered Member Sending an Invalid Command
 * **Condition:** An active registered member texts a syntax that does not match any valid command regex pattern.
-* **User SMS Input:** `hello` / `borrow bike` / `check availability`
-* **System Action:** Intercepted by `fallbackController.js`, logs the attempt under `invalid_command_senders` and `Logs`.
-* **System SMS Reply:**
-  > `"Invalid Command. Send "bikeshare help" for list of available commands."`
+* **User SMS Input:** `hello` / `hi` / `borrow bike`
+* **System Action:** Intercepted by `fallbackController.js`, checks account standing first, and logs the attempt under `invalid_command_senders` and `Logs`.
+* **System SMS Replies:**
+  * If Standing Normal: > `"Invalid Command. Send "bikeshare help" for list of available commands."`
+  * If Suspended (`trust_points < 50`): > `"Account suspended due to low trust score ([Score] pts). To lift suspension: find & deliver missing/broken bikes to hubs, or request community service via FB Messenger (m.me/upbikesharebot) or visit UPBS Admin."`
+  * If Frozen (`points_frozen = 1`): > `"Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub."`
 
 ### Scenario 1.3: Suspended Account Attempting to Borrow
-* **Condition:** A member whose account status is currently marked as suspended tries to borrow a bike.
+* **Condition:** A member whose trust score is below the suspension threshold (`trust_points < 50`) tries to borrow a bike.
 * **User SMS Input:** `1 eee to vinzons`
-* **System Action:** Rejects the checkout transaction.
+* **System Action:** Rejects the checkout transaction and provides actionable steps to earn points and lift the suspension.
 * **System SMS Reply:**
-  > `"Account suspended."`
+  > `"Account suspended due to low trust score ([Score] pts). To lift suspension: find & deliver missing/broken bikes to hubs, or request community service via FB Messenger (m.me/upbikesharebot) or visit UPBS Admin."`
 
 ### Scenario 1.4: Frozen Account (Due to Dispute) Attempting to Borrow
 * **Condition:** A member whose account is frozen due to an ongoing bike damage/missing dispute tries to borrow a bike.

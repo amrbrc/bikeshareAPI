@@ -10,14 +10,24 @@ const invalidCommand = async (req, res) => {
 
     try {
         // Retrieve member details to determine registration status
-        const memberQuery = "SELECT lastname, firstname, phone_number FROM members WHERE phone_number = ?";
+        const memberQuery = "SELECT lastname, firstname, phone_number, trust_points, points_frozen FROM members WHERE phone_number = ?";
         const [memberRecords] = await db.upbsPool.query(memberQuery, [smsSender]);
         const isRegistered = memberRecords.length > 0;
 
         let replyMessage = "";
 
         if (isRegistered) {
-            replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
+            const user = memberRecords[0];
+            const [settingRows] = await db.upbsPool.query("SELECT SettingValue FROM settings WHERE SettingKey = 'suspension_limit'");
+            const suspensionLimit = (settingRows.length > 0) ? parseInt(settingRows[0].SettingValue, 10) : 50;
+
+            if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
+                replyMessage = "Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub.";
+            } else if (user.trust_points < suspensionLimit) {
+                replyMessage = `Account suspended due to low trust score (${user.trust_points} pts). To lift suspension: find & deliver missing/broken bikes to hubs, or request community service via FB Messenger (m.me/upbikesharebot) or visit UPBS Admin.`;
+            } else {
+                replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
+            }
             
             // Check if this invalid command attempt has already been logged
             const checkQuery = "SELECT * FROM invalid_command_senders WHERE phone_number = ? AND message_id = ?";
