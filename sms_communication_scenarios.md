@@ -32,15 +32,15 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
 * **System Action:** Intercepted by `fallbackController.js`, checks account standing first, and logs the attempt under `invalid_command_senders` and `Logs`.
 * **System SMS Replies:**
   * If Standing Normal: > `"Invalid Command. Send "bikeshare help" for list of available commands."`
-  * If Suspended (`trust_points < 50`): > `"Account suspended ([Score] pts). To lift: deliver missing/broken bikes to hubs, or msg FB Bot m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub."`
-  * If Frozen (`points_frozen = 1`): > `"Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub."`
+  * If Suspended (`trust_points < 50`): > `"Account suspended ([Score] pts). To lift: deliver missing/broken bikes to hubs, or message m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub."`
+  * If Frozen (`points_frozen = 1`): > `"Account frozen due to dispute. To settle: send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UP Bikeshare Admin Hub."`
 
 ### Scenario 1.3: Suspended Account Attempting to Borrow
 * **Condition:** A member whose trust score is below the suspension threshold (`trust_points < 50`) tries to borrow a bike.
 * **User SMS Input:** `1 eee to vinzons`
 * **System Action:** Rejects the checkout transaction and provides actionable steps to earn points and lift the suspension.
 * **System SMS Reply:**
-  > `"Account suspended ([Score] pts). To lift: deliver missing/broken bikes to hubs, or msg FB Bot m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub."`
+  > `"Account suspended ([Score] pts). To lift: deliver missing/broken bikes to hubs, or message m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub."`
 
 ### Scenario 1.4: Frozen Account (Due to Dispute) Attempting to Borrow
 * **Condition:** A member whose account is frozen due to an ongoing bike damage/missing dispute tries to borrow a bike.

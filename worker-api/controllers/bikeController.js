@@ -378,12 +378,12 @@ const borrow = async (req, res) => {
         const suspensionLimit = await getSettingValue('suspension_limit', 50, upbsConn);
         if (user.trust_points < suspensionLimit) {
             await upbsConn.rollback();
-            return res.json({ reply: `Account suspended (${user.trust_points} pts). To lift: deliver missing/broken bikes to hubs, or msg FB Bot m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub.` });
+            return res.json({ reply: `Account suspended (${user.trust_points} pts). To lift: deliver missing/broken bikes to hubs, or message m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub.` });
         }
 
         if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
             await upbsConn.rollback();
-            return res.json({ reply: "Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub." });
+            return res.json({ reply: "Account frozen due to dispute. To settle: send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UP Bikeshare Admin Hub." });
         }
 
         // Apply Gatekeeper check for multiple simultaneous borrows

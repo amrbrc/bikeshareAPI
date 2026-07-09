@@ -22,9 +22,9 @@ const invalidCommand = async (req, res) => {
             const suspensionLimit = (settingRows.length > 0) ? parseInt(settingRows[0].setting_value, 10) : 50;
 
             if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
-                replyMessage = "Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub.";
+                replyMessage = "Account frozen due to dispute. To settle: send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UP Bikeshare Admin Hub.";
             } else if (user.trust_points < suspensionLimit) {
-                replyMessage = `Account suspended (${user.trust_points} pts). To lift: deliver missing/broken bikes to hubs, or msg FB Bot m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub.`;
+                replyMessage = `Account suspended (${user.trust_points} pts). To lift: deliver missing/broken bikes to hubs, or message m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub.`;
             } else {
                 replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
             }
