@@ -47,6 +47,21 @@ All incoming SMS messages are intercepted by the Gateway and verified against th
 * **System SMS Reply:**
   > `"Account frozen due to dispute. To settle: send photo to m(.)me/upbikesharebot (remove parenthesis) or visit UP Bikeshare Admin Hub."`
 
+### Scenario 1.5: Administrator Registration & Confirmation via SMS
+* **Condition:** An existing system administrator registers a new administrator account via the Admin Hub (`POST /api/admin/add-admin`).
+* **Trigger:** Admin Hub creation action (`adminController.js`).
+* **System Action:** Creates or upgrades the member record (`is_admin = 1`) and automatically dispatches a welcome SMS confirmation.
+* **System SMS Reply (Automated):**
+  > `"You are now registered as an administrator in the UP Bikeshare System (UPBS)."`
+
+### Scenario 1.6: Member Registration & Reactivation via Admin Hub
+* **Condition:** An administrator registers a new student member or reactivates a previously deactivated account from the Admin Hub.
+* **Trigger:** Admin Hub member management (`adminController.js`).
+* **System Action:** Activates the account (`is_active = 1`) and sends an onboarding/welcome back SMS.
+* **System SMS Replies (Automated):**
+  * If Newly Registered: > `"Welcome to UP Bike Share! You are now registered and can start borrowing bikes."`
+  * If Reactivated: > `"Welcome back to UP Bike Share! Your account has been reactivated."`
+
 ---
 
 ## 2. Core Ride Lifecycle (Borrow ➔ Done ➔ Handshake)
@@ -189,9 +204,9 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.1: Borrower Reporting Bike Broken During Handshake (`broken`)
 * **Condition:** Active borrower replies `broken` instead of `good` after ending their trip.
 * **User SMS Pattern:** `broken <code>` or `<code> broken` (e.g., `broken 1` / `1 broken`)
-* **System Action:** Finalizes trip with condition `Broken`, updates bike status to `Broken`, resets borrower's `consecutive_good_rides` counter to 0, and applies a **−2 Trust Points demerit**.
+* **System Action:** Finalizes trip with condition `Broken`, updates bike status to `Broken`, resets borrower's `consecutive_good_rides` counter to 0, and applies a **−2 Trust Points demerit**. Instructs user to drop off bike and text `delivered <code> <location>`.
 * **System SMS Reply:**
-  > `"Thank you for reporting. Please lock and leave Bike [Code] at the designated UPBS Hub (or current location) for the maintenance team to collect."`
+  > `"Thank you for reporting damage on Bike [Code]. Please lock and leave it at a station hub. Once dropped off, text 'delivered [Code] [location]' so our team can collect it."`
 
 ### Scenario 3.2: Next User Reporting Bike Broken at Checkout (Dispute Protocol)
 * **Condition:** A bike is marked as `Good` at a station, but the *next* intending rider finds it damaged before borrowing and texts `broken`.
@@ -222,9 +237,9 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.5: Delivering a Broken Bike to a Hub for Repair (`delivered`)
 * **Condition:** Member delivers a broken/maintenance bike to a designated station or maintenance hub to be serviced by tech crew.
 * **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 1 engg` / `1 delivered vinzons`)
-* **System Action:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery. Awards **+5 Trust Points & +5 Leaderboard Points** to community volunteers who transport the bike. *(Note: If the deliverer is the borrower who broke/used it during the trip, 0 bonus reward points are awarded since returning it is their standard borrower duty).*
+* **System Action:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery. Awards **+5 Trust Points & +5 Leaderboard Points** to community volunteers who transport the bike. *(Note: If the deliverer is the borrower who broke/used it during the trip, 0 bonus reward points are awarded since returning it is their standard borrower duty. Riders are allowed to drop off a broken bicycle at any convenient station hub for safety without wrong-station penalties).*
 * **System SMS Reply (If Volunteer):**
-  > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. As a volunteer transport, you have been rewarded +5 trust points!"`
+  > `"Thank you! Bike [Code] has been reported as delivered to [LOCATION]. To confirm your +5 trust points, please take a clear picture of the bike at the hub and upload it to our Facebook Messenger bot."`
 * **System SMS Reply (If Borrower who broke it):**
   > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
 
@@ -283,6 +298,13 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
     * *Outbound SMS to Borrower:* > `"The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account."`
     * *Outbound SMS to Honest Reporter:* > `"The dispute you reported has been resolved neutrally (external damage). You have earned +[Reward] trust points for accurately reporting the broken bike. Thank you!"`
 
+### Scenario 3.12: Volunteer Delivery Verification Verdicts & SMS Notifications
+* **Condition:** An administrator reviews a Volunteer Delivery Report on the Web Dashboard (`POST /api/admin/deliveries/:id/resolve`) and approves or rejects the delivery proof photo/record.
+* **System Actions & SMS Replies by Verdict:**
+  * **Approved Proof:**
+    * *Outbound SMS to Volunteer:* > `"Your delivery proof for Bike [Code] has been approved by admin! You have been rewarded +[Reward] trust points. Thank you for volunteering!"`
+  * **Rejected / Unverified Proof:**
+    * *Outbound SMS to Volunteer:* > `"Your delivery report for Bike [Code] was unverified/rejected by admin. Point reward was not issued."`
 
 ---
 

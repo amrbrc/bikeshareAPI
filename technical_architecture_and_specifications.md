@@ -163,7 +163,7 @@ To maintain clean architecture, business logic in `worker-api` is segregated by 
 * `bikeController.js`: Core SMS command execution (`borrow`, `done`, `good`, `broken`, `delivered`, `missing`, `points`, `search`, `locations`, `usage`) and dashboard data feeds (`/bicycles`, `/locations`, `/history/:code`).
 * `adminController.js`: Administrative operations (CRUD members, bicycles, stations, point overrides, dispute resolution, maintenance queue, honesty logs).
 * `facebookWebhookController.js`: Meta Graph API integration for Facebook Messenger. Handles webhook verification (`GET /webhook`), incoming message parsing (`POST /webhook`), session state machine (`fb_bot_sessions`), dispute appeal photo attachments (`dispute_image_url`), and vertical stacked button templates (`sendFbCompletionButtons`).
-* `analyticsController.js`: Aggregates historical ride data, peak hours, station utilization, and trust point distributions for dashboard charts.
+* `analyticsController.js`: Decoupled analytics engine that queries `bicycle_history` directly (without strict inner joins on `members` or `bicycle_codes`) so historical trips are never dropped even when bicycles or members are archived. Filters completed rides via `(reported_condition != 'Timeout' OR reported_condition IS NULL)` and supports both **Monthly View** (`period = 'month'`, filtered by `YEAR` + `MONTH`) and **Yearly View** (`period = 'year'`, filtered across all months of a year) along with dynamic available year queries (`LIMIT 15`).
 * `helpController.js`: Formulates multi-part help guides and instruction manuals.
 * `fallbackController.js`: Gracefully handles and logs unregistered users and unrecognized syntax commands.
 
@@ -296,8 +296,8 @@ To elevate the visual experience beyond generic Bootstrap defaults, a custom des
 * `student.js`: Powers the Student Portal. Manages authentication state, renders user trust score and leaderboard ranking, dynamically displays campus bike availability, and controls the multi-step interactive Quick Start Guide modal with smooth pagination.
 * `admin.js`: Powers the Admin Portal. Handles tabbed navigation (Fleet, Members, Stations, Analytics, Settings, Logs).
 * `admin-search.js`: Real-time filtering and live table rendering for bicycles and student records.
-* `settings.js`: Interface for adjusting system variables (timeout durations, reward points, borrow limits) via `/api/admin/settings`.
-* `analytics.js`: Fetches aggregate backend metrics and paints dynamic Chart.js canvas graphs.
+* `settings.js`: Interface for adjusting system variables (timeout durations, reward points, borrow limits) via `/api/admin/settings`, rendered inside a responsive floating modal card (`#settings-card`) with fixed header controls and a scrollable body so it remains fully accessible and never stretches off-screen on mobile viewports.
+* `analytics.js`: Fetches aggregate backend metrics and paints dynamic Chart.js canvas graphs. Features an interactive Year Selector built with an `<input type="number">` paired with a `<datalist>`, allowing administrators to either type any custom historical year directly or choose from dynamically fetched recent years (`LIMIT 15`) without dropdown list overflow.
 * `theme.js`: Handles instant Dark/Light theme toggling via `data-theme` attribute on the HTML root.
 
 ### 6.4 Leaderboard & Gamification Architecture
