@@ -124,7 +124,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
   * If `Disputed` (Under Admin Review): > `"Bike [Code] is currently disputed and under admin review. Please choose another bike."`
   * If `Missing`: > `"Bike [Code] has been reported missing and is under investigation."`
   * If `Borrowed` (Checked Out by Someone Else): > `"Bike [Code] is currently checked out by another member."`
-  * If `Pending_Status` (Awaiting Condition Confirmation): > `"Bike [Code] is currently pending a condition report from the previous user. Please try another bike."`
+  * If `Pending_Status` (Awaiting Condition Confirmation): > `"Bike [Code] is awaiting return inspection by the previous rider. Please choose another bike."`
 
 ### Scenario 2.5A: Borrowing with Non-Existent / Invalid Bike Code
 * **Condition:** User attempts to borrow using a bicycle code that does not exist or is inactive in the database (even if station names are valid, e.g., `999 eee to vinzons`).
