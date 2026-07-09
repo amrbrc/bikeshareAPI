@@ -24,7 +24,7 @@ const invalidCommand = async (req, res) => {
             if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
                 replyMessage = "Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub.";
             } else if (user.trust_points < suspensionLimit) {
-                replyMessage = `Account suspended due to low trust score (${user.trust_points} pts). To lift suspension: find & deliver missing/broken bikes to hubs, or request community service via FB Messenger (m.me/upbikesharebot) or visit UPBS Admin.`;
+                replyMessage = `Account suspended (${user.trust_points} pts). To lift: deliver missing/broken bikes to hubs, or msg FB Bot m(.)me/upbikesharebot (remove parenthesis) or visit Admin Hub.`;
             } else {
                 replyMessage = 'Invalid Command. Send "bikeshare help" for list of available commands.';
             }
