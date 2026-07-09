@@ -36,24 +36,34 @@ const getAnalytics = async (req, res) => {
         }
 
         // --- Overall (All-Time) Queries ---
-        const [overallTotalRows] = await db.upbsPool.query(`SELECT COUNT(*) AS total FROM bicycle_history WHERE (done_text_received = 1 OR condition_confirmed = 1)`);
+        const [overallTotalRows] = await db.upbsPool.query(`
+            SELECT COUNT(*) AS total 
+            FROM bicycle_history bh
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+            WHERE (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+        `);
         const overallTotalRides = overallTotalRows[0] ? overallTotalRows[0].total : 0;
 
         // 1. Peak usage hours (overall)
         const overallPeakHoursQuery = `
-            SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
-            FROM bicycle_history
-            WHERE borrowed_at IS NOT NULL AND (done_text_received = 1 OR condition_confirmed = 1)
-            GROUP BY HOUR(borrowed_at)
+            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+            FROM bicycle_history bh
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+            WHERE bh.borrowed_at IS NOT NULL AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+            GROUP BY HOUR(bh.borrowed_at)
             ORDER BY hour ASC
         `;
         const [overallPeakHours] = await db.upbsPool.query(overallPeakHoursQuery);
 
         // 2. Popular stations (overall)
         const overallPopularStationsQuery = `
-            SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
-            FROM bicycle_history
-            WHERE (done_text_received = 1 OR condition_confirmed = 1)
+            SELECT COALESCE(NULLIF(TRIM(bh.new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+            FROM bicycle_history bh
+            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+            WHERE (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
             GROUP BY station
             ORDER BY count DESC
         `;
@@ -62,35 +72,55 @@ const getAnalytics = async (req, res) => {
         // --- Periodic Queries (Filtered to month or year) ---
         let totalRidesQuery, peakHoursQuery, popularStationsQuery, queryParams;
         if (period === 'year') {
-            totalRidesQuery = `SELECT COUNT(*) AS total FROM bicycle_history WHERE YEAR(borrowed_at) = ? AND (done_text_received = 1 OR condition_confirmed = 1)`;
+            totalRidesQuery = `
+                SELECT COUNT(*) AS total 
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+            `;
             peakHoursQuery = `
-                SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
-                FROM bicycle_history
-                WHERE YEAR(borrowed_at) = ? AND borrowed_at IS NOT NULL AND (done_text_received = 1 OR condition_confirmed = 1)
-                GROUP BY HOUR(borrowed_at)
+                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND bh.borrowed_at IS NOT NULL AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+                GROUP BY HOUR(bh.borrowed_at)
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
-                SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
-                FROM bicycle_history
-                WHERE YEAR(borrowed_at) = ? AND (done_text_received = 1 OR condition_confirmed = 1)
+                SELECT COALESCE(NULLIF(TRIM(bh.new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
                 GROUP BY station
                 ORDER BY count DESC
             `;
             queryParams = [year];
         } else {
-            totalRidesQuery = `SELECT COUNT(*) AS total FROM bicycle_history WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ? AND (done_text_received = 1 OR condition_confirmed = 1)`;
+            totalRidesQuery = `
+                SELECT COUNT(*) AS total 
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ? AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+            `;
             peakHoursQuery = `
-                SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
-                FROM bicycle_history
-                WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ? AND borrowed_at IS NOT NULL AND (done_text_received = 1 OR condition_confirmed = 1)
-                GROUP BY HOUR(borrowed_at)
+                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ? AND bh.borrowed_at IS NOT NULL AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
+                GROUP BY HOUR(bh.borrowed_at)
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
-                SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
-                FROM bicycle_history
-                WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ? AND (done_text_received = 1 OR condition_confirmed = 1)
+                SELECT COALESCE(NULLIF(TRIM(bh.new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+                FROM bicycle_history bh
+                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
+                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ? AND (bh.done_text_received = 1 OR bh.condition_confirmed = 1)
                 GROUP BY station
                 ORDER BY count DESC
             `;
