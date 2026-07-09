@@ -36,83 +36,76 @@ const getAnalytics = async (req, res) => {
         }
 
         // --- Overall (All-Time) Queries ---
+        const [overallTotalRows] = await db.upbsPool.query(`SELECT COUNT(*) AS total FROM bicycle_history`);
+        const overallTotalRides = overallTotalRows[0] ? overallTotalRows[0].total : 0;
+
         // 1. Peak usage hours (overall)
         const overallPeakHoursQuery = `
-            SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
-            FROM bicycle_history bh
-            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            GROUP BY HOUR(bh.borrowed_at)
+            SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
+            FROM bicycle_history
+            WHERE borrowed_at IS NOT NULL
+            GROUP BY HOUR(borrowed_at)
             ORDER BY hour ASC
         `;
         const [overallPeakHours] = await db.upbsPool.query(overallPeakHoursQuery);
 
         // 2. Popular stations (overall)
         const overallPopularStationsQuery = `
-            SELECT bh.new_location AS station, COUNT(*) AS count
-            FROM bicycle_history bh
-            JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
-            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-            GROUP BY bh.new_location
+            SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+            FROM bicycle_history
+            GROUP BY station
             ORDER BY count DESC
         `;
         const [overallPopularStations] = await db.upbsPool.query(overallPopularStationsQuery);
 
         // --- Periodic Queries (Filtered to month or year) ---
-        let peakHoursQuery, popularStationsQuery, queryParams;
+        let totalRidesQuery, peakHoursQuery, popularStationsQuery, queryParams;
         if (period === 'year') {
+            totalRidesQuery = `SELECT COUNT(*) AS total FROM bicycle_history WHERE YEAR(borrowed_at) = ?`;
             peakHoursQuery = `
-                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
-                FROM bicycle_history bh
-                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ?
-                GROUP BY HOUR(bh.borrowed_at)
+                SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
+                FROM bicycle_history
+                WHERE YEAR(borrowed_at) = ? AND borrowed_at IS NOT NULL
+                GROUP BY HOUR(borrowed_at)
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
-                SELECT bh.new_location AS station, COUNT(*) AS count
-                FROM bicycle_history bh
-                JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
-                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ?
-                GROUP BY bh.new_location
+                SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+                FROM bicycle_history
+                WHERE YEAR(borrowed_at) = ?
+                GROUP BY station
                 ORDER BY count DESC
             `;
             queryParams = [year];
         } else {
+            totalRidesQuery = `SELECT COUNT(*) AS total FROM bicycle_history WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ?`;
             peakHoursQuery = `
-                SELECT HOUR(bh.borrowed_at) AS hour, COUNT(*) AS count
-                FROM bicycle_history bh
-                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
-                GROUP BY HOUR(bh.borrowed_at)
+                SELECT HOUR(borrowed_at) AS hour, COUNT(*) AS count
+                FROM bicycle_history
+                WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ? AND borrowed_at IS NOT NULL
+                GROUP BY HOUR(borrowed_at)
                 ORDER BY hour ASC
             `;
             popularStationsQuery = `
-                SELECT bh.new_location AS station, COUNT(*) AS count
-                FROM bicycle_history bh
-                JOIN locations l ON l.location_name = bh.new_location AND l.is_active = 1
-                JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-                JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
-                WHERE YEAR(bh.borrowed_at) = ? AND MONTH(bh.borrowed_at) = ?
-                GROUP BY bh.new_location
+                SELECT COALESCE(NULLIF(TRIM(new_location), ''), 'Unknown Station') AS station, COUNT(*) AS count
+                FROM bicycle_history
+                WHERE YEAR(borrowed_at) = ? AND MONTH(borrowed_at) = ?
+                GROUP BY station
                 ORDER BY count DESC
             `;
             queryParams = [year, month];
         }
+        const [periodicTotalRows] = await db.upbsPool.query(totalRidesQuery, queryParams);
+        const periodicTotalRides = periodicTotalRows[0] ? periodicTotalRows[0].total : 0;
+
         const [peakHours] = await db.upbsPool.query(peakHoursQuery, queryParams);
         const [popularStations] = await db.upbsPool.query(popularStationsQuery, queryParams);
 
         // 5. Available years and months
         const availableYearsQuery = `
-            SELECT DISTINCT YEAR(bh.borrowed_at) AS year
-            FROM bicycle_history bh
-            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+            SELECT DISTINCT YEAR(borrowed_at) AS year
+            FROM bicycle_history
+            WHERE borrowed_at IS NOT NULL
             ORDER BY year DESC
         `;
         const [availableYearsRows] = await db.upbsPool.query(availableYearsQuery);
@@ -120,10 +113,9 @@ const getAnalytics = async (req, res) => {
         if (availableYears.length === 0) availableYears = [year];
 
         const availableMonthsQuery = `
-            SELECT DISTINCT DATE_FORMAT(bh.borrowed_at, '%Y-%m') AS month
-            FROM bicycle_history bh
-            JOIN bicycle_codes bc ON bc.bicycle_code = bh.bicycle_code AND bc.is_active = 1
-            JOIN members m ON m.phone_number = bh.borrower_phone AND m.is_active = 1
+            SELECT DISTINCT DATE_FORMAT(borrowed_at, '%Y-%m') AS month
+            FROM bicycle_history
+            WHERE borrowed_at IS NOT NULL
             ORDER BY month DESC
         `;
         const [availableMonthsRows] = await db.upbsPool.query(availableMonthsQuery);
@@ -135,6 +127,8 @@ const getAnalytics = async (req, res) => {
             year,
             month: targetMonth,
             month_num: month,
+            overallTotalRides,
+            totalRides: periodicTotalRides,
             overallPeakHours,
             overallPopularStations,
             peakHours,

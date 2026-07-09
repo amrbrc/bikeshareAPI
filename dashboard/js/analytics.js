@@ -268,19 +268,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
-                updateOverallStatsBanner(data.overallPeakHours, data.overallPopularStations);
+                updateOverallStatsBanner(data.overallPeakHours, data.overallPopularStations, data.overallTotalRides);
                 renderOverallCharts(data.overallPeakHours, data.overallPopularStations);
 
                 populateYearsDropdown(data.availableYears || [], data.year || year);
 
                 const hasData = (data.peakHours && data.peakHours.length > 0) ||
-                                (data.popularStations && data.popularStations.length > 0);
+                                (data.popularStations && data.popularStations.length > 0) ||
+                                (data.totalRides > 0);
 
                 if (hasData) {
                     if (noDataEl) noDataEl.style.display = 'none';
                     if (chartHoursCol) chartHoursCol.style.display = '';
                     if (chartStationsCol) chartStationsCol.style.display = '';
-                    updateMonthlyStatsBanner(data.peakHours, data.popularStations);
+                    updateMonthlyStatsBanner(data.peakHours, data.popularStations, data.totalRides);
                     renderMonthlyCharts(data.peakHours, data.popularStations);
                 } else {
                     if (noDataEl) noDataEl.style.display = '';
@@ -307,9 +308,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${displayHour}:00 ${ampm}`;
     }
 
-    function updateOverallStatsBanner(peakHoursData, popularStationsData) {
-        let total = 0;
-        popularStationsData.forEach(s => total += s.count);
+    function updateOverallStatsBanner(peakHoursData, popularStationsData, explicitTotalRides) {
+        let total = explicitTotalRides !== undefined && explicitTotalRides !== null ? explicitTotalRides : 0;
+        if (explicitTotalRides === undefined || explicitTotalRides === null) {
+            popularStationsData.forEach(s => total += s.count);
+        }
         if (overallTotalRidesEl) overallTotalRidesEl.textContent = total;
         if (overallDoughnutCenterValEl) overallDoughnutCenterValEl.textContent = total;
 
@@ -337,9 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateMonthlyStatsBanner(peakHoursData, popularStationsData) {
-        let total = 0;
-        popularStationsData.forEach(s => total += s.count);
+    function updateMonthlyStatsBanner(peakHoursData, popularStationsData, explicitTotalRides) {
+        let total = explicitTotalRides !== undefined && explicitTotalRides !== null ? explicitTotalRides : 0;
+        if (explicitTotalRides === undefined || explicitTotalRides === null) {
+            popularStationsData.forEach(s => total += s.count);
+        }
         if (monthlyTotalRidesEl) monthlyTotalRidesEl.textContent = total;
         if (monthlyDoughnutCenterValEl) monthlyDoughnutCenterValEl.textContent = total;
 
