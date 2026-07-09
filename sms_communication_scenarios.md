@@ -246,7 +246,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 1 engg` / `1 delivered vinzons`)
 * **System Action:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery. Awards **+5 Trust Points & +5 Leaderboard Points** to community volunteers who transport the bike. *(Note: If the deliverer is the borrower who broke/used it during the trip, 0 bonus reward points are awarded since returning it is their standard borrower duty. Riders are allowed to drop off a broken bicycle at any convenient station hub for safety without wrong-station penalties).*
 * **System SMS Reply (If Volunteer):**
-  > `"Thank you! Bike [Code] has been reported as delivered to [LOCATION]. To confirm your +5 trust points, please take a clear picture of the bike at the hub and upload it to our Facebook Messenger bot."`
+  > `"Thank you! Bike [Code] delivered to [LOCATION]. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +5 pts."`
 * **System SMS Reply (If Borrower who broke it):**
   > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
 
