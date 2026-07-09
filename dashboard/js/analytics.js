@@ -139,7 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         yearSelect.addEventListener('change', () => {
-            loadAnalyticsData(periodSelect.value, yearSelect.value, monthSelect.value);
+            if (yearSelect.value && String(yearSelect.value).length === 4) {
+                loadAnalyticsData(periodSelect.value, yearSelect.value, monthSelect.value);
+            }
+        });
+        yearSelect.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter' && yearSelect.value && String(yearSelect.value).length === 4) {
+                loadAnalyticsData(periodSelect.value, yearSelect.value, monthSelect.value);
+            }
         });
 
         monthSelect.addEventListener('change', () => {
@@ -151,25 +158,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateYearsDropdown(availableYears, selectedYear) {
         if (!yearSelect) return;
-        yearSelect.innerHTML = '';
+        const datalist = document.getElementById('analytics-years-datalist');
         const rawYears = availableYears && availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
-        
-        // Convert to numbers, deduplicate with Set, and sort descending (newest first)
         let uniqueYears = Array.from(new Set(rawYears.map(y => Number(y)))).sort((a, b) => b - a);
-        
-        const selNum = Number(selectedYear);
-        if (selNum && !uniqueYears.includes(selNum)) {
-            uniqueYears.push(selNum);
-            uniqueYears.sort((a, b) => b - a);
+
+        if (datalist) {
+            datalist.innerHTML = '';
+            uniqueYears.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                datalist.appendChild(opt);
+            });
         }
 
-        uniqueYears.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            if (Number(y) === selNum) opt.selected = true;
-            yearSelect.appendChild(opt);
-        });
+        if (selectedYear) {
+            yearSelect.value = selectedYear;
+        } else if (!yearSelect.value) {
+            yearSelect.value = new Date().getFullYear();
+        }
     }
 
     // ── Nav View Switching ──────────────────────────────────────────────────

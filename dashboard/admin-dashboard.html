@@ -299,18 +299,19 @@
                                 style="letter-spacing: 0.5px; font-size: 0.75rem;">View:</span>
                             <select id="analytics-period-select" class="form-select form-select-sm fw-semibold"
                                 style="width: auto; min-width: 140px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 12px; cursor: pointer;">
-                                <option value="month">Monthly View</option>
-                                <option value="year">Yearly View</option>
+                                <option value="month">Monthly</option>
+                                <option value="year">Yearly</option>
                             </select>
                         </div>
-                        <!-- Year Indicator & Dropdown -->
+                        <!-- Year Input & Datalist -->
                         <div class="d-flex align-items-center gap-2">
                             <span class="text-muted fw-bold small text-uppercase"
                                 style="letter-spacing: 0.5px; font-size: 0.75rem;">Year:</span>
-                            <select id="analytics-year-select" class="form-select form-select-sm fw-semibold"
-                                style="width: auto; min-width: 110px; max-height: 250px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 30px 6px 14px; cursor: pointer;">
+                            <input type="number" id="analytics-year-select" list="analytics-years-datalist" min="2000" max="2100" class="form-control form-control-sm fw-semibold"
+                                style="width: 105px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-h); padding: 6px 10px; text-align: center;">
+                            <datalist id="analytics-years-datalist">
                                 <!-- Populated by JS -->
-                            </select>
+                            </datalist>
                         </div>
                         <!-- Month Indicator & Dropdown -->
                         <div class="d-flex align-items-center gap-2" id="analytics-month-wrapper">
@@ -725,7 +726,9 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
                                     stroke-linejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                    <path
+                                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                                    </path>
                                 </svg>
                                 Admin Alert Contacts
                             </button>
@@ -753,7 +756,10 @@
                                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
                                     <h5 class="fw-bold text-dark mb-0">Bicycle Modification</h5>
                                     <div class="d-flex align-items-center gap-2">
-                                        <button id="btn-save-all-bikes" class="btn btn-sm btn-success fw-bold px-3 border-0 shadow-sm text-nowrap" style="background-color: var(--up-green); height: 31px; font-size: 0.75rem;">Save All Edits</button>
+                                        <button id="btn-save-all-bikes"
+                                            class="btn btn-sm btn-success fw-bold px-3 border-0 shadow-sm text-nowrap"
+                                            style="background-color: var(--up-green); height: 31px; font-size: 0.75rem;">Save
+                                            All Edits</button>
                                         <div class="input-group input-group-sm shadow-sm"
                                             style="width: 220px; margin-bottom: 0;">
                                             <input type="text" id="search-bike-override" class="form-control border-0"
@@ -797,36 +803,59 @@
                                     <h5 class="fw-bold text-dark mb-0">Admin SMS Alert Contacts</h5>
                                     <span class="text-muted small">Configure contacts for real-time alerts</span>
                                 </div>
-                                <div class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1" style="padding-right: 8px;">
-                                    <p class="small text-muted mb-0">Select which administrators receive real-time SMS notifications for dispute flags and appeal uploads.</p>
-                                    
-                                    <div class="card p-3 border rounded shadow-sm mb-3" style="background-color: var(--bg-panel); border-color: var(--border) !important;">
+                                <div class="custom-scroll d-flex flex-column gap-3 overflow-auto flex-grow-1"
+                                    style="padding-right: 8px;">
+                                    <p class="small text-muted mb-0">Select which administrators receive real-time SMS
+                                        notifications for dispute flags and appeal uploads.</p>
+
+                                    <div class="card p-3 border rounded shadow-sm mb-3"
+                                        style="background-color: var(--bg-panel); border-color: var(--border) !important;">
                                         <div class="d-flex flex-column gap-4">
-                                            
+
                                             <!-- Admin 1 -->
-                                            <div id="admin-container-1" class="d-flex align-items-center justify-content-between border-bottom pb-3" style="border-color: var(--border) !important;">
+                                            <div id="admin-container-1"
+                                                class="d-flex align-items-center justify-content-between border-bottom pb-3"
+                                                style="border-color: var(--border) !important;">
                                                 <div>
-                                                    <div class="fw-bold text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Primary Admin (Admin 1)</div>
-                                                    <div id="admin-display-name-1" class="fw-bold text-dark mt-1" style="font-size: 0.95rem;">Not Configured</div>
-                                                    <div id="admin-display-phone-1" class="small text-muted font-monospace mt-0.5">-</div>
+                                                    <div class="fw-bold text-muted"
+                                                        style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        Primary Admin (Admin 1)</div>
+                                                    <div id="admin-display-name-1" class="fw-bold text-dark mt-1"
+                                                        style="font-size: 0.95rem;">Not Configured</div>
+                                                    <div id="admin-display-phone-1"
+                                                        class="small text-muted font-monospace mt-0.5">-</div>
                                                 </div>
-                                                <button id="btn-edit-admin-1" class="btn btn-sm btn-outline-primary fw-bold" onclick="window.startAdminEdit(1)" style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit Admin</button>
+                                                <button id="btn-edit-admin-1"
+                                                    class="btn btn-sm btn-outline-primary fw-bold"
+                                                    onclick="window.startAdminEdit(1)"
+                                                    style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit
+                                                    Admin</button>
                                             </div>
-                                            
+
                                             <!-- Admin 2 -->
-                                            <div id="admin-container-2" class="d-flex align-items-center justify-content-between pb-1">
+                                            <div id="admin-container-2"
+                                                class="d-flex align-items-center justify-content-between pb-1">
                                                 <div>
-                                                    <div class="fw-bold text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Secondary Admin (Admin 2)</div>
-                                                    <div id="admin-display-name-2" class="fw-bold text-dark mt-1" style="font-size: 0.95rem;">Not Configured</div>
-                                                    <div id="admin-display-phone-2" class="small text-muted font-monospace mt-0.5">-</div>
+                                                    <div class="fw-bold text-muted"
+                                                        style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        Secondary Admin (Admin 2)</div>
+                                                    <div id="admin-display-name-2" class="fw-bold text-dark mt-1"
+                                                        style="font-size: 0.95rem;">Not Configured</div>
+                                                    <div id="admin-display-phone-2"
+                                                        class="small text-muted font-monospace mt-0.5">-</div>
                                                 </div>
-                                                <button id="btn-edit-admin-2" class="btn btn-sm btn-outline-primary fw-bold" onclick="window.startAdminEdit(2)" style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit Admin</button>
+                                                <button id="btn-edit-admin-2"
+                                                    class="btn btn-sm btn-outline-primary fw-bold"
+                                                    onclick="window.startAdminEdit(2)"
+                                                    style="border-radius: 6px; font-size: 0.75rem; border-color: var(--up-maroon) !important; color: var(--up-maroon) !important;">Edit
+                                                    Admin</button>
                                             </div>
-                                            
+
                                         </div>
                                     </div>
-                                    
-                                    <span id="admin-alerts-save-msg" class="small text-success fw-semibold text-center" style="display: none; font-size: 0.75rem;">Saved successfully!</span>
+
+                                    <span id="admin-alerts-save-msg" class="small text-success fw-semibold text-center"
+                                        style="display: none; font-size: 0.75rem;">Saved successfully!</span>
                                 </div>
                             </div>
 
