@@ -434,10 +434,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     msg.textContent = 'Great standing! You can borrow bikes anytime.';
                 } else if (score < 50) {
                     circle.style.stroke = '#ef4444'; // Red
-                    msg.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-slash-circle-fill"></i> ACCOUNT SUSPENDED (LOW TRUST SCORE)</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">How to earn points & restore standing:<br>1) <strong>Volunteer Delivery:</strong> Find & deliver missing or broken bikes to repair hubs (text <code>delivered &lt;code&gt; &lt;hub&gt;</code>) for <strong>+5 pts</strong>.<br>2) <strong>Community Service:</strong> Visit UP Bikeshare Admin Hub to volunteer for station shifts.</small>';
+                    msg.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-slash-circle-fill"></i> ACCOUNT SUSPENDED (LOW TRUST SCORE)</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">How to restore standing:<br>1) <strong>Volunteer Delivery:</strong> Find & deliver missing or broken bikes to repair hubs.<br>2) <strong>Community Service:</strong> Request a shift via FB Messenger (<a href="https://m.me/upbikesharebot" target="_blank" class="fw-bold" style="color: inherit; text-decoration: underline;">m.me/upbikesharebot</a>) or visit UP Bikeshare Admin Hub.</small>';
                 } else {
                     circle.style.stroke = '#f97316'; // Orange
-                    msg.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-circle-fill"></i> LOW TRUST SCORE WARNING</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">Your trust score is getting low. Complete clean rides (every 5th ride gives +5 pts) or volunteer to deliver missing/broken bikes to hubs (+5 pts).</small>';
+                    msg.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-circle-fill"></i> LOW TRUST SCORE WARNING</span><br><small class="text-muted" style="line-height:1.4; display:block; margin-top:4px;">Your trust score is getting low. Complete clean rides.</small>';
                 }
             }
         }, 300);
@@ -618,10 +618,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
 
-                updateGuideVal('qs-val-honest-return',  'honesty_reward');
+                updateGuideVal('qs-val-honest-return', 'honesty_reward');
                 updateGuideVal('qs-val-dispute-reward', 'reward_honest_report');
-                updateGuideVal('qs-val-overtime',       'penalty_overtime', '/hr');
-                updateGuideVal('qs-val-hit-run',        'penalty_hit_and_run');
+                updateGuideVal('qs-val-overtime', 'penalty_overtime', '/hr');
+                updateGuideVal('qs-val-hit-run', 'penalty_hit_and_run');
 
             }
         } catch (err) {
@@ -638,12 +638,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentStep = 1;
         let guideOpened = false;
 
-        const overlay   = document.getElementById('quickstart-overlay');
-        const btnNext   = document.getElementById('qs-btn-next');
-        const btnBack   = document.getElementById('qs-btn-back');
-        const btnClose  = document.getElementById('qs-close-btn');
-        const progress  = document.getElementById('qs-progress-fill');
-        const dots      = document.querySelectorAll('.qs-dot');
+        const overlay = document.getElementById('quickstart-overlay');
+        const btnNext = document.getElementById('qs-btn-next');
+        const btnBack = document.getElementById('qs-btn-back');
+        const btnClose = document.getElementById('qs-close-btn');
+        const progress = document.getElementById('qs-progress-fill');
+        const dots = document.querySelectorAll('.qs-dot');
         const triggerBtn = document.getElementById('btn-quick-start');
 
         if (!overlay) return;
@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!overlay || overlay.style.display === 'none') return;
             if (e.key === 'Escape') closeGuide();
             if (e.key === 'ArrowRight' && currentStep < TOTAL_STEPS) goToStep(currentStep + 1);
-            if (e.key === 'ArrowLeft'  && currentStep > 1)            goToStep(currentStep - 1);
+            if (e.key === 'ArrowLeft' && currentStep > 1) goToStep(currentStep - 1);
         });
 
         // Sidebar trigger button
