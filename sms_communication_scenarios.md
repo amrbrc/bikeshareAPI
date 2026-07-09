@@ -114,12 +114,17 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **System SMS Reply:**
   > `"You have a pending return confirmation for Bike [Code]. Please reply 'GOOD [Code]' or 'BROKEN [Code]' first before checking out another bike."`
 
-### Scenario 2.4: Borrowing an Unavailable / Parked-Out Bike
-* **Condition:** The requested bike code is currently `Borrowed`, `In_Repair`, `Missing`, or `Pending_Status` by someone else.
+### Scenario 2.4: Borrowing an Unavailable / Damaged / Parked-Out Bike
+* **Condition:** The requested bike code is currently `Broken`, `In_Repair`, `Disputed`, `Missing`, `Borrowed`, or `Pending_Status`.
 * **User SMS Input:** `1 eee to vinzons`
-* **System Action:** Rejects borrow attempt.
-* **System SMS Reply:**
-  > `"Bike unavailable."`
+* **System Action:** Rejects borrow attempt based on specific bike condition status.
+* **System SMS Replies by Bike Condition:**
+  * If `Broken` (Reported Damaged): > `"Bike [Code] cannot be used because it was reported damaged/broken. It is waiting for maintenance collection."`
+  * If `In_Repair` (Under Maintenance): > `"Bike [Code] is currently undergoing maintenance/repairs and cannot be borrowed."`
+  * If `Disputed` (Under Admin Review): > `"Bike [Code] is currently disputed and under admin review. Please choose another bike."`
+  * If `Missing`: > `"Bike [Code] has been reported missing and is under investigation."`
+  * If `Borrowed` (Checked Out by Someone Else): > `"Bike [Code] is currently checked out by another member."`
+  * If `Pending_Status` (Awaiting Condition Confirmation): > `"Bike [Code] is currently pending a condition report from the previous user. Please try another bike."`
 
 ### Scenario 2.5A: Borrowing with Non-Existent / Invalid Bike Code
 * **Condition:** User attempts to borrow using a bicycle code that does not exist or is inactive in the database (even if station names are valid, e.g., `999 eee to vinzons`).
