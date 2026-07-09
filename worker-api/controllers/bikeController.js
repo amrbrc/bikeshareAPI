@@ -1061,7 +1061,7 @@ const delivered = async (req, res) => {
 
         // Check if the person delivering is the borrower who broke/used it
         const [lastHistory] = await upbsConn.query(
-            "SELECT borrowed_by, reported_condition, to_location FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1",
+            "SELECT borrowed_by, reported_condition, new_location FROM bicycle_history WHERE bicycle_code = ? ORDER BY id DESC LIMIT 1",
             [bicycleCode]
         );
         const isBorrowerWhoBrokeIt = (activeTrip.length > 0) || (lastHistory.length > 0 && lastHistory[0].borrowed_by === currentUserName && lastHistory[0].reported_condition === 'Broken');
