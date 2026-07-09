@@ -105,7 +105,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 * **User SMS Input:** `2 eee to chk`
 * **System Action:** Blocks the borrow attempt (1 bike per user policy).
 * **System SMS Reply:**
-  > `"You already have an active bike checked out. Please return it and text 'done' before borrowing another."`
+  > `"You already have an active bike checked out (Bike [Code]). Please return it and text 'DONE [Code]' before borrowing another."`
 
 ### Scenario 2.3: Borrowing When User Has a Pending Return Handshake
 * **Condition:** Member already texted `done` for a previous ride, but has not yet confirmed condition (`good` or `broken`). They attempt to borrow a new bike.
