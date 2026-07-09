@@ -1142,14 +1142,14 @@ body {
 
     /* Modal dialog overrides for mobile */
     #settings-container.modal-overlay {
-        padding: 0 !important;
+        padding: 1.25rem 0.75rem !important;
         margin: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
         height: 100% !important;
         max-height: 100% !important;
-        align-items: flex-start !important;
-        justify-content: flex-start !important;
+        align-items: center !important;
+        justify-content: center !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         box-sizing: border-box !important;
@@ -1165,37 +1165,38 @@ body {
     }
 
     .modal-card.admin-active {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 92% !important;
+        max-width: 480px !important;
         min-width: 0 !important;
         height: auto !important;
-        min-height: 100% !important;
-        max-height: none !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
-        border: none !important;
-        padding: 1rem !important;
+        max-height: 84vh !important;
+        margin: auto !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--border-strong) !important;
+        padding: 1.5rem !important;
         box-sizing: border-box !important;
         overflow-x: hidden !important;
-        overflow-y: visible !important;
+        overflow-y: auto !important;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45) !important;
+        position: relative !important;
     }
 
     .modal-card.admin-active .close-btn {
-        position: fixed !important;
-        top: 68px !important;
-        right: 14px !important;
-        width: 44px !important;
-        height: 44px !important;
+        position: absolute !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        width: 36px !important;
+        height: 36px !important;
         border-radius: 50% !important;
-        background: #7b1113 !important;
-        color: #ffffff !important;
-        border: 2px solid #ffffff !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
-        z-index: 999999 !important;
+        background: var(--bg-main) !important;
+        color: var(--text-h) !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        z-index: 1050 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.6rem !important;
+        font-size: 1.4rem !important;
         font-weight: bold !important;
         line-height: 1 !important;
         cursor: pointer !important;
@@ -1223,7 +1224,7 @@ body {
 
     .modal-card.admin-active #settings-admin-view {
         overflow-y: visible;
-        padding-bottom: 3rem;
+        padding-bottom: 2rem;
         width: 100% !important;
     }
 
@@ -1249,7 +1250,7 @@ body {
         flex-direction: column !important;
         border-right: none !important;
         border-bottom: 1px solid var(--border) !important;
-        padding-top: 3.5rem !important;
+        padding-top: 2.5rem !important;
         padding-bottom: 1rem !important;
         padding-right: 0 !important;
         margin-bottom: 1.25rem !important;
