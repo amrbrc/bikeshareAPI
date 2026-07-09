@@ -39,9 +39,15 @@ app.listen(GATEWAY_PORT, () => {
     console.log(`Gateway HTTP Server listening on port ${GATEWAY_PORT}`);
 });
 
+const http = require('http');
+const https = require('https');
+
 const WORKER_URL = process.env.WORKER_URL || 'http://localhost:3001';
 const workerAPI = axios.create({
     baseURL: WORKER_URL,
+    timeout: 10000,
+    httpAgent: new http.Agent({ keepAlive: true }),
+    httpsAgent: new https.Agent({ keepAlive: true }),
     headers: {
         'x-gateway-secret': process.env.GATEWAY_SECRET || 'upbs-gateway-secret-token-2026'
     }
@@ -63,7 +69,12 @@ async function pollOutboundSms() {
             }
         }
     } catch (err) {
-        console.error("[Cloud Queue] Error polling outbound SMS:", err.message);
+        // Suppress noisy transient network disconnects during background polling
+        const transientErrors = ['ECONNRESET', 'ETIMEDOUT', 'socket hang up', 'socket disconnected'];
+        const isTransient = transientErrors.some(t => (err.code && err.code.includes(t)) || (err.message && err.message.includes(t)));
+        if (!isTransient) {
+            console.error("[Cloud Queue] Error polling outbound SMS:", err.message);
+        }
     }
 }
 
