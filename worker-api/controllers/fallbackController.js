@@ -18,8 +18,8 @@ const invalidCommand = async (req, res) => {
 
         if (isRegistered) {
             const user = memberRecords[0];
-            const [settingRows] = await db.upbsPool.query("SELECT SettingValue FROM settings WHERE SettingKey = 'suspension_limit'");
-            const suspensionLimit = (settingRows.length > 0) ? parseInt(settingRows[0].SettingValue, 10) : 50;
+            const [settingRows] = await db.upbsPool.query("SELECT setting_value FROM system_settings WHERE setting_name = 'suspension_limit'");
+            const suspensionLimit = (settingRows.length > 0) ? parseInt(settingRows[0].setting_value, 10) : 50;
 
             if (user.points_frozen == 1 || user.points_frozen === true || user.points_frozen === 'true') {
                 replyMessage = "Account frozen due to dispute. To settle: send photo via FB Messenger (m.me/upbikesharebot) or visit UP Bikeshare Admin Hub.";
