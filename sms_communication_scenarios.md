@@ -211,14 +211,14 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 ### Scenario 3.1: Borrower Reporting Bike Broken During Handshake (`broken`)
 * **Condition:** Active borrower replies `broken` instead of `good` after ending their trip.
 * **User SMS Pattern:** `broken <code>` or `<code> broken` (e.g., `broken 1` / `1 broken`)
-* **System Action:** Finalizes trip with condition `Broken`, updates bike status to `Broken`, resets borrower's `consecutive_good_rides` counter to 0, and applies a **−2 Trust Points demerit**. Instructs user to drop off bike and text `delivered <code> <location>`.
+* **System Action (Honesty Policy):** Finalizes trip with condition `Broken` and updates bike status to `Broken`. **No Trust Points deduction is applied** because the borrower honestly self-reported the issue. Since the borrower is already at the destination rack, no further drop-off text is required.
 * **System SMS Reply:**
-  > `"Thank you for reporting damage on Bike [Code]. Please lock and leave it at a station hub. Once dropped off, text 'delivered [Code] [location]' so our team can collect it."`
+  > `"Thank you for reporting damage on Bike [Code]. Your trip is ended with no penalty. Our maintenance team has been alerted."`
 
 ### Scenario 3.2: Next User Reporting Bike Broken at Checkout (Dispute Protocol)
 * **Condition:** A bike is marked as `Good` at a station, but the *next* intending rider finds it damaged before borrowing and texts `broken`.
 * **User SMS Input:** `broken 1`
-* **System Action:** Triggers Dispute Protocol. Flags bike status to `Disputed` (or `In_Repair`), freezes the *previous* borrower's account pending admin review, resets previous user's streak, and applies a **−5 Trust Points penalty** to the previous borrower for leaving unreported damage.
+* **System Action:** Triggers Dispute Protocol. Flags bike status to `Disputed`, temporarily freezes the *previous* borrower's account (`points_frozen = 1`) pending admin review without deducting points or resetting streak until Admin confirms a Guilty verdict.
 * **System SMS Reply (To Reporter):**
   > `"Thank you for reporting. Bike [Code] is marked as Disputed for admin review. You will be rewarded trust points if this is verified."`
 * **Outbound Alert SMS (To Previous Borrower):**
