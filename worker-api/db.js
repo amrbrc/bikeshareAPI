@@ -103,7 +103,9 @@ async function runMigrations() {
         "ALTER TABLE bicycle_codes ADD COLUMN dispute_image_url VARCHAR(512) DEFAULT NULL",
         "ALTER TABLE bicycle_codes ADD COLUMN broken_reported_at DATETIME DEFAULT NULL",
         "ALTER TABLE bicycle_codes ADD COLUMN dispute_reported_by VARCHAR(50) DEFAULT NULL",
-        "ALTER TABLE bicycle_codes ADD COLUMN penalty_applied INT DEFAULT 0"
+        "ALTER TABLE bicycle_codes ADD COLUMN penalty_applied INT DEFAULT 0",
+        "ALTER TABLE bicycle_codes ADD COLUMN is_disabled TINYINT(1) DEFAULT 0",
+        "ALTER TABLE locations ADD COLUMN is_disabled TINYINT(1) DEFAULT 0"
     ];
     for (const q of colsToEnsure) {
         try { await upbsPool.query(q); } catch(e) { if(e.code !== 'ER_DUP_FIELDNAME') console.error("[DB] Migration error:", e.message); }

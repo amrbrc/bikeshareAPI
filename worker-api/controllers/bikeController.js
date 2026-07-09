@@ -1102,7 +1102,8 @@ const delivered = async (req, res) => {
         await upbsConn.commit();
         return res.json({ reply: replyMessage });
     } catch (err) {
-        console.error(err);
+        console.error('[DELIVERED ERROR]:', err);
+        console.log('[DELIVERED ERROR]:', err.message, err.stack);
         if (upbsConn) {
             try {
                 await upbsConn.rollback();
