@@ -152,19 +152,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateYearsDropdown(availableYears, selectedYear) {
         if (!yearSelect) return;
         yearSelect.innerHTML = '';
-        const years = availableYears && availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
+        const rawYears = availableYears && availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
         
-        // Only render the 10 most recent years so the native OS dropdown never stretches off screen when the system runs for decades
-        const recentYears = years.slice(0, 10);
-        if (!recentYears.includes(Number(selectedYear)) && selectedYear) {
-            recentYears.push(Number(selectedYear));
+        // Convert to numbers, deduplicate with Set, and sort descending (newest first)
+        let uniqueYears = Array.from(new Set(rawYears.map(y => Number(y)))).sort((a, b) => b - a);
+        
+        const selNum = Number(selectedYear);
+        if (selNum && !uniqueYears.includes(selNum)) {
+            uniqueYears.push(selNum);
+            uniqueYears.sort((a, b) => b - a);
         }
 
-        recentYears.forEach(y => {
+        uniqueYears.forEach(y => {
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;
-            if (Number(y) === Number(selectedYear)) opt.selected = true;
+            if (Number(y) === selNum) opt.selected = true;
             yearSelect.appendChild(opt);
         });
     }
