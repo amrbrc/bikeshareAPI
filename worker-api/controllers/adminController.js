@@ -1129,7 +1129,7 @@ const resolveDelivery = async (req, res) => {
 
         // Fetch the bike details
         const [bike] = await conn.query(
-            "SELECT dispute_reported_by, new_location FROM bicycle_codes WHERE bicycle_code = ? FOR UPDATE",
+            "SELECT dispute_reported_by, last_user_phone, new_location FROM bicycle_codes WHERE bicycle_code = ? FOR UPDATE",
             [bicycle_code]
         );
 
@@ -1138,7 +1138,8 @@ const resolveDelivery = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Bike not found' });
         }
 
-        const volunteerPhone = bike[0].dispute_reported_by;
+        const volunteerPhone = bike[0].dispute_reported_by || bike[0].last_user_phone;
+        console.log(`[Resolve Delivery] Bike #${bicycle_code} verdict=${verdict}, target phone=${volunteerPhone}`);
 
         if (verdict === 'approve') {
             const reward = await getSettingValue('reward_delivered_bike', 5, conn);

@@ -285,6 +285,9 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **Condition:** Member spots that a bike is missing from its designated station and texts `missing`.
 * **User SMS Pattern:** `missing <code>` or `<code> missing` (e.g., `missing 1` / `1 missing`)
 * **System Action:** Flags bike status to `Missing`, freezes the last known borrower's account for investigation, and queues a **+5 Trust Points reward** for the honest reporter upon verification.
+* **Admin Dashboard Resolution:** Admins can verify or resolve the missing report directly from the Maintenance Queue:
+  * **Approve:** Confirms the missing report and penalizes the previous borrower who lost the bicycle (unless the **Waive standard point penalty** checkbox is checked).
+  * **Reject:** Rejects a false missing report and penalizes the false reporter (unless the **Waive standard point penalty** checkbox is checked).
 * **System SMS Reply:**
   > `"Thank you for reporting. Bike [Code] is marked as Missing for admin review. You will be rewarded trust points if this is verified."`
 
