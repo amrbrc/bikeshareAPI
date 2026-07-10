@@ -661,31 +661,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let actionHtml = '';
                     if (b.condition_status === 'Pending_Delivery') {
-                        if (b.dispute_image_url) {
-                            actionHtml = `
-                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Verify Volunteer Delivery:</div>
-                                    <div class="d-flex gap-2" style="max-width: 200px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-delivery" data-verdict="reject" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
-                                    </div>
+                        actionHtml = `
+                            <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Verify Volunteer Delivery:</div>
+                                <div class="d-flex gap-2" style="max-width: 200px;">
+                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
+                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-delivery" data-verdict="reject" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
                                 </div>
-                            `;
-                        } else {
-                            actionHtml = `
-                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600; padding: 6px 10px;">🕒 Delivery photo proof pending from volunteer</div>
-                                </div>
-                            `;
-                        }
-                    } else if (b.dispute_image_url) {
+                            </div>
+                        `;
+                    } else {
+                        const targetPhone = b.last_user_phone || b.reporter_phone || '';
                         if (b.condition_status === 'Missing') {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
                                     <div class="d-flex gap-2" style="max-width: 180px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
+                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
+                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
                                     </div>
                                     <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
@@ -698,9 +691,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
                                     <div class="d-flex gap-2" style="max-width: 260px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${b.last_user_phone || ''}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
                                     </div>
                                     <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
@@ -814,7 +807,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const resolveData = await res.json();
                                 if (resolveData.success) {
                                     alert(resolveData.message);
-                                    renderMaintenanceQueue();
+                                    loadLogs();
+                                    renderMembersList();
                                     if (window.initDashboard) window.initDashboard(); // Refresh bikes grid
                                 } else {
                                     alert(resolveData.error || "Failed to resolve delivery.");
