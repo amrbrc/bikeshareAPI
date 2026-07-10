@@ -1167,7 +1167,7 @@ const resolveDelivery = async (req, res) => {
                 );
 
                 // Send SMS confirmation to volunteer
-                await sendSMS(volunteerPhone, `Your delivery proof for Bike ${bicycle_code} has been approved by admin! You have been rewarded +${reward} trust points. Thank you for volunteering!`);
+                await sendSMS(volunteerPhone, `Delivery verified! Bike ${bicycle_code} approved by admin. +${reward} pts added to your trust points. Thank you for volunteering!`);
             }
 
             await conn.commit();

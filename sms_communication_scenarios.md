@@ -254,7 +254,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **System SMS Reply (If Borrower who broke it):**
   > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
 * **Admin Verification SMS Reply (When Approved by Admin):**
-  > `"Your delivery proof for Bike [Code] has been approved by admin! You have been rewarded +[Reward] trust points. Thank you for volunteering!"`
+  > `"Delivery verified! Bike [Code] approved by admin. +[Reward] pts added to your trust points. Thank you for volunteering!"`
 * **Admin Verification SMS Reply (When Rejected by Admin - Penalty Waived):**
   > `"Your delivery report for Bike [Code] was unverified/rejected by admin. The false report point penalty was waived by admin this time."`
 * **Admin Verification SMS Reply (When Rejected by Admin - Penalty Applied):**
