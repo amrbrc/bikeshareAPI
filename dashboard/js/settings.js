@@ -677,32 +677,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </label>
                             </div>
                         `;
-                    } else if (!b.dispute_reported_by) {
+                    } else if (b.condition_status === 'Missing' || !b.dispute_reported_by) {
                         actionHtml = `
-                            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="border-top: 1px dashed var(--border) !important;">
-                                <div class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
-                                    <span style="color: #10b981; font-weight: 700;">✓</span> Awaiting Repair
+                            <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+                                    ${b.condition_status === 'Missing' ? 'Reported Missing • Under Investigation' : 'Awaiting Repair'}
                                 </div>
-                                <button class="btn btn-sm btn-success btn-mark-repaired shadow-sm" data-bike="${b.bicycle_code}" style="font-size: 0.75rem; font-weight: 600; padding: 4px 12px; border-radius: 6px;">Mark Repaired</button>
                             </div>
                         `;
                     } else {
                         const targetPhone = b.last_user_phone || b.reporter_phone || '';
-                        if (b.condition_status === 'Missing') {
-                            actionHtml = `
-                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
-                                    <div class="d-flex gap-2" style="max-width: 180px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
-                                    </div>
-                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
-                                        Waive standard point penalty
-                                    </label>
-                                </div>
-                            `;
-                        } else {
+                        if (b.dispute_image_url) {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
@@ -715,6 +700,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
                                         Waive standard point penalty
                                     </label>
+                                </div>
+                            `;
+                        } else {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600; padding: 6px 10px;">🕒 Dispute appeal photo pending</div>
                                 </div>
                             `;
                         }
@@ -730,12 +721,28 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="badge ${badgeClass}" style="font-size: 0.75rem;">${cleanStatus}</span>
                                 </div>
                                 <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
-                                ${(b.reporter_phone && b.last_user_phone && b.reporter_phone !== b.last_user_phone) ? `
-                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
-                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported By (Next User): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
-                                ` : `
-                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">${b.dispute_reported_by ? 'Reported By' : 'Last Borrower'}: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
-                                `}
+                                ${(() => {
+                                    if (b.condition_status === 'Pending_Delivery') {
+                                        return `
+                                            ${b.last_user_phone && b.last_user_phone !== b.reporter_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
+                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Delivered By (Volunteer): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone || ''})` : (b.reporter_phone || 'Unknown')}</b></div>
+                                        `;
+                                    } else if (b.condition_status === 'Missing') {
+                                        return `
+                                            ${b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
+                                            ${b.reporter_phone && b.reporter_phone !== b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Missing By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>` : ''}
+                                        `;
+                                    } else if (b.reporter_phone && b.last_user_phone && b.reporter_phone !== b.last_user_phone) {
+                                        return `
+                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
+                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Broken By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
+                                        `;
+                                    } else {
+                                        return `
+                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">${b.dispute_reported_by ? 'Reported Broken By' : 'Last Borrower'}: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
+                                        `;
+                                    }
+                                })()}
                                 <div class="small mb-2" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
                                 
                                 ${actionHtml}
