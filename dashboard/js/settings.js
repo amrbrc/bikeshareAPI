@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Dispute appeal photo pending</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Awaiting user appeal photo</div>
                                 </div>
                             `;
                         }
