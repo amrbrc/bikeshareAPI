@@ -356,14 +356,14 @@ const resolveDispute = async (req, res) => {
             await db.upbsPool.query("UPDATE members SET points_frozen = 0 WHERE phone_number = ?", [phone_number]);
 
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NULL WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }
 
             // Text the borrower
             const neutralMsg = conditionStatus === 'Missing' ?
-                `The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account.` :
+                `The missing report for Bike ${bicycle_code} was resolved neutrally (external factor). No penalty points were deducted from your account.` :
                 `The dispute has been resolved neutrally (external damage). The bike is broken, but no points were deducted from your account.`;
 
             await sendSMS(phone_number, neutralMsg);
@@ -1116,7 +1116,7 @@ const updateSettings = async (req, res) => {
         for (const newPhone of newPhonesSet) {
             if (!oldPhonesSet.has(newPhone)) {
                 console.log(`[Role Sync] Promoting ${newPhone} to admin role.`);
-                
+
                 // Get member details to check if they exist before promoting
                 const [memRows] = await conn.query("SELECT role FROM members WHERE phone_number = ?", [newPhone]);
                 if (memRows.length > 0) {
@@ -1174,7 +1174,7 @@ const resolveDelivery = async (req, res) => {
 
         if (verdict === 'approve') {
             const reward = await getSettingValue('reward_delivered_bike', 5, conn);
-            
+
             // Update bike to 'Broken' (awaiting admin maintenance) and clear delivery request
             await conn.query(
                 "UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW() WHERE bicycle_code = ?",

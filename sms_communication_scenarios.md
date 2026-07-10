@@ -301,7 +301,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   * *To Innocent Borrower:* > `"The missing report for Bike [Code] was resolved in your favor. No points deducted."`
 * **Admin Verification SMS Reply (When Marked Neutral):**
   * *To Reporter:* > `"The missing bike report has been resolved neutrally (external factor). You have earned +[Reward] trust points for alerting us. Thank you!"`
-  * *To Borrower:* > `"The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account."`
+  * *To Borrower:* > `"The missing report for Bike [Code] was resolved neutrally (external factor). No penalty points were deducted from your account."`
 
 ### Scenario 3.10: Reporting Missing on an In-Use or Under-Repair Bike
 * **Condition:** User reports a bike missing while it is actively borrowed or already in the repair shop.
