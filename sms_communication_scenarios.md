@@ -293,7 +293,8 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   > `"Thank you for reporting. Bike [Code] is marked as Missing for admin review. You will be rewarded trust points if this is verified."`
 * **Admin Verification SMS Reply (When Marked Guilty):**
   * *To Reporter:* > `"Missing report verified! Bike [Code] confirmed missing. +[Reward] pts added to your trust points. Thank you!"`
-  * *To Borrower who lost it:* > `"Notice: You were found responsible for losing Bike [Code]. [Penalty] points were deducted from your trust points."`
+  * *To Borrower who lost it (Penalty Applied):* > `"Notice: You were found responsible for losing Bike [Code]. [Penalty] points were deducted from your trust points."`
+  * *To Borrower who lost it (Penalty Waived):* > `"Notice: You were found responsible for losing Bike [Code], but the admin waived your penalty points this time."`
 * **Admin Verification SMS Reply (When Marked Innocent):**
   * *To Reporter (False Report - Waived):* > `"Notice: Your missing report for Bike [Code] was unverified. Your penalty was waived by admin this time."`
   * *To Reporter (False Report - Penalty Applied):* > `"Your missing report for Bike [Code] was found false. A [Penalty]-point penalty was applied."`

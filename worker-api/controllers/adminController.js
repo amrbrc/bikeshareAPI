@@ -254,7 +254,7 @@ const resolveDispute = async (req, res) => {
             }
 
             if (conditionStatus === 'Missing') {
-                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL, dispute_image_url = NULL WHERE bicycle_code = ?", [bicycle_code]);
+                await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Missing', dispute_reported_by = NULL WHERE bicycle_code = ?", [bicycle_code]);
             } else {
                 await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Broken', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NOW(), penalty_applied = 0 WHERE bicycle_code = ?", [bicycle_code]);
             }

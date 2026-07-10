@@ -678,21 +678,31 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         `;
                     } else if (b.condition_status === 'Missing') {
-                        const targetPhone = b.last_user_phone || b.reporter_phone || '';
-                        actionHtml = `
-                            <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
-                                <div class="d-flex gap-2" style="max-width: 260px;">
-                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                    <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                        if (b.dispute_reported_by) {
+                            const targetPhone = b.last_user_phone || b.reporter_phone || '';
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
+                                    <div class="d-flex gap-2" style="max-width: 260px;">
+                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                                    </div>
+                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
+                                        Waive standard point penalty
+                                    </label>
                                 </div>
-                                <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                    <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
-                                    Waive standard point penalty
-                                </label>
-                            </div>
-                        `;
+                            `;
+                        } else {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+                                        Missing (Resolved / Awaiting Recovery)
+                                    </div>
+                                </div>
+                            `;
+                        }
                     } else if (!b.dispute_reported_by) {
                         actionHtml = `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
