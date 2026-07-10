@@ -740,47 +740,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     const photoLabel = b.condition_status === 'Pending_Delivery' ? 'Delivery Photo:' : 'Dispute Appeal Photo:';
 
                     return `
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 p-3 border rounded shadow-sm mb-3 maintenance-card" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
-                            <div class="d-flex flex-column flex-grow-1" style="min-width: 0;">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <strong style="font-size: 1rem;">Bike #${b.bicycle_code}</strong>
-                                    <span class="badge ${badgeClass}" style="font-size: 0.75rem;">${cleanStatus}</span>
+                        <div class="d-flex flex-column gap-2 p-3 border rounded shadow-sm mb-3 maintenance-card" style="background-color: var(--bg-panel); color: var(--text-h); border-color: var(--border) !important;">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                                <div class="d-flex flex-column flex-grow-1" style="min-width: 0;">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <strong style="font-size: 1rem;">Bike #${b.bicycle_code}</strong>
+                                        <span class="badge ${badgeClass}" style="font-size: 0.75rem;">${cleanStatus}</span>
+                                    </div>
+                                    <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
+                                    ${(() => {
+                                        if (b.condition_status === 'Pending_Delivery') {
+                                            return `
+                                                ${b.last_user_phone && b.last_user_phone !== b.reporter_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
+                                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Delivered By (Volunteer): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone || ''})` : (b.reporter_phone || 'Unknown')}</b></div>
+                                            `;
+                                        } else if (b.condition_status === 'Missing') {
+                                            return `
+                                                ${b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
+                                                ${b.reporter_phone && b.reporter_phone !== b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Missing By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>` : ''}
+                                            `;
+                                        } else if (b.reporter_phone && b.last_user_phone && b.reporter_phone !== b.last_user_phone) {
+                                            return `
+                                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
+                                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Broken By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
+                                            `;
+                                        } else {
+                                            return `
+                                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">${b.dispute_reported_by ? 'Reported Broken By' : 'Last Borrower'}: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
+                                            `;
+                                        }
+                                    })()}
+                                    <div class="small mb-1" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
                                 </div>
-                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Location: <b>${b.new_location || 'Unknown'}</b></div>
-                                ${(() => {
-                                    if (b.condition_status === 'Pending_Delivery') {
-                                        return `
-                                            ${b.last_user_phone && b.last_user_phone !== b.reporter_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
-                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Delivered By (Volunteer): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone || ''})` : (b.reporter_phone || 'Unknown')}</b></div>
-                                        `;
-                                    } else if (b.condition_status === 'Missing') {
-                                        return `
-                                            ${b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>` : ''}
-                                            ${b.reporter_phone && b.reporter_phone !== b.last_user_phone ? `<div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Missing By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>` : ''}
-                                        `;
-                                    } else if (b.reporter_phone && b.last_user_phone && b.reporter_phone !== b.last_user_phone) {
-                                        return `
-                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
-                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported Broken By: <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
-                                        `;
-                                    } else {
-                                        return `
-                                            <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">${b.dispute_reported_by ? 'Reported Broken By' : 'Last Borrower'}: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
-                                        `;
-                                    }
-                                })()}
-                                <div class="small mb-2" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
-                                
+                                ${b.dispute_image_url ? `
+                                    <div class="d-flex flex-column align-items-center align-items-md-end justify-content-center flex-shrink-0 ms-md-auto text-md-end" style="min-width: 140px;">
+                                        <div style="font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); text-align: center;">${photoLabel}</div>
+                                        <a href="${b.dispute_image_url}" target="_blank" class="d-block text-center">
+                                            <img src="${b.dispute_image_url}" style="width: 140px; height: 140px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" alt="Delivery proof" />
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="w-100">
                                 ${actionHtml}
                             </div>
-                            ${b.dispute_image_url ? `
-                                <div class="d-flex flex-column align-items-center align-items-md-end justify-content-center flex-shrink-0 ms-md-auto text-md-end" style="min-width: 140px;">
-                                    <div style="font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); text-align: center;">${photoLabel}</div>
-                                    <a href="${b.dispute_image_url}" target="_blank" class="d-block text-center">
-                                        <img src="${b.dispute_image_url}" style="width: 140px; height: 140px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" alt="Delivery proof" />
-                                    </a>
-                                </div>
-                            ` : ''}
                         </div>
                     `;
                 }).join('');

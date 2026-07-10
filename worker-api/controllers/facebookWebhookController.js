@@ -365,6 +365,7 @@ async function processIncomingMessage(psid, message) {
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
              WHERE bc.condition_status IN ('Disputed', 'Missing') 
+               AND bc.dispute_reported_by IS NOT NULL
                AND (bh.borrower_phone = ? OR bh.borrowed_by = ?)
              ORDER BY bh.borrowed_at DESC LIMIT 1`,
             [normalizedPhone, `${member.firstname} ${member.lastname}`]
@@ -520,6 +521,7 @@ async function processIncomingMessage(psid, message) {
              FROM bicycle_codes bc
              JOIN bicycle_history bh ON bc.bicycle_code = bh.bicycle_code
              WHERE bc.condition_status IN ('Disputed', 'Missing') 
+               AND bc.dispute_reported_by IS NOT NULL
                AND (bh.borrower_phone = ? OR bh.borrowed_by = ?)
              ORDER BY bh.borrowed_at DESC LIMIT 1`,
             [session.phone_number, `${member.firstname} ${member.lastname}`]
