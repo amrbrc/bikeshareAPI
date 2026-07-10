@@ -680,8 +680,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (!b.dispute_reported_by) {
                         actionHtml = `
                             <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="border-top: 1px dashed var(--border) !important;">
-                                <span class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600;">✅ Dispute Settled • Awaiting Tech Crew Repair</span>
-                                <button class="btn btn-sm btn-outline-success btn-mark-repaired" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 30px; padding: 2px 10px;">Mark Repaired / Available</button>
+                                <div class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+                                    <span style="color: #10b981; font-weight: 700;">✓</span> Dispute Settled • Awaiting Repair
+                                </div>
+                                <button class="btn btn-sm btn-success btn-mark-repaired shadow-sm" data-bike="${b.bicycle_code}" style="font-size: 0.75rem; font-weight: 600; padding: 4px 12px; border-radius: 6px;">Mark Repaired</button>
                             </div>
                         `;
                     } else {
