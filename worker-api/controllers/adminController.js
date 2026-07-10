@@ -272,10 +272,16 @@ const resolveDispute = async (req, res) => {
             }
 
             // Text the borrower that they are guilty
-            const offense = conditionStatus === 'Missing' ? 'losing' : 'damaging';
-            const message = (waive_penalty === true || waive_penalty === 'true') ?
-                "Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time." :
-                `You have been proven guilty of unreported damage (Hit-and-Run) on a bike. ${absolutePenalty} points were deducted from your trust points.`;
+            let message;
+            if (conditionStatus === 'Missing') {
+                message = (waive_penalty === true || waive_penalty === 'true')
+                    ? `Notice: You were found responsible for losing Bike ${bicycle_code}, but the admin waived your penalty points this time.`
+                    : `Notice: You were found responsible for losing Bike ${bicycle_code}. ${absolutePenalty} points were deducted from your trust points.`;
+            } else {
+                message = (waive_penalty === true || waive_penalty === 'true')
+                    ? "Notice: You were found responsible for bike damage, but the admin has opted to waive your penalty points this time. Please be careful next time."
+                    : `You have been proven guilty of unreported damage (Hit-and-Run) on a bike. ${absolutePenalty} points were deducted from your trust points.`;
+            }
 
             await sendSMS(phone_number, message);
 
@@ -291,7 +297,11 @@ const resolveDispute = async (req, res) => {
                     [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Conflict Report Reward']
                 );
 
-                await sendSMS(reporterPhone, `The dispute you reported has been resolved. The previous user was penalized. You have earned +${reward} trust points. Thank you for keeping our bikes safe!`);
+                const reporterMsg = (conditionStatus === 'Missing')
+                    ? `Missing report verified! Bike ${bicycle_code} confirmed missing. +${reward} pts added to your trust points. Thank you!`
+                    : `The dispute you reported has been resolved. The previous user was penalized. You have earned +${reward} trust points. Thank you for keeping our bikes safe!`;
+
+                await sendSMS(reporterPhone, reporterMsg);
             }
 
         } else if (verdict === 'innocent') {
@@ -299,7 +309,10 @@ const resolveDispute = async (req, res) => {
             await db.upbsPool.query("UPDATE bicycle_codes SET condition_status = 'Good', dispute_reported_by = NULL, dispute_image_url = NULL, broken_reported_at = NULL WHERE bicycle_code = ?", [bicycle_code]);
 
             // Text the borrower that they are innocent
-            await sendSMS(phone_number, `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`);
+            const innocentMsg = (conditionStatus === 'Missing')
+                ? `The missing report for Bike ${bicycle_code} was resolved in your favor. No points deducted.`
+                : `The dispute has been resolved in your favor (Innocent). No trust points were deducted from your account.`;
+            await sendSMS(phone_number, innocentMsg);
 
             if (reporterPhone) {
                 if (waive_penalty === true || waive_penalty === 'true') {
@@ -313,7 +326,10 @@ const resolveDispute = async (req, res) => {
                     );
 
                     // Text the false reporter about the waiver
-                    await sendSMS(reporterPhone, `Notice: Your damage report was unverified. Your false report point penalty was waived by admin this time. Please inspect bikes carefully next time.`);
+                    const waiverMsg = (conditionStatus === 'Missing')
+                        ? `Notice: Your missing report for Bike ${bicycle_code} was unverified. Your penalty was waived by admin this time.`
+                        : `Notice: Your damage report was unverified. Your false report point penalty was waived by admin this time. Please inspect bikes carefully next time.`;
+                    await sendSMS(reporterPhone, waiverMsg);
                 } else {
                     const penalty = await getSettingValue('penalty_false_report', -5);
                     const absolutePenalty = Math.abs(penalty);
@@ -327,7 +343,10 @@ const resolveDispute = async (req, res) => {
                     );
 
                     // Text the false reporter about their points deduction
-                    await sendSMS(reporterPhone, `Your recent missing or damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`);
+                    const penaltyMsg = (conditionStatus === 'Missing')
+                        ? `Your missing report for Bike ${bicycle_code} was found false. A ${absolutePenalty}-point penalty was applied.`
+                        : `Your recent damage report was found to be false. A ${absolutePenalty}-point penalty has been applied to your trust points.`;
+                    await sendSMS(reporterPhone, penaltyMsg);
 
                     const notificationService = require('../services/notificationService');
                     await notificationService.checkAndAlertSuspension(reporterPhone);
@@ -361,7 +380,10 @@ const resolveDispute = async (req, res) => {
                     [reporterLastName, reporterFirstName, reporterPhone, reporterPhone, 'Neutral Report Reward']
                 );
 
-                await sendSMS(reporterPhone, `The dispute you reported has been resolved neutrally (external damage). You have earned +${reward} trust points for accurately reporting the broken bike. Thank you!`);
+                const neutralReporterMsg = (conditionStatus === 'Missing')
+                    ? `The missing bike report has been resolved neutrally (external factor). You have earned +${reward} trust points for alerting us. Thank you!`
+                    : `The dispute you reported has been resolved neutrally (external damage). You have earned +${reward} trust points for accurately reporting the broken bike. Thank you!`;
+                await sendSMS(reporterPhone, neutralReporterMsg);
             }
         }
         return res.json({ success: true, message: `Dispute resolved as ${verdict}.` });

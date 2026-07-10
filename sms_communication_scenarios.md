@@ -286,10 +286,21 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **User SMS Pattern:** `missing <code>` or `<code> missing` (e.g., `missing 1` / `1 missing`)
 * **System Action:** Flags bike status to `Missing`, freezes the last known borrower's account for investigation, and queues a **+5 Trust Points reward** for the honest reporter upon verification.
 * **Admin Dashboard Resolution:** Admins can verify or resolve the missing report directly from the Maintenance Queue:
-  * **Approve:** Confirms the missing report and penalizes the previous borrower who lost the bicycle (unless the **Waive standard point penalty** checkbox is checked).
-  * **Reject:** Rejects a false missing report and penalizes the false reporter (unless the **Waive standard point penalty** checkbox is checked).
-* **System SMS Reply:**
+  * **Guilty:** Confirms the missing report and penalizes the previous borrower who lost the bicycle (unless the **Waive standard point penalty** checkbox is checked). Reporter gets rewarded (+5 pts).
+  * **Innocent:** Borrower is proven innocent (no penalty). Rejects a false missing report and penalizes the false reporter (unless the **Waive standard point penalty** checkbox is checked).
+  * **Neutral:** Resolves as external factor (e.g., security guard moved bike). Borrower is un-frozen with 0 penalty points deducted, and reporter still receives +5 points for alerting us.
+* **System SMS Reply (To Reporter upon initial report):**
   > `"Thank you for reporting. Bike [Code] is marked as Missing for admin review. You will be rewarded trust points if this is verified."`
+* **Admin Verification SMS Reply (When Marked Guilty):**
+  * *To Reporter:* > `"Missing report verified! Bike [Code] confirmed missing. +[Reward] pts added to your trust points. Thank you!"`
+  * *To Borrower who lost it:* > `"Notice: You were found responsible for losing Bike [Code]. [Penalty] points were deducted from your trust points."`
+* **Admin Verification SMS Reply (When Marked Innocent):**
+  * *To Reporter (False Report - Waived):* > `"Notice: Your missing report for Bike [Code] was unverified. Your penalty was waived by admin this time."`
+  * *To Reporter (False Report - Penalty Applied):* > `"Your missing report for Bike [Code] was found false. A [Penalty]-point penalty was applied."`
+  * *To Innocent Borrower:* > `"The missing report for Bike [Code] was resolved in your favor. No points deducted."`
+* **Admin Verification SMS Reply (When Marked Neutral):**
+  * *To Reporter:* > `"The missing bike report has been resolved neutrally (external factor). You have earned +[Reward] trust points for alerting us. Thank you!"`
+  * *To Borrower:* > `"The dispute has been resolved neutrally. The missing bike was found, and no points were deducted from your account."`
 
 ### Scenario 3.10: Reporting Missing on an In-Use or Under-Repair Bike
 * **Condition:** User reports a bike missing while it is actively borrowed or already in the repair shop.

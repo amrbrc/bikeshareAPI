@@ -682,9 +682,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         actionHtml = `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
-                                <div class="d-flex gap-2" style="max-width: 180px;">
-                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
-                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
+                                <div class="d-flex gap-2" style="max-width: 260px;">
+                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                    <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
                                 </div>
                                 <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
                                     <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
@@ -792,10 +793,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         let confirmText = `Mark user (${phoneNumber}) as ${verdict.toUpperCase()} for bike #${bikeCode}?`;
 
                         if (status === 'Missing') {
-                            confirmTitle = verdict === 'guilty' ? 'Approve Missing Report' : 'Reject Missing Report';
-                            confirmText = verdict === 'guilty'
-                                ? `Are you sure you want to APPROVE this missing report? The previous borrower (${phoneNumber}) will be penalized for losing the bike.`
-                                : `Are you sure you want to REJECT this missing report? The reporter will receive a false report penalty.`;
+                            if (verdict === 'guilty') {
+                                confirmTitle = 'Mark Guilty (Missing)';
+                                confirmText = `Are you sure you want to mark the borrower (${phoneNumber}) GUILTY of losing Bike #${bikeCode}? The borrower will be penalized.`;
+                            } else if (verdict === 'innocent') {
+                                confirmTitle = 'Mark Innocent (Missing)';
+                                confirmText = `Are you sure you want to mark the borrower (${phoneNumber}) INNOCENT for Bike #${bikeCode}? No points deducted from borrower.`;
+                            } else {
+                                confirmTitle = 'Mark Neutral (External Factor)';
+                                confirmText = `Are you sure you want to resolve Bike #${bikeCode} as NEUTRAL (external factor)? No points deducted from borrower, and reporter receives honest report reward.`;
+                            }
                         }
 
                         confirmAction(confirmTitle, confirmText, async () => {
