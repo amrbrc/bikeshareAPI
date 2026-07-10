@@ -466,8 +466,8 @@ Background timers continuously monitor active rides, pending handshakes, and rep
 * **Condition:** A bike remains in `Pending_Status` without confirmation for longer than `handshake_timeout_mins` (default: 30 mins).
 * **Trigger:** Cron job running every 5 minutes.
 * **System Action:** Auto-finalizes trip (`condition_confirmed = 1`, `reported_condition = 'Timeout'`), reverts bike status to `Good`, applies abandoned handshake penalty (default: **−2 Trust Points**, configured via `penalty_abandoned_handshake`), and alerts user.
-* **System SMS Reply (Automated):**
-  > `"ALERT: You failed to confirm the condition of Bike [Code] within 30 minutes. Your trip has been auto-completed, and a -2 point penalty has been applied to your account."`
+* **System SMS Reply (<160 chars Single SMS - Automated):**
+  > `"ALERT: You failed to confirm Bike [Code] condition within 30 mins. Trip auto-completed and -2 pt penalty applied to your account."`
 
 ---
 

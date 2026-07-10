@@ -363,7 +363,7 @@ const startHandshakeTimeoutJob = () => {
 
                     await conn.commit();
 
-                    const text = `ALERT: You failed to confirm the condition of Bike ${row.bicycle_code} within ${timeoutMins} minutes. Your trip has been auto-completed, and a -${absolutePenalty} point penalty has been applied to your account.`;
+                    const text = `ALERT: You failed to confirm Bike ${row.bicycle_code} condition within ${timeoutMins} mins. Trip auto-completed and -${absolutePenalty} pt penalty applied to your account.`;
                     await sendSMS(row.phone_number, text);
 
                 } catch (txErr) {
