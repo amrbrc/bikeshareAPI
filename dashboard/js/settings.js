@@ -665,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
                                     <span style="font-size: 0.7rem; color: var(--text-muted);">Verify Volunteer Delivery:</span>
-                                    ${!b.dispute_image_url ? '<span class="badge bg-secondary" style="font-size: 0.65rem;">🕒 Photo not yet uploaded</span>' : ''}
+                                    ${!b.dispute_image_url ? '<span style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">Photo not yet uploaded</span>' : ''}
                                 </div>
                                 <div class="d-flex gap-2" style="max-width: 200px;">
                                     <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600; padding: 6px 10px;">🕒 Dispute appeal photo pending</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Dispute appeal photo pending</div>
                                 </div>
                             `;
                         }
