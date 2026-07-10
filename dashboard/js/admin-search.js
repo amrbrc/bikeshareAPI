@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="card border p-3 shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h6 class="fw-bold mb-0 ${bike.is_disabled ? 'text-muted' : 'text-dark'}">Bike #${bike.code} ${bike.is_disabled ? '<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">OFFLINE</span>' : ''}</h6>
-                <span class="badge ${bike.status === 'Good' ? 'bg-success' : (bike.status === 'Broken' ? 'bg-danger' : 'bg-warning')}">${bike.status}</span>
+                <span class="badge ${bike.status === 'Good' ? 'bg-success' : (bike.status === 'Broken' ? 'bg-danger' : (bike.status === 'Pending_Delivery' ? 'bg-info text-dark' : 'bg-warning'))}">${bike.status ? bike.status.replace('_', ' ') : 'Unknown'}</span>
             </div>
             <div class="small text-muted mb-2">📍 Location: <span class="text-dark fw-semibold">${bike.location || 'Unknown'}</span></div>
             <div class="d-flex flex-column gap-1 border-top pt-2 mt-2">

@@ -1403,6 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <option value="In_Repair" ${bike.condition_status === 'In_Repair' ? 'selected' : ''}>In Repair</option>
                             <option value="Disputed" ${bike.condition_status === 'Disputed' ? 'selected' : ''}>Disputed</option>
                             <option value="Missing" ${bike.condition_status === 'Missing' ? 'selected' : ''}>Missing</option>
+                            <option value="Pending_Delivery" ${bike.condition_status === 'Pending_Delivery' ? 'selected' : ''}>Pending Delivery</option>
                         </select>
                     </div>
                     <div class="col-12 col-sm-4">

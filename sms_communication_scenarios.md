@@ -115,7 +115,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
   > `"You have a pending return confirmation for Bike [Code]. Please reply 'GOOD [Code]' or 'BROKEN [Code]' first before checking out another bike."`
 
 ### Scenario 2.4: Borrowing an Unavailable / Damaged / Parked-Out Bike
-* **Condition:** The requested bike code is currently `Broken`, `In_Repair`, `Disputed`, `Missing`, `Borrowed`, or `Pending_Status`.
+* **Condition:** The requested bike code is currently `Broken`, `In_Repair`, `Disputed`, `Missing`, `Borrowed`, `Pending_Status`, or `Pending_Delivery`.
 * **User SMS Input:** `1 eee to vinzons`
 * **System Action:** Rejects borrow attempt based on specific bike condition status.
 * **System SMS Replies by Bike Condition:**
@@ -125,6 +125,7 @@ This section outlines the primary workflow when checking out a bike, riding it, 
   * If `Missing`: > `"Bike [Code] has been reported missing and is under investigation."`
   * If `Borrowed` (Checked Out by Someone Else): > `"Bike [Code] is currently checked out by another member."`
   * If `Pending_Status` (Awaiting Condition Confirmation): > `"Bike [Code] is awaiting return inspection by the previous rider. Please choose another bike."`
+  * If `Pending_Delivery` (Delivered by Volunteer, Awaiting Photo Proof): > `"Bike unavailable."`
 
 ### Scenario 2.5A: Borrowing with Non-Existent / Invalid Bike Code
 * **Condition:** User attempts to borrow using a bicycle code that does not exist or is inactive in the database (even if station names are valid, e.g., `999 eee to vinzons`).
@@ -243,10 +244,13 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 
 ### Scenario 3.5: Delivering a Broken Bike to a Hub for Repair (`delivered`)
 * **Condition:** Member delivers a broken/maintenance bike to a designated station or maintenance hub to be serviced by tech crew.
-* **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 1 engg` / `1 delivered vinzons`)
-* **System Action:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery. Awards **+5 Trust Points & +5 Leaderboard Points** to community volunteers who transport the bike. *(Note: If the deliverer is the borrower who broke/used it during the trip, 0 bonus reward points are awarded since returning it is their standard borrower duty. Riders are allowed to drop off a broken bicycle at any convenient station hub for safety without wrong-station penalties).*
+* **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 4 eee` / `4 delivered eee`)
+* **System Action:**
+  * **If Volunteer:** Updates bike status to `Pending_Delivery` (awaiting hub photo upload and admin verification), sets location to the delivery hub, and prompts the volunteer to upload a photo to Facebook Messenger to claim their reward points (configurable via `reward_delivered_bike`, default: +5 pts).
+  * **If Borrower who broke it:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery with 0 bonus reward points since returning it is their standard borrower duty. Riders are allowed to drop off a broken bicycle at any convenient station hub for safety without wrong-station penalties.
 * **System SMS Reply (If Volunteer):**
-  > `"Thank you! Bike [Code] delivered to [LOCATION]. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +5 pts."`
+  > `"Thank you! Bike [Code] delivered to [LOCATION]. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +[Reward] pts."`
+  *(Example: `"Thank you! Bike 4 delivered to EEE. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +5 pts."`)*
 * **System SMS Reply (If Borrower who broke it):**
   > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
 
