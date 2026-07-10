@@ -500,30 +500,39 @@ Below is the exhaustive, verified ledger of all **Merit Rewards** and **Penaltie
 ---
 
 ## 7. Facebook Messenger Bot Integration & Persistent Menu Protocol
-To supplement SMS communication and provide rich media capabilities (such as uploading dispute evidence photos), the system integrates with Meta's Facebook Messenger Graph API (`facebookWebhookController.js`).
+To supplement SMS communication and provide rich media capabilities (such as uploading dispute evidence photos or proof of volunteer delivery), the system integrates with Meta's Facebook Messenger Graph API (`facebookWebhookController.js`).
 
-### 7.1 Dispute Appeal Photo Upload Protocol (`m(.)me/upbikesharebot`)
-When a student's account is frozen due to an ongoing bike dispute (`points_frozen === 1`), SMS commands are restricted. To appeal and restore their account:
-1. **Initiate Appeal:** The student messages the FB bot. The backend matches their Facebook PSID or prompts for their registered phone number, locating their profile in `members`.
-2. **State Transition:** When verified as frozen, the bot sets their session state in `fb_bot_sessions` to `AWAITING_PHOTO` and guides them to upload visual proof of the bicycle's condition and combination lock.
-3. **Image Capture & Linking:** Upon receiving an image attachment, the controller extracts the URL and executes atomic database updates:
-   ```sql
-   UPDATE bicycle_codes SET dispute_image_url = ? WHERE bicycle_code = ?;
-   UPDATE bicycle_history SET dispute_image_url = ? WHERE id = ?;
-   UPDATE fb_bot_sessions SET bot_state = 'COMPLETED' WHERE psid = ?;
-   ```
-4. **Admin Dashboard Review:** The uploaded photo instantly attaches to the active dispute ticket on the Web Dashboard (`admin.js`), allowing administrators to inspect the evidence and issue a verdict (`Guilty`, `Neutral`, or `Waive`).
+### 7.1 Dispute & Missing Bike Appeal Photo Upload Protocol (`AWAITING_PHOTO`)
+When a student's account is frozen due to an active dispute or missing bike report (`points_frozen === 1`), SMS commands are restricted. To appeal and restore their account:
+1. **Initiate Appeal:** The student messages the FB bot (`m.me/upbikesharebot`). The backend matches their Facebook PSID or prompts for their registered phone number, locating their profile in `members`.
+2. **Active Dispute Verification:** The bot queries `bicycle_codes` for active tickets (`condition_status IN ('Disputed', 'Missing') AND dispute_reported_by IS NOT NULL`) linked to the member.
+3. **State Transition:** The bot sets `fb_bot_sessions.bot_state = 'AWAITING_PHOTO'` and instructs the member to upload clear photo evidence of the bike's condition or hub parking.
+4. **Image Capture & Alerting:** Upon receiving an image attachment, the controller updates `bicycle_codes.dispute_image_url` and dispatches real-time alerts to Admins via SMS and Discord Webhook.
+5. **Admin Review:** On the Web Dashboard Maintenance Queue, admins inspect the photo and select **Innocent**, **Guilty**, or **Neutral** to resolve the case.
 
-### 7.2 Vertical Stacked Completion Buttons (`sendFbCompletionButtons`)
+### 7.2 Volunteer Delivery Photo Verification Protocol (`WAITING_DELIVERY_PHOTO`)
+When a volunteer delivers a bike to a hub (`delivered <code> <loc>`), the system sets `condition_status = 'Pending_Delivery'` and requests photo proof before awarding trust points:
+1. **Photo Upload Prompt:** After texting `delivered`, the volunteer messages the bot with a photo of the parked bicycle.
+2. **Session Matching:** The bot identifies their session state (`WAITING_DELIVERY_PHOTO`) and locates the bike awaiting delivery verification (`condition_status = 'Pending_Delivery' AND dispute_reported_by = phone_number`).
+3. **Dashboard Attachment:** The uploaded image URL is saved to `bicycle_codes.dispute_image_url`, and an instant alert is sent to admins (`UPBS ALERT: Bike [Code] delivery photo uploaded...`).
+4. **Reward Disbursement:** Once an admin clicks **Approve** on the dashboard card, the volunteer receives their `reward_delivered_bike` (+5 to +15 pts) via SMS.
+
+### 7.3 Suspended Account & Community Service Request Flow (`sendFbSuspendedButtons`)
+If a student's trust points fall below the suspension threshold (`trust_points < suspensionLimit`):
+1. **Suspension Detection:** When the student chats with the bot, the system detects their suspended standing.
+2. **Interactive Options Card:** Instead of blocking them silently, the bot sends an interactive template card explaining their standing and providing a vertical button: **`"🤝 Req Comm Service"`**.
+3. **Reinstatement Pathway:** Students can request volunteer station shifts or deliver missing/broken bikes to earn positive merit points and restore their account standing.
+
+### 7.4 Vertical Stacked Completion Buttons (`sendFbCompletionButtons`)
 To maintain a clean, non-intrusive chat experience:
-* **Why Not Standard Quick Replies?** Standard quick replies render horizontally as scrolling pills and appear on every message, cluttering standard text conversations. Ice Breakers only appear on brand new chats with zero history and vanish permanently once messaging begins.
-* **Unified Card with Vertical Buttons:** The system utilizes Meta's **Button Template (`template_type: "button"`)** to present stacked vertical options attached directly beneath completion messages (such as after successful photo upload, checking good standing, or completed appeal states):
+* **Why Not Standard Quick Replies?** Standard quick replies render horizontally as scrolling pills and appear on every message, cluttering standard text conversations.
+* **Unified Card with Vertical Buttons:** The system utilizes Meta's **Button Template (`template_type: "button"`)** to present stacked vertical options attached directly beneath completion messages:
   ```json
   {
     "type": "template",
     "payload": {
       "template_type": "button",
-      "text": "Thank you! Your dispute appeal photo has been successfully uploaded...",
+      "text": "Thank you! Your photo has been successfully uploaded...",
       "buttons": [
         { "type": "postback", "title": "🚲 File Appeal", "payload": "RESET" },
         { "type": "postback", "title": "🔄 Start Over", "payload": "RESET" }
@@ -531,7 +540,7 @@ To maintain a clean, non-intrusive chat experience:
     }
   }
   ```
-* **Strict Character Length Control:** Because Facebook Messenger strictly enforces a 20-character limit on button titles (truncating longer text with ellipses `...`), labels are optimized to **`"🚲 File Appeal"`** (14 chars) and **`"🔄 Start Over"`** (13 chars), ensuring crisp, professional presentation without truncation.
+* **Strict Character Length Control:** Because Facebook Messenger strictly enforces a 20-character limit on button titles (truncating longer text with ellipses `...`), labels are optimized to **`"🚲 File Appeal"`** (14 chars) and **`"🔄 Start Over"`** (13 chars).
 
-### 7.3 Permanent Access via Persistent Menu
+### 7.5 Permanent Access via Persistent Menu
 In addition to automated completion buttons, the bot registers a permanent **Messenger Persistent Menu** and **Get Started Button** via `setMessengerProfile.js`. This allows students to reopen the menu, file an appeal, or restart bot navigation at any time with a single tap from the chat header.
