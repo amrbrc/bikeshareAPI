@@ -246,13 +246,19 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
 * **Condition:** Member delivers a broken/maintenance bike to a designated station or maintenance hub to be serviced by tech crew.
 * **User SMS Pattern:** `delivered <code> <location>` or `<code> delivered <location>` (e.g., `delivered 4 eee` / `4 delivered eee`)
 * **System Action:**
-  * **If Volunteer:** Updates bike status to `Pending_Delivery` (awaiting hub photo upload and admin verification), sets location to the delivery hub, and prompts the volunteer to upload a photo to Facebook Messenger to claim their reward points (configurable via `reward_delivered_bike`, default: +5 pts).
+  * **If Volunteer:** Updates bike status to `Pending_Delivery` (awaiting hub photo upload and admin verification), sets location to the delivery hub, and prompts the volunteer to upload a photo to Facebook Messenger to claim their reward points (configurable via `reward_delivered_bike`, default: +5 pts). Admins can approve the delivery (rewarding points) or reject it (deducting false report penalty unless the **Waive false report penalty on reject** checkbox is selected) directly from the dashboard at any time, even before photo upload.
   * **If Borrower who broke it:** Updates bike status to `Broken` (awaiting admin pickup), sets location to the delivery hub, and logs the delivery with 0 bonus reward points since returning it is their standard borrower duty. Riders are allowed to drop off a broken bicycle at any convenient station hub for safety without wrong-station penalties.
 * **System SMS Reply (If Volunteer):**
   > `"Thank you! Bike [Code] delivered to [LOCATION]. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +[Reward] pts."`
   *(Example: `"Thank you! Bike 4 delivered to EEE. Upload a hub photo to m(.)me/upbikesharebot (remove parenthesis) to claim +5 pts."`)*
 * **System SMS Reply (If Borrower who broke it):**
   > `"Thank you! Bike [Code] has been delivered to [LOCATION] and marked as Broken. An admin will collect it for repair."`
+* **Admin Verification SMS Reply (When Approved by Admin):**
+  > `"Your delivery proof for Bike [Code] has been approved by admin! You have been rewarded +[Reward] trust points. Thank you for volunteering!"`
+* **Admin Verification SMS Reply (When Rejected by Admin - Penalty Waived):**
+  > `"Your delivery report for Bike [Code] was unverified/rejected by admin. The false report point penalty was waived by admin this time."`
+* **Admin Verification SMS Reply (When Rejected by Admin - Penalty Applied):**
+  > `"Your delivery report for Bike [Code] was unverified/rejected by admin. A [Penalty]-point penalty has been applied to your trust points."`
 
 ### Scenario 3.6: Delivering Without Specifying Location
 * **Condition:** User texts `delivered 1` but forgets to include the station/hub name.
@@ -315,7 +321,8 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   * **Approved Proof:**
     * *Outbound SMS to Volunteer:* > `"Your delivery proof for Bike [Code] has been approved by admin! You have been rewarded +[Reward] trust points. Thank you for volunteering!"`
   * **Rejected / Unverified Proof:**
-    * *Outbound SMS to Volunteer:* > `"Your delivery report for Bike [Code] was unverified/rejected by admin. Point reward was not issued."`
+    * *Outbound SMS to Volunteer (Penalty Waived):* > `"Your delivery report for Bike [Code] was unverified/rejected by admin. The false report point penalty was waived by admin this time."`
+    * *Outbound SMS to Volunteer (Penalty Applied):* > `"Your delivery report for Bike [Code] was unverified/rejected by admin. A [Penalty]-point penalty has been applied to your trust points."`
 
 ---
 

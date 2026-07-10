@@ -663,11 +663,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (b.condition_status === 'Pending_Delivery') {
                         actionHtml = `
                             <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Verify Volunteer Delivery:</div>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span style="font-size: 0.7rem; color: var(--text-muted);">Verify Volunteer Delivery:</span>
+                                    ${!b.dispute_image_url ? '<span class="badge bg-secondary" style="font-size: 0.65rem;">🕒 Photo not yet uploaded</span>' : ''}
+                                </div>
                                 <div class="d-flex gap-2" style="max-width: 200px;">
                                     <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
                                     <button class="btn btn-sm btn-danger flex-fill btn-resolve-delivery" data-verdict="reject" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
                                 </div>
+                                <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                    <input type="checkbox" class="waive-penalty-checkbox-delivery" data-bike="${b.bicycle_code}">
+                                    Waive false report penalty on reject
+                                </label>
+                            </div>
+                        `;
+                    } else if (!b.dispute_reported_by) {
+                        actionHtml = `
+                            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="border-top: 1px dashed var(--border) !important;">
+                                <span class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600;">✅ Dispute Settled • Awaiting Tech Crew Repair</span>
+                                <button class="btn btn-sm btn-outline-success btn-mark-repaired" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 30px; padding: 2px 10px;">Mark Repaired / Available</button>
                             </div>
                         `;
                     } else {
@@ -793,6 +807,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.addEventListener('click', async (e) => {
                         const verdict = btn.getAttribute('data-verdict');
                         const bikeCode = btn.getAttribute('data-bike');
+                        const card = btn.closest('.maintenance-card');
+                        const waiveCheckbox = card ? card.querySelector('.waive-penalty-checkbox-delivery') : null;
 
                         confirmAction('Verify Delivery', `Are you sure you want to ${verdict} the volunteer delivery of Bike #${bikeCode}?`, async () => {
                             try {
@@ -801,7 +817,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                     headers: getAdminHeaders(),
                                     body: JSON.stringify({
                                         bicycle_code: bikeCode,
-                                        verdict: verdict
+                                        verdict: verdict,
+                                        waive_penalty: waiveCheckbox ? waiveCheckbox.checked : false
                                     })
                                 });
                                 const resolveData = await res.json();
@@ -815,6 +832,35 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             } catch (err) {
                                 alert("Error resolving delivery.");
+                            }
+                        });
+                    });
+                });
+
+                // Attach event listeners for marking settled bikes as repaired/available
+                qList.querySelectorAll('.btn-mark-repaired').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const bikeCode = btn.getAttribute('data-bike');
+                        confirmAction('Mark Repaired / Available', `Mark Bike #${bikeCode} as repaired and ready for use?`, async () => {
+                            try {
+                                const res = await fetch('/api/admin/bicycles/override', {
+                                    method: 'POST',
+                                    headers: getAdminHeaders(),
+                                    body: JSON.stringify({
+                                        bicycle_code: bikeCode,
+                                        condition_status: 'Good'
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Bike marked as repaired and available!');
+                                    loadLogs();
+                                    if (window.initDashboard) window.initDashboard();
+                                } else {
+                                    alert(data.error || 'Failed to update bicycle.');
+                                }
+                            } catch (err) {
+                                alert('Error updating bicycle status.');
                             }
                         });
                     });

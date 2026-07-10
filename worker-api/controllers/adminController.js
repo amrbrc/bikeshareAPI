@@ -266,8 +266,8 @@ const resolveDispute = async (req, res) => {
             );
             if (lastTrip.length > 0) {
                 await db.upbsPool.query(
-                    "UPDATE bicycle_history SET condition_confirmed = 1, reported_condition = 'Broken' WHERE id = ?",
-                    [lastTrip[0].id]
+                    "UPDATE bicycle_history SET condition_confirmed = 1, reported_condition = ? WHERE id = ?",
+                    [conditionStatus, lastTrip[0].id]
                 );
             }
 
@@ -477,7 +477,7 @@ const overrideBicycle = async (req, res) => {
 const getMaintenanceQueue = async (req, res) => {
     try {
         const query = `
-            SELECT b.bicycle_code, b.new_location, b.condition_status, b.dispute_image_url,
+            SELECT b.bicycle_code, b.new_location, b.condition_status, b.dispute_image_url, b.dispute_reported_by,
                    (SELECT bh.borrower_phone 
                     FROM bicycle_history bh 
                     WHERE bh.bicycle_code = b.bicycle_code 
@@ -1118,7 +1118,7 @@ const updateSettings = async (req, res) => {
 };
 
 const resolveDelivery = async (req, res) => {
-    const { bicycle_code, verdict } = req.body;
+    const { bicycle_code, verdict, waive_penalty } = req.body;
     if (!bicycle_code || !verdict) {
         return res.status(400).json({ success: false, error: 'bicycle_code and verdict are required' });
     }
@@ -1171,7 +1171,16 @@ const resolveDelivery = async (req, res) => {
             );
 
             if (volunteerPhone) {
-                await sendSMS(volunteerPhone, `Your delivery report for Bike ${bicycle_code} was unverified/rejected by admin. Point reward was not issued.`);
+                if (waive_penalty === true || waive_penalty === 'true') {
+                    await sendSMS(volunteerPhone, `Your delivery report for Bike ${bicycle_code} was unverified/rejected by admin. The false report point penalty was waived by admin this time.`);
+                } else {
+                    const penalty = await getSettingValue('penalty_false_report', -5);
+                    await conn.query(
+                        "UPDATE members SET trust_points = GREATEST(0, LEAST(120, CAST(trust_points AS SIGNED) + ?)) WHERE phone_number = ?",
+                        [penalty, volunteerPhone]
+                    );
+                    await sendSMS(volunteerPhone, `Your delivery report for Bike ${bicycle_code} was unverified/rejected by admin. A ${Math.abs(penalty)}-point penalty has been applied to your trust points.`);
+                }
             }
 
             await conn.commit();
