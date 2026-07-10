@@ -681,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         actionHtml = `
                             <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="border-top: 1px dashed var(--border) !important;">
                                 <div class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
-                                    <span style="color: #10b981; font-weight: 700;">✓</span> Dispute Settled • Awaiting Repair
+                                    <span style="color: #10b981; font-weight: 700;">✓</span> Awaiting Repair
                                 </div>
                                 <button class="btn btn-sm btn-success btn-mark-repaired shadow-sm" data-bike="${b.bicycle_code}" style="font-size: 0.75rem; font-weight: 600; padding: 4px 12px; border-radius: 6px;">Mark Repaired</button>
                             </div>
@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Previous Borrower: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone})` : b.last_user_phone}</b></div>
                                 <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported By (Next User): <b>${b.reporter_name ? `${b.reporter_name} (${b.reporter_phone})` : b.reporter_phone}</b></div>
                                 ` : `
-                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">Reported By: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
+                                <div class="small" style="color: var(--text-muted); margin-bottom: 2px;">${b.dispute_reported_by ? 'Reported By' : 'Last Borrower'}: <b>${b.last_user_name ? `${b.last_user_name} (${b.last_user_phone || ''})` : (b.last_user_phone || b.reporter_phone || 'Unknown')}</b></div>
                                 `}
                                 <div class="small mb-2" style="color: var(--text-muted);">Reported Time: <b>${b.last_activity ? new Date(b.last_activity).toLocaleString() : 'Unknown'}</b></div>
                                 
