@@ -350,6 +350,7 @@ Protocols for handling broken bicycles, missing bikes, disputes between consecut
   * **Guilty:** Confirms the missing report and penalizes the previous borrower who lost the bicycle (unless the **Waive standard point penalty** checkbox is checked). Reporter gets rewarded (+5 pts).
   * **Innocent:** Borrower is proven innocent (no penalty). Rejects a false missing report and penalizes the false reporter (unless the **Waive standard point penalty** checkbox is checked).
   * **Neutral:** Resolves as external factor (e.g., security guard moved bike). Borrower is un-frozen with 0 penalty points deducted, and reporter still receives +5 points for alerting us.
+  * **Photo Not Yet Uploaded & Manual Reveal Toggle:** If the student has not yet uploaded an appeal/evidence photo via FB Messenger, cards display italicized text *"Photo not yet uploaded"* and hide the resolution buttons by default. Admins can check **☑ Settle Without Photo** (or **☑ Verify Without Photo**) to manually reveal the resolution buttons right away.
 * **System SMS Reply (To Reporter upon initial report):**
   > `"Thank you for reporting. Bike [Code] is marked as Missing for admin review. You will be rewarded trust points if this is verified."`
 * **Admin Verification SMS Reply (When Marked Guilty):**

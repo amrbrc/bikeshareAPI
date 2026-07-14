@@ -661,39 +661,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let actionHtml = '';
                     if (b.condition_status === 'Pending_Delivery') {
-                        actionHtml = `
-                            <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <span style="font-size: 0.7rem; color: var(--text-muted);">Verify Volunteer Delivery:</span>
-                                    ${!b.dispute_image_url ? '<span style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">Photo not yet uploaded</span>' : ''}
-                                </div>
-                                <div class="d-flex gap-2" style="max-width: 200px;">
-                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
-                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-delivery" data-verdict="reject" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
-                                </div>
-                                <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                    <input type="checkbox" class="waive-penalty-checkbox-delivery" data-bike="${b.bicycle_code}">
-                                    Waive false report penalty on reject
-                                </label>
+                        const buttonsBlock = `
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Verify Volunteer Delivery:</div>
+                            <div class="d-flex gap-2" style="max-width: 200px;">
+                                <button class="btn btn-sm btn-success flex-fill btn-resolve-delivery" data-verdict="approve" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Approve</button>
+                                <button class="btn btn-sm btn-danger flex-fill btn-resolve-delivery" data-verdict="reject" data-bike="${b.bicycle_code}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Reject</button>
                             </div>
+                            <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                <input type="checkbox" class="waive-penalty-checkbox-delivery" data-bike="${b.bicycle_code}">
+                                Waive false report penalty on reject
+                            </label>
                         `;
+
+                        if (b.dispute_image_url) {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    ${buttonsBlock}
+                                </div>
+                            `;
+                        } else {
+                            actionHtml = `
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Photo not yet uploaded</span>
+                                        <label class="d-flex align-items-center gap-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                                            <input type="checkbox" onchange="const el = this.closest('.maintenance-card').querySelector('.mq-hidden-actions'); if(el) el.style.display = this.checked ? 'block' : 'none';">
+                                            Verify Without Photo
+                                        </label>
+                                    </div>
+                                    <div class="mq-hidden-actions mt-2 pt-2 border-top" style="display: none; border-top: 1px dashed var(--border) !important;">
+                                        ${buttonsBlock}
+                                    </div>
+                                </div>
+                            `;
+                        }
                     } else if (b.condition_status === 'Missing') {
                         if (b.dispute_reported_by) {
                             const targetPhone = b.last_user_phone || b.reporter_phone || '';
-                            actionHtml = `
-                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
-                                    <div class="d-flex gap-2" style="max-width: 260px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
-                                    </div>
-                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
-                                        Waive standard point penalty
-                                    </label>
+                            const buttonsBlock = `
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Missing Report:</div>
+                                <div class="d-flex gap-2" style="max-width: 260px;">
+                                    <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                    <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                    <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
                                 </div>
+                                <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                    <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
+                                    Waive standard point penalty
+                                </label>
                             `;
+
+                            if (b.dispute_image_url) {
+                                actionHtml = `
+                                    <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                        ${buttonsBlock}
+                                    </div>
+                                `;
+                            } else {
+                                actionHtml = `
+                                    <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Photo not yet uploaded</span>
+                                            <label class="d-flex align-items-center gap-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                                                <input type="checkbox" onchange="const el = this.closest('.maintenance-card').querySelector('.mq-hidden-actions'); if(el) el.style.display = this.checked ? 'block' : 'none';">
+                                                Settle Without Photo
+                                            </label>
+                                        </div>
+                                        <div class="mq-hidden-actions mt-2 pt-2 border-top" style="display: none; border-top: 1px dashed var(--border) !important;">
+                                            ${buttonsBlock}
+                                        </div>
+                                    </div>
+                                `;
+                            }
                         } else {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
@@ -713,25 +752,38 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     } else {
                         const targetPhone = b.last_user_phone || b.reporter_phone || '';
+                        const buttonsBlock = `
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
+                            <div class="d-flex gap-2" style="max-width: 260px;">
+                                <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
+                                <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
+                                <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
+                            </div>
+                            <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
+                                <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
+                                Waive standard point penalty
+                            </label>
+                        `;
+
                         if (b.dispute_image_url) {
                             actionHtml = `
                                 <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Resolve Dispute / Settle Report:</div>
-                                    <div class="d-flex gap-2" style="max-width: 260px;">
-                                        <button class="btn btn-sm btn-success flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="innocent" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Innocent</button>
-                                        <button class="btn btn-sm btn-danger flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="guilty" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Guilty</button>
-                                        <button class="btn btn-sm btn-secondary flex-fill btn-resolve-mq" data-status="${b.condition_status}" data-verdict="neutral" data-bike="${b.bicycle_code}" data-phone="${targetPhone}" style="font-size: 0.7rem; font-weight: 700; height: 32px; padding: 2px 8px;">Neutral</button>
-                                    </div>
-                                    <label class="d-flex align-items-center gap-2 mt-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" class="waive-penalty-checkbox-mq" data-bike="${b.bicycle_code}">
-                                        Waive standard point penalty
-                                    </label>
+                                    ${buttonsBlock}
                                 </div>
                             `;
                         } else {
                             actionHtml = `
-                                <div class="mt-2 pt-2 border-top d-flex justify-content-end" style="border-top: 1px dashed var(--border) !important;">
-                                    <div style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">Awaiting user appeal photo</div>
+                                <div class="mt-2 pt-2 border-top" style="border-top: 1px dashed var(--border) !important;">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Photo not yet uploaded</span>
+                                        <label class="d-flex align-items-center gap-2 mb-0" style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                                            <input type="checkbox" onchange="const el = this.closest('.maintenance-card').querySelector('.mq-hidden-actions'); if(el) el.style.display = this.checked ? 'block' : 'none';">
+                                            Settle Without Photo
+                                        </label>
+                                    </div>
+                                    <div class="mq-hidden-actions mt-2 pt-2 border-top" style="display: none; border-top: 1px dashed var(--border) !important;">
+                                        ${buttonsBlock}
+                                    </div>
                                 </div>
                             `;
                         }
