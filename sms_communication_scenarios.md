@@ -209,6 +209,67 @@ This section outlines the primary workflow when checking out a bike, riding it, 
 ## 3. Maintenance, Damage & Dispute Reporting
 Protocols for handling broken bicycles, missing bikes, disputes between consecutive users, and delivering bikes to repair hubs.
 
+### 3.0 Maintenance, Volunteer Delivery & Missing Bike Reporting Flows
+
+#### A. Volunteer Delivery & Photo Verification Flow (`delivered`)
+```
+                              [Broken / Maintenance Bike Spotted]
+                                               │
+                                               ▼
+                         [Member Texts: `delivered <code> <location>`]
+                                               │
+                       ┌───────────────────────┴───────────────────────┐
+                       ▼                                               ▼
+     [Delivered by Borrower Who Broke It]               [Delivered by Volunteer Rider]
+                       │                                               │
+                       ▼                                               ▼
+         [Bike Marked `Broken` at Hub]                  [Bike Marked `Pending_Delivery`]
+         [0 Bonus Pts (Standard Duty)]                                 │
+                                                                       ▼
+                                                 [FB Chatbot Photo Upload (`m.me/upbikesharebot`)]
+                                                    (Volunteer Submits Proof of Parked Bike)
+                                                                       │
+                                                                       ▼
+                                                        [Admin Review on Web Dashboard]
+                                                                       │
+                                              ┌────────────────────────┴────────────────────────┐
+                                              ▼                                                 ▼
+                                     [Approved by Admin]                             [Rejected / Unverified]
+                                              │                                                 │
+                                              ▼                                                 ▼
+                                 [Volunteer Reward Awarded]                           [False Report Penalty]
+                                  (+5 to +15 Trust Points)                          (−5 to −15 Pts OR Waived)
+```
+
+#### B. Missing Bike Reporting & Admin Investigation Flow (`missing`)
+```
+                              [Member Spots Missing Bike at Station]
+                                                │
+                                                ▼
+                                 [Member Texts: `missing <code>`]
+                                                │
+                                                ▼
+                    [Bike Marked `Missing` & Previous Borrower Account Frozen]
+                      (Outbound Alert SMS: Appeal via `m.me/upbikesharebot`)
+                                                │
+                                                ▼
+                                   [FB Chatbot Appeal System]
+                           (Prev Borrower Submits Parking Photo Proof)
+                                                │
+                                                ▼
+                         [Admin Investigation & Verdict on Web Dashboard]
+                                                │
+                ┌───────────────────────────────┼───────────────────────────────┐
+                ▼                               ▼                               ▼
+     [Guilty Verdict (Loss/Theft)]    [Innocent Verdict (False Claim)]     [Neutral Verdict (External)]
+                │                               │                               │
+        ┌───────┴───────┐               ┌───────┴───────┐               ┌───────┴───────┐
+        ▼               ▼               ▼               ▼               ▼               ▼
+ [Prev Borrower]   [Reporter]    [Prev Borrower]   [Reporter]    [Prev Borrower]   [Reporter]
+ (−30 to −35 Pts   (+5 to +15    (0 Pts Deducted;  (−5 to −15    (0 Pts Deducted;  (+5 to +15
+   OR Waived)        Points)        Unfrozen)     Pts OR Waived)    Unfrozen)        Points)
+```
+
 ### Scenario 3.1: Borrower Reporting Bike Broken During Handshake (`broken`)
 * **Condition:** Active borrower replies `broken` instead of `good` after ending their trip.
 * **User SMS Pattern:** `broken <code>` or `<code> broken` (e.g., `broken 1` / `1 broken`)
@@ -433,6 +494,23 @@ Utility commands allowing students to query system status without internet conne
 
 ## 5. Automated System Notifications (Cron Jobs & Penalties)
 Background timers continuously monitor active rides, pending handshakes, and repair grace periods, dispatching automated SMS alerts when rules are triggered.
+
+### 5.0 Automated Cron Monitoring & Penalty Enforcement Flows
+```
+                                 [Active Ride / Pending Handshake Timers]
+                                                    │
+                 ┌──────────────────────────────────┴──────────────────────────────────┐
+                 ▼                                                                     ▼
+    [Active Ride Timer (Hourly Cron)]                               [Pending Handshake Timer (2/5-Min Cron)]
+                 │                                                                     │
+                 ├─────────────────────────┐                                           ├─────────────────────────┐
+                 ▼                         ▼                                           ▼                         ▼
+        [At 1 Hour Elapsed]     [Exceeds Max Limit (>6h)]                     [At 5 Mins Pending]     [Exceeds 30 Mins Pending]
+                 │                         │                                           │                         │
+                 ▼                         ▼                                           ▼                         ▼
+     [Friendly Check-In SMS]    [Overtime Penalty Applied]                   [Photo Proof Reminder]   [Auto-Finalize as Good]
+     ("Hope you're enjoying")   (−5 Pts/Hour Continuous)                     ("Reply GOOD/BROKEN")    [Abandoned Penalty −2 Pts]
+```
 
 ### Scenario 5.1: 1-Hour Active Ride Reminder
 * **Condition:** A bike has been checked out (`Borrowed`) for exactly 1 hour.
